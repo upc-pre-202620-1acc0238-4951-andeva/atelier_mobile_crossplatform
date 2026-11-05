@@ -1,0 +1,187 @@
+# Roadmap de construcción — Atelier Mobile (Flutter)
+
+Orden de construcción de la app, paso a paso. **Cada paso se hace en su propia sesión** y en su propia rama. Al cerrar un paso se actualiza este archivo: es lo único que una sesión nueva necesita para saber dónde va el proyecto.
+
+Es el mismo orden que siguió `atelier-mobile-android`. Esa app ya tiene resueltos los flujos y los huecos del backend, así que aquí se **porta** su comportamiento; no se vuelve a diseñar.
+
+## Cómo empezar una sesión
+
+```text
+Lee docs/07-roadmap.md y haz el paso N. Primero un plan, luego implementa.
+```
+
+Reglas para todas las sesiones:
+
+1. **Fuente de verdad:** `docs/` (00–06 y `api/`). `atelier-documentation.md` y `atelier-ecosystem-details.md` son solo contexto general y están desactualizados.
+2. **Estilo:** [05-flutter-architecture.md](05-flutter-architecture.md), que sigue el repo del profesor. El código Android es la referencia de **qué** hace cada caso de uso, no de **cómo** se escribe: no traducir Kotlin línea por línea.
+3. **Referencia Android:** cada paso indica su carpeta en `../../atelier-mobile-android/app/src/main/java/com/andeva/atelier/mobile/`. El detalle de cada pieza está en [android-roadmap-reference.md](android-roadmap-reference.md).
+4. **Antes de empezar:** el paso anterior debe estar commiteado y el árbol limpio (`git status`). La rama nueva sale de `develop` (o de la rama del paso anterior si aún no se mergeó).
+5. **Una sesión por rama:** no trabajar dos sesiones a la vez sobre los mismos archivos.
+6. **Reutilizar el núcleo** (`core/`, paso 1). No crear otro cliente HTTP, otra cola ni otro manejo de sesión.
+7. **Cada paso incluye sus pantallas:** `domain`, `application`, `infrastructure` y `presentation`. Donde Android ya tiene la pantalla, se porta; donde no, se hace funcional con los componentes de `core/designsystem`.
+8. **Al terminar:** los comandos de abajo en verde, docs actualizados si cambió algo y este archivo marcado.
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+```bash
+flutter analyze
+```
+
+```bash
+flutter test
+```
+
+```bash
+flutter build apk --debug --dart-define-from-file=config/dev.json
+```
+
+iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados como **sin comprobar** hasta probarlos en una Mac ([04](04-mobile-integration.md)).
+
+## Estado
+
+| # | Paso | Estado | Rama |
+| --- | --- | --- | --- |
+| 0 | Configuración general (`pubspec`, identificador, plataformas) | ✅ Android · iOS sin comprobar | `feature/foundations` |
+| 1 | Núcleo `core/` | ⬜ Pendiente | |
+| 2 | `auth` — sesión y acceso | ⬜ Pendiente | |
+| 3 | `main` — contenedor con pestañas por permiso | ⬜ Pendiente | |
+| 4 | `attendance` — asistencia y turnos | ⬜ Pendiente | |
+| 5 | `tasks` — tareas del mecánico | ⬜ Pendiente | |
+| 6 | `reception` + `workorders` — recepción y órdenes | ⬜ Pendiente | |
+| 7 | `inventory` — catálogo, lotes y alertas | ⬜ Pendiente | |
+| 8 | `diagnostics` — OBD-II, DTC e informe IA | ⬜ Pendiente | |
+| 9 | `bays`, `cashier`, `reports`, `team` | ⬜ Pendiente | |
+
+Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho.
+
+Tamaño de referencia en Android: 459 archivos Kotlin en `core`, `navigation` y `features`.
+
+---
+
+## Paso 0 — Configuración general
+
+Deja el proyecto compilando con todas las dependencias, sin funcionalidad.
+
+- `pubspec.yaml`, `build.yaml` y `analysis_options.yaml` de [05](05-flutter-architecture.md) §2, y `l10n.yaml` + `lib/l10n/app_es.arb`.
+- Identificador `com.andeva.atelier.mobile`, `minSdk = 26`, `compileSdk = 37`, AGP 9.4.1, Gradle 9.6.0, iOS 15.0, desugaring y `google-services` opcional ([04](04-mobile-integration.md) §1). Sin estos cambios no compila.
+- Permisos de Android e iOS ([04](04-mobile-integration.md) §6).
+- `config/dev.example.json`, `AppConfig` y `.gitignore` ([04](04-mobile-integration.md) §1).
+- Fuentes `.ttf` en `assets/fonts/` (de `app/src/main/res/font/` de Android) e íconos con `flutter_launcher_icons`, solo `android` e `ios`, desde `docs/branding/atelier-workshop-icon.png`.
+- `README.md` del proyecto (el del repo Android como base) y borrar el `.iml`, que `.gitignore` ya ignora.
+
+**Listo cuando:** `flutter build apk --debug` funciona y la app abre en un emulador.
+
+## Paso 1 — Núcleo `core/`
+
+Base que usan todas las features. Detalle en [05](05-flutter-architecture.md) §3 y §5 y en [06](06-offline-sync.md) §3–§5. **Android:** `core/`, `navigation/`.
+
+| Pieza | Dónde | Para qué la usa una feature |
+| --- | --- | --- |
+| `Session`, `Permission`, `Plan` | `core/domain` | Habilitar UI por permiso y plan (`session.has(...)`, `canUseTelemetry()`) |
+| `ApiException`, `NetworkException` | `core/domain` | Mostrar el `message` del backend; distinguir "sin red" |
+| `BusinessTime`, `Money`, `MissingBranchException` | `core/domain` | Día de Lima, dinero y acciones que necesitan sede |
+| `ApiClient`, `AuthenticatedClient`, `TokenRefresher`, `PublicEndpoints` | `core/data/remote` | Llamar a la API con sesión y un solo refresh |
+| `SessionManager`, `JwtClaims` | `core/data/local` | Guardar la respuesta de sign-in (`save(dto)`), sede/turno (`updateAssignment`), `clear()` |
+| `AppDatabase` + 19 tablas | `core/data/local`, `features/*/infrastructure/local` | Cada feature agrega **su DAO** (las tablas ya existen) |
+| `CrossIsolateLock`, `LocalChangeNotifier` | `core/data` | Convivencia de la UI y el worker |
+| `PendingOperationQueue`, `OperationHandler`, `SyncProcessor`, `SyncScheduler`, `callbackDispatcher` | `core/data/sync` | Encolar capturas sin red y registrar su handler ([06](06-offline-sync.md) §3) |
+| `CacheMaintenanceDao` | `core/data/sync` | Borrar cachés al cerrar sesión |
+| `SupabaseUploader`, `StoragePaths`, `PhotoCapture` | `core/media` | Comprimir y subir fotos; URL pública determinista |
+| `PushRouter`, `PushInbox`, `DeviceTokenRegistrar`, `NotificationChannels` | `core/notifications` | Abrir la pantalla correcta al tocar un push |
+| `ConnectivityObserver`, `PdfDownloader` | `core/data/remote` | Deshabilitar acciones "en línea"; descargar PDFs |
+| `MaterialTheme` y componentes | `core/designsystem` | Tema Atelier en claro y oscuro |
+| `AppRoot` | `navigation/` | Login o app según la sesión |
+
+**Primero se prueba lo que no existe en Android:** dos conexiones sobre el mismo archivo, `CrossIsolateLock` y el refresh desde dos motores. Es el mayor riesgo técnico del proyecto.
+
+**Listo cuando:** pasan las pruebas de [06](06-offline-sync.md) §8 y, en un dispositivo real, una operación encolada se envía con la app cerrada.
+
+---
+
+## Paso 2 — `auth`
+
+- **Historias:** US01–US05 ([01](01-requirements/user-stories.md), EP01) · **API:** [api/iam.md](api/iam.md) · **Trazabilidad:** [03](03-traceability.md) EP01 · **Android:** `features/auth`
+- **Casos de uso:** `SignIn`, `GoogleSignIn`, `VerifyEmail`, `ResendVerification`, `ValidateInvitation`, `AcceptInvitation`, `ForgotPassword`, `ResetPassword`, `GetPendingOperationCount`, `SignOut`, `GetSelectableBranches`, `SelectBranch`, `SkipBranchChoice`.
+- **Pantallas:** A5 login, A3 registro por invitación, A4 código, A5b elegir sede, A6 recuperar contraseña. Las cuatro primeras existen en Android; **A6 hay que hacerla**.
+- **Tras el login:** `GET /hr/employees/membership/{membershipId}` con el token recibido → `SessionManager.save(dto)` + `updateAssignment(branchId, shiftId)` → `DeviceTokenRegistrar.registerCurrentToken()` → pedir permiso de notificaciones. La sede se pide **antes** de guardar, porque al guardar `AppRoot` cambia de pantalla; sin perfil laboral (404) se entra sin sede.
+- **Cierre de sesión:** avisar si hay operaciones pendientes ([06](06-offline-sync.md) §3; la cola se conserva) → `DeviceTokenRegistrar.clear()` → `POST /auth/sign-out` → `CacheMaintenanceDao.clearCaches()` → `SessionManager.clear()`.
+- **Errores clave:** 401 credenciales · `code = EMAIL_NOT_VERIFIED` (403) → pantalla OTP · invitación: 404 inexistente/revocada, 409 ya aceptada o membresía activa, 410 vencida.
+- **Decisiones ya tomadas en Android:** aceptar la invitación devuelve la sesión, así que A3 no pasa por A4 · el enlace de invitación se pega a mano (H1) · el alta de taller (`POST /auth/sign-up`) queda fuera · solo elige sede quien entra sin perfil laboral (H33).
+- **Sin red:** todo es en línea.
+
+## Paso 3 — `main`
+
+- **Android:** `features/main`. **Casos de uso:** `ObserveSession`, `ObservePendingOperationCount`, `ObservePendingOperations`, `RetryPendingOperation`, `DiscardPendingOperation`, `ObservePushDestination`, `ConsumePushDestination`.
+- **Incluye:** `MainPage` con `NavigationBar` e `IndexedStack`, pestañas según `NavigationItem` y permisos ([05](05-flutter-architecture.md) §5.5), aviso si `plan.accessGranted == false`, ícono con el contador de pendientes y pantalla "Pendientes de sincronizar" con *Reintentar* / *Descartar* ([06](06-offline-sync.md) §3). Android todavía no tiene esta última pantalla.
+- **Pestañas, como en Android:** con `operations:tasks:track_time` → Inicio · Tareas · (Órdenes si `work_orders:create`) · OBD-II (si `canUseTelemetry()`) · Perfil; sin él → Inicio · Órdenes · Recepción · Stock · Ajustes.
+- **Consume** `PushInbox` para abrir el destino del push.
+
+## Paso 4 — `attendance`
+
+- **Historias:** US06, US08, US09, US10 · **API:** [api/hr.md](api/hr.md) · [04](04-mobile-integration.md) §7 · **Android:** `features/attendance`
+- **Casos de uso:** `RefreshAttendance`, `ObserveTodayAttendance`, `ObserveAttendanceHistory`, `ObserveWeeklySchedule`, `ClockIn`, `ClockOut`, `SubmitJustification`.
+- **Primera feature con cola offline:** `CLOCK_IN`, `CLOCK_OUT`, `SUBMIT_JUSTIFICATION` (handlers + `dedupe_key` de [06](06-offline-sync.md) §3 y §6).
+- **Cachés:** `branches`, `shifts`, `attendances`.
+- **Ubicación:** `LocationProvider` (contrato en dominio, implementación con `geolocator`), ubicación fresca, precisión ≤ 50 m, detectar ubicación simulada.
+- **Sin red en iOS:** la marcación queda en cola hasta que se abra la app (H42). Que se note en la pantalla.
+
+## Paso 5 — `tasks`
+
+- **Historias:** US26–US30, US23 E1–E3, US33 E1, US35 E1/E3 · **API:** [api/operations.md](api/operations.md), [api/crm.md](api/crm.md) (placa), [api/inventory.md](api/inventory.md) (buscar repuesto) · **Android:** `features/tasks`
+- **Casos de uso:** `ObserveMyTasks`, `RefreshMyTasks`, `ObserveTask`, `GetTaskDetail`, `StartTask`, `PauseTask`, `RequestSuspension`, `ApproveSuspension`, `RejectSuspension`, `ResumeSuspendedTask`, `SuggestLaborHours`, `CompleteTask`, `AttachTaskEvidence`, `ObservePendingEvidence`, `SearchParts`, `AddPartToTask`, `UpdateTaskPartQuantity`, `RemovePartFromTask`.
+- **En línea:** iniciar, pausar, suspender, reanudar, cerrar e imputar repuestos.
+- **Offline:** fotos de desmontaje y montaje (`UPLOAD_FILE` + `ATTACH_TASK_EVIDENCE`).
+- **Caché:** `tasks` (+ `vehicles` y `bays` para placa y bahía). **Push:** `TASK_ASSIGNED`, `TASK_PAUSED`, `TASK_RESUMED`, `TASK_SUSPENSION_REQUESTED`, `TASK_PART_CHARGED`.
+- **Cuidado (H37, H38, H9):** corregir la cantidad de un repuesto no tiene efecto real y *Devolver* deja la línea visible, por errores del backend.
+
+## Paso 6 — `reception` + `workorders`
+
+- **Historias:** US11, US44, US12–US15, US22, US24, US25, US36, US33 E2, US35 E2 · **API:** [api/crm.md](api/crm.md), [api/operations.md](api/operations.md) · **Android:** `features/reception`, `features/workorders`
+- **`reception`:** `FindVehicleByPlate`, `SearchCustomers`, `GetCustomerVehicles`, `ObserveCustomer`, `ObserveVehicle`, `RegisterIndividualCustomer`, `RegisterCompanyCustomer`, `RegisterVehicle`, `LookupAffiliation`, `AffiliateCustomer`, `RefreshAppointments`, `ObserveAppointments`, `MarkAppointmentArrived`.
+- **`workorders`:** `RefreshBranchWorkOrders`, `ObserveBranchWorkOrders`, `ObserveWorkOrder`, `GetWorkOrderDetail`, `OpenWorkOrder`, `UpdateWorkOrder`, `FindDraftWorkOrderForVehicle`, `StartWorkOrder`, `CompleteWorkOrder`, `CancelWorkOrder`, `AddWorkOrderTask`, `UpdateWorkOrderTask`, `GetServiceCatalog`, `GetBranchMechanics`, `AttachIntakePhoto`, `ObservePendingIntakePhotos`, `SubmitProposal`, `ObservePendingProposals`, `NotifyProposal`, `ApproveProposal`, `RejectProposal`, `DownloadQuotationPdf`, `SendQuotation`, `ApproveQuotation`, `RejectQuotation`, `GetPartMovements`, `GetProfitability`.
+- **Offline:** fotos de recepción (`ATTACH_INTAKE_IMAGE`) y propuestas (`SUBMIT_PROPOSAL`). El resto es en línea.
+- **Propuestas:** `severity` solo `LOW`, `MEDIUM` o `CRITICAL`; la petición rechaza `HIGH` con 400 ([api/README.md](api/README.md) §8).
+- **Decisiones ya tomadas en Android:** suspensiones en el detalle de la orden (H5) · la llegada de una cita crea la orden después, con kilometraje 0 (H10) · nombres de servicios y mecánicos (H11) · el combustible va al inicio del diagnóstico (H34).
+- **Cachés:** `customers`, `vehicles`, `appointments`, `work_orders`. **PDF:** proforma ([04](04-mobile-integration.md) §8).
+
+## Paso 7 — `inventory`
+
+- **Historias:** US31, US32, US34 · **API:** [api/inventory.md](api/inventory.md) · **Android:** `features/inventory`
+- **Casos de uso:** `RefreshPartsCatalog`, `ObservePartsCatalog`, `SearchPartsCatalog`, `FindPartBySku`, `ObservePart`, `GetPartDetail`, `RefreshPartBatches`, `ObservePartBatches`, `GetStockAlerts`, `ObserveStockAlerts`, `GetInventoryValuation`, `GetPurchaseOrders`, `GetPurchaseOrder`, `ReceivePurchaseOrder`, `ObservePartBrands`.
+- **Cachés:** `parts`, `batches` (solo con `inventory:batches:read`). **Push:** `LOW_STOCK`.
+- **Backend:** el catálogo se pagina en memoria, los lotes llegan del más nuevo al más viejo y con agotados, las alertas se calculan al consultar y `receive` responde 400 a todo (H12–H15).
+- **Lector de código de barras:** sin implementar en Android. Elegir el plugin en este paso.
+
+## Paso 8 — `diagnostics`
+
+- **Historias:** US16–US21, US43 E1 · **API:** [api/iot.md](api/iot.md) · [04](04-mobile-integration.md) §4 · **Android:** `features/diagnostics`
+- **Casos de uso:** `GetPairedObdAdapters`, `GetObdDevices`, `GetActiveInstallation`, `InstallObdDevice`, `UninstallObdDevice`, `ConnectObd`, `DisconnectObd`, `StartLiveTelemetry`, `StopLiveTelemetry`, `ObserveLiveTelemetry`, `FreezeTelemetry`, `ScanFaults`, `ClearFaults`, `RefreshVehicleFaults`, `ObserveVehicleFaults`, `ObserveDiagnosticsSyncState`, `GenerateHealthReport`, `GetLatestHealthReport`, `GetHealthReportDetail`, `DownloadHealthReportPdf`, `RefreshPredictiveAlerts`, `ObservePredictiveAlerts`, `AcknowledgePredictiveAlert`.
+- **Offline:** `telemetry_readings` → `TELEMETRY_BATCH`, `REGISTER_FAULT`, `RESOLVE_FAULT` ([06](06-offline-sync.md) §6).
+- **En línea:** instalar o retirar el escáner, informe IA, alertas predictivas.
+- **Visible solo si** `session.canUseTelemetry()` / `canUseAiDiagnostics()`.
+- **Empezar por `ObdTransport`:** SPP por canal de plataforma, luego BLE. **Requiere un ELM327 BLE para probar**; sin él, no se puede afirmar que funcione en iOS (H40, H41).
+- **Sesión larga:** `flutter_foreground_task` en Android y `bluetooth-central` en iOS.
+
+## Paso 9 — `bays`, `cashier`, `reports`, `team`
+
+- **`bays`** (US40): `RefreshBayBoard`, `ObserveBayBoard`, `PollBayBoard`, `ReassignBay`, `ReassignTaskMechanic`. Tablero con refresco cada 30 s mientras la pantalla está visible (H24, H25).
+- **`cashier`** (US37–US39, US42): `PrepareVoucher`, `IssueVoucher`, `GetWorkOrderVouchers`, `ObserveWorkOrderVouchers`, `RegisterPayment`, `GetVoucherPayments`, `GetDailyCashSummary`, `MarkWorkOrderPaid`, `DownloadExitPass`, `DeliverVehicle`, `GetBranchSeries`, `ConfigureSeries`, `SetSeriesActive`. Todo en línea. `voucherType` viaja como código SUNAT (`"01"`, `"03"`, `"07"`). **Dinero y documentos fiscales: portar H26–H29 sin simplificar**, en especial H28 (no duplicar comprobantes ni cobros tras un timeout).
+- **`reports`** (US41, US43 E2): `GetCashFlowSummary`, `DownloadCashFlowPdf`, `DownloadFleetHealthPdf`. Todo en línea (H30, H31).
+- **`team`** (US10): `GetBranchDailyAttendance`, `GetPendingJustifications`, `GetCollaboratorAttendance`, `ApproveJustification`, `RejectJustification`. Todo en línea (H32).
+
+---
+
+## Pendientes y riesgos conocidos
+
+| Tema | Detalle | Afecta |
+| --- | --- | --- |
+| Dos motores | `CrossIsolateLock` y las escrituras concurrentes se probaron con dos conexiones en pruebas unitarias; falta comprobar con `workmanager` real, y `LocalChangeNotifier` solo se compiló | Paso 1 |
+| iOS sin comprobar | Desde Windows no se compila iOS. `Info.plist`, los permisos con Swift Package Manager, `AppDelegate`, Keychain en segundo plano y `BGTaskScheduler` necesitan una Mac | Todos |
+| Cuenta de Apple Developer | Sin ella no hay push en iOS ni instalación estable en iPhones (H43) | Pasos 1, 2 |
+| Adaptador ELM327 BLE | Sin uno no se puede probar el escáner en iOS (H40) | Paso 8 |
+| Segundo plano en iOS | Solo es una mejora: lo capturado puede no salir hasta abrir la app (H42) | Pasos 1, 4, 5, 6, 8 |
+| Configuración local | Faltan `config/dev.json`, `google-services.json` y `GoogleService-Info.plist` | Pasos 2, 5, 6 |
+| Identificador compartido | Con `com.andeva.atelier.mobile`, la app nativa y esta no conviven en un mismo Android ([04](04-mobile-integration.md) §1) | Pruebas |
+| Huecos del backend | H9, H26–H31, H34–H39 siguen abiertos y se heredan tal cual ([03](03-traceability.md#huecos-abiertos)) | Pasos 5–9 |
