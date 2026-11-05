@@ -1,3 +1,4 @@
+import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -9,8 +10,16 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(body: Center(child: Text('Hello World!'))),
+    return MaterialApp(
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      debugShowCheckedModeBanner: false,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(child: Text(AppLocalizations.of(context).appTitle)),
+        ),
+      ),
     );
   }
 }

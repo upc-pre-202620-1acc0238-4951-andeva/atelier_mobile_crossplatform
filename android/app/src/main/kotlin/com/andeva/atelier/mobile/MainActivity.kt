@@ -1,4 +1,4 @@
-package com.example.atelier_mobile_crossplatform
+package com.andeva.atelier.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

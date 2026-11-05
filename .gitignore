@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.codegraph/
 
 # IntelliJ related
 *.iml
@@ -38,6 +39,13 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+# Configuración local y secretos (docs/04-mobile-integration.md §1)
+config/dev.json
+config/prod.json
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+*.local.md
 
 # Android Studio will place build artifacts here
 /android/app/debug

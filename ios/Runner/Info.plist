@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Atelier Mobile Crossplatform</string>
+	<string>Atelier</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>atelier_mobile_crossplatform</string>
+	<string>Atelier</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -65,6 +65,25 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Validamos que marques tu asistencia dentro del taller.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Tomamos fotos de recepción y evidencias de trabajo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Adjuntamos fotos de tu galería a la orden de trabajo.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Conectamos con el escáner OBD-II del vehículo.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+		<string>bluetooth-central</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>atelier.sync</string>
 	</array>
 </dict>
 </plist>
