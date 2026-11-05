@@ -1,0 +1,13 @@
+# dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "docs/branding/atelier-workshop-icon.png"
+
+  android: true
+  min_sdk_android: 26
+  adaptive_icon_background: "#0071EB"
+  adaptive_icon_foreground: "docs/branding/atelier-workshop-icon.png"
+  adaptive_icon_foreground_inset: 16
+
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#0071EB"
