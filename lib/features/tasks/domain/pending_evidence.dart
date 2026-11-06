@@ -1,5 +1,7 @@
 class PendingEvidence {
   final String operationId;
+
+  /// Ruta absoluta para mostrar la foto; `null` cuando ya se subió y se borró el archivo.
   final String? localFilePath;
   final String imageUrl;
   final String? description;

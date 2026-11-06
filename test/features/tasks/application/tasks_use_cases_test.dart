@@ -29,6 +29,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart'
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeTaskRepository implements TaskRepository {
@@ -108,7 +109,7 @@ class FakeTaskRepository implements TaskRepository {
   @override
   Future<TaskDetail> complete(
     TaskId id,
-    double actualLaborHours, {
+    Decimal actualLaborHours, {
     String? notes,
   }) async {
     calls.add('complete:${id.value}:$actualLaborHours:$notes');
@@ -139,7 +140,7 @@ class FakeTaskRepository implements TaskRepository {
   Future<TaskProduct> addPart(
     TaskId id,
     String productId,
-    double quantity,
+    Decimal quantity,
   ) async {
     calls.add('addPart:${id.value}:$productId:$quantity');
     return TaskProduct(
@@ -153,7 +154,7 @@ class FakeTaskRepository implements TaskRepository {
   Future<TaskDetail> updatePartQuantity(
     TaskId id,
     String productId,
-    double quantity,
+    Decimal quantity,
   ) async {
     calls.add('updatePartQuantity:${id.value}:$productId:$quantity');
     return taskDetail!;
@@ -225,6 +226,12 @@ void main() {
       repository.calls,
       contains('requestSuspension:t1:Falta pastilla:inv1'),
     );
+    // Valida el texto recortado: debe enviar ese mismo texto (Android lo recorta al enviar).
+    await request.execute(const TaskId('t1'), '  Bomba de agua  ');
+    expect(
+      repository.calls,
+      contains('requestSuspension:t1:Bomba de agua:null'),
+    );
 
     final approve = ApproveSuspensionUseCase(repository: repository);
     await approve.execute(const TaskId('t1'));
@@ -253,19 +260,27 @@ void main() {
         totalPausedSeconds: 0,
       ),
     );
-    expect(hours, 2.0);
+    expect(hours, Decimal.fromInt(2));
 
     final complete = CompleteTaskUseCase(repository: repository);
     expect(
-      () => complete.execute(const TaskId('t1'), -1.0),
+      () => complete.execute(const TaskId('t1'), Decimal.parse('-1')),
       throwsA(isA<InvalidTaskInputException>()),
     );
     expect(
-      () => complete.execute(const TaskId('t1'), 2.0, notes: 'a' * 1001),
+      () => complete.execute(
+        const TaskId('t1'),
+        Decimal.fromInt(2),
+        notes: 'a' * 1001,
+      ),
       throwsA(isA<InvalidTaskInputException>()),
     );
 
-    await complete.execute(const TaskId('t1'), 2.5, notes: 'Todo OK');
+    await complete.execute(
+      const TaskId('t1'),
+      Decimal.parse('2.5'),
+      notes: 'Todo OK',
+    );
     expect(repository.calls, contains('complete:t1:2.5:Todo OK'));
   });
 
@@ -305,19 +320,19 @@ void main() {
 
     final add = AddPartToTaskUseCase(repository: repository);
     expect(
-      () => add.execute(const TaskId('t1'), 'p1', 0.0),
+      () => add.execute(const TaskId('t1'), 'p1', Decimal.zero),
       throwsA(isA<InvalidTaskInputException>()),
     );
-    await add.execute(const TaskId('t1'), 'p1', 2.0);
-    expect(repository.calls, contains('addPart:t1:p1:2.0'));
+    await add.execute(const TaskId('t1'), 'p1', Decimal.parse('2.5'));
+    expect(repository.calls, contains('addPart:t1:p1:2.5'));
 
     final update = UpdateTaskPartQuantityUseCase(repository: repository);
     expect(
-      () => update.execute(const TaskId('t1'), 'p1', -1.0),
+      () => update.execute(const TaskId('t1'), 'p1', Decimal.parse('-1')),
       throwsA(isA<InvalidTaskInputException>()),
     );
-    await update.execute(const TaskId('t1'), 'p1', 3.0);
-    expect(repository.calls, contains('updatePartQuantity:t1:p1:3.0'));
+    await update.execute(const TaskId('t1'), 'p1', Decimal.fromInt(3));
+    expect(repository.calls, contains('updatePartQuantity:t1:p1:3'));
 
     final remove = RemovePartFromTaskUseCase(repository: repository);
     await remove.execute(const TaskId('t1'), 'p1');

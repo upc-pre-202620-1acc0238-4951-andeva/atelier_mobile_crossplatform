@@ -3,6 +3,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.d
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_validation.dart';
+import 'package:decimal/decimal.dart';
 
 /// Cierre técnico con horas hombre en decimal (US30 E1). En línea.
 class CompleteTaskUseCase {
@@ -12,7 +13,7 @@ class CompleteTaskUseCase {
 
   Future<TaskDetail> execute(
     TaskId id,
-    double actualLaborHours, {
+    Decimal actualLaborHours, {
     String? notes,
   }) {
     if (!TaskValidation.isLaborHours(actualLaborHours)) {

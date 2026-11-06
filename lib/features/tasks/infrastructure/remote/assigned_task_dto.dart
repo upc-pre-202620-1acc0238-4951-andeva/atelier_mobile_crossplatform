@@ -1,3 +1,6 @@
+import 'package:atelier_mobile_crossplatform/core/data/remote/json_decimal.dart';
+import 'package:decimal/decimal.dart';
+
 class AssignedTaskDto {
   final String taskId;
   final String workOrderId;
@@ -8,7 +11,7 @@ class AssignedTaskDto {
   final String? bayId;
   final String? status;
   final String? description;
-  final double? estimatedHours;
+  final Decimal? estimatedHours;
   final String? startedAt;
   final int? totalPausedSeconds;
 
@@ -38,7 +41,7 @@ class AssignedTaskDto {
       bayId: json['bayId'] as String?,
       status: json['status'] as String?,
       description: json['description'] as String?,
-      estimatedHours: (json['estimatedHours'] as num?)?.toDouble(),
+      estimatedHours: decimalFromJson(json['estimatedHours']),
       startedAt: json['startedAt'] as String?,
       totalPausedSeconds: (json['totalPausedSeconds'] as num?)?.toInt(),
     );

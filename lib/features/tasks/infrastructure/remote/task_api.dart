@@ -106,16 +106,16 @@ class TaskApi {
     return TaskProductDto.fromJson(json);
   }
 
-  Future<TaskProductDto> updateProduct(
+  /// Sin cuerpo: el backend responde una línea armada a mano, no la guardada (H9).
+  Future<void> updateProduct(
     String taskId,
     String productId,
     UpdateTaskProductRequestDto body,
   ) async {
-    final Map<String, dynamic> json = await client.put(
+    await client.put(
       '/api/v1/tasks/$taskId/products/$productId',
       body: body.toJson(),
     );
-    return TaskProductDto.fromJson(json);
   }
 
   Future<void> removeProduct(String taskId, String productId) async {

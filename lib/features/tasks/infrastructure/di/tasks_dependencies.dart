@@ -38,6 +38,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remot
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/repository/task_evidence_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/sync/attach_task_evidence_handler.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/task_repository_impl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void setupTasksDependencies() {
@@ -91,6 +92,7 @@ void setupTasksDependencies() {
       pendingUploadDao: getIt<PendingUploadDao>(),
       evidenceCapture: getIt<TaskEvidenceCapture>(),
       session: getIt<SessionManager>(),
+      supportDirectory: getApplicationSupportDirectory,
     ),
   );
 

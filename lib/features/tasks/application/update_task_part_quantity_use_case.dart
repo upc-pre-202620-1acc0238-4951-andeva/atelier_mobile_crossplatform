@@ -3,6 +3,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.d
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_validation.dart';
+import 'package:decimal/decimal.dart';
 
 /// Supervisor: corregir la cantidad de un repuesto imputado (US22 E2). En línea.
 class UpdateTaskPartQuantityUseCase {
@@ -13,7 +14,7 @@ class UpdateTaskPartQuantityUseCase {
   Future<TaskDetail> execute(
     TaskId id,
     String productId,
-    double quantity,
+    Decimal quantity,
   ) {
     if (!TaskValidation.isQuantity(quantity)) {
       throw const InvalidTaskInputException('quantity');

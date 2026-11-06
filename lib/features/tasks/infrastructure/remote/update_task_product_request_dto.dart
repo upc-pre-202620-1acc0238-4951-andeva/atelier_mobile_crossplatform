@@ -1,7 +1,9 @@
+import 'package:decimal/decimal.dart';
+
 class UpdateTaskProductRequestDto {
-  final double quantity;
+  final Decimal quantity;
 
   const UpdateTaskProductRequestDto({required this.quantity});
 
-  Map<String, dynamic> toJson() => {'quantity': quantity};
+  Map<String, dynamic> toJson() => {'quantity': quantity.toDouble()};
 }
