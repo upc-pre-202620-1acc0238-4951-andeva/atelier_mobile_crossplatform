@@ -10,6 +10,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.d
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_validation.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -82,19 +83,32 @@ void main() {
       expect(effective, 7200); // 2 hours
 
       final hours = LaborTime.suggestedHours(started, pausedSeconds, now);
-      expect(hours, 2.0);
+      expect(hours, Decimal.parse('2'));
 
       // No puede ser negativo
       final futurePaused = LaborTime.effectiveSeconds(started, 20000, now);
       expect(futurePaused, 0);
     });
+
+    test('redondea HALF_UP como Android, sin ruido de double', () {
+      final started = DateTime.utc(2026, 11, 6, 8);
+      Decimal hoursAfter(int seconds) => LaborTime.suggestedHours(
+        started,
+        0,
+        started.add(Duration(seconds: seconds)),
+      );
+
+      expect(hoursAfter(3618), Decimal.parse('1.01')); // 1.005 h; con double daba 1.00
+      expect(hoursAfter(450), Decimal.parse('0.13'));
+      expect(hoursAfter(449), Decimal.parse('0.12'));
+    });
   });
 
   group('TaskValidation', () {
     test('valida horas, notas, motivo faltante y cantidades', () {
-      expect(TaskValidation.isLaborHours(0.0), isTrue);
-      expect(TaskValidation.isLaborHours(1.5), isTrue);
-      expect(TaskValidation.isLaborHours(-0.1), isFalse);
+      expect(TaskValidation.isLaborHours(Decimal.zero), isTrue);
+      expect(TaskValidation.isLaborHours(Decimal.parse('1.5')), isTrue);
+      expect(TaskValidation.isLaborHours(Decimal.parse('-0.1')), isFalse);
 
       expect(TaskValidation.isNotes(null), isTrue);
       expect(TaskValidation.isNotes('OK'), isTrue);
@@ -110,25 +124,25 @@ void main() {
       expect(TaskValidation.isEvidenceDescription('a' * 500), isTrue);
       expect(TaskValidation.isEvidenceDescription('a' * 501), isFalse);
 
-      expect(TaskValidation.isQuantity(1.0), isTrue);
-      expect(TaskValidation.isQuantity(0.0), isFalse);
-      expect(TaskValidation.isQuantity(-1.0), isFalse);
+      expect(TaskValidation.isQuantity(Decimal.one), isTrue);
+      expect(TaskValidation.isQuantity(Decimal.zero), isFalse);
+      expect(TaskValidation.isQuantity(Decimal.parse('-1')), isFalse);
     });
   });
 
   group('PartOption', () {
     test('disponible solo si stock > 0', () {
-      const available = PartOption(
+      final available = PartOption(
         id: 'p1',
         name: 'Pastillas',
-        totalStock: 5.0,
+        totalStock: Decimal.fromInt(5),
       );
       expect(available.isAvailable, isTrue);
 
-      const outOfStock = PartOption(
+      final outOfStock = PartOption(
         id: 'p2',
         name: 'Disco',
-        totalStock: 0.0,
+        totalStock: Decimal.zero,
       );
       expect(outOfStock.isAvailable, isFalse);
     });

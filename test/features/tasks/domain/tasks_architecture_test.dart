@@ -22,6 +22,7 @@ void main() {
               'package:atelier_mobile_crossplatform/features/tasks/domain/',
             ) ||
             uri.startsWith('package:atelier_mobile_crossplatform/core/domain/') ||
+            uri == 'package:decimal/decimal.dart' ||
             !uri.startsWith('package:');
         expect(allowed, isTrue, reason: '${file.path} importa $uri');
       }
