@@ -345,7 +345,8 @@ El proyecto iOS usa Swift Package Manager y no tiene `Podfile`. Con SPM, `permis
 
 ## 7. Geocerca y asistencia
 
-- Pedir una ubicación **fresca** con `Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high))`; no usar la última conocida.
+- Pedir una ubicación **fresca** con `Geolocator.getCurrentPosition` y precisión alta; no usar la última conocida.
+- **Solo Android:** usar `AndroidSettings(forceLocationManager: true)`. Con `LocationSettings`, el plugin llama a `checkLocationSettings`: si *Precisión de la ubicación* de Google está apagada, muestra su diálogo de consentimiento en cada marcación y, si se rechaza, falla con `LocationServiceDisabledException` (comprobado en emulador). La app nativa no lo pide. La contrapartida es que `LocationManager` puede tardar más en dar un fix bajo techo; falta medirlo en un teléfono físico.
 - Si la precisión (`position.accuracy`) es peor que 50 m, pedir al usuario que salga a cielo abierto antes de marcar.
 - La sede y el turno salen de `GET /hr/employees/membership/{membershipId}` (`branchId`, `assignedShiftId`); la geocerca, de `GET /branches/{id}` (`latitude`, `longitude`, `geofenceRadiusMeters`). La app puede mostrar la distancia antes de enviar, pero **la validación real la hace el backend** (422 si está fuera).
 - Detectar ubicación simulada con `position.isMocked` y advertir; el backend no lo verifica. En iOS este dato es menos fiable: solo sirve de aviso.
