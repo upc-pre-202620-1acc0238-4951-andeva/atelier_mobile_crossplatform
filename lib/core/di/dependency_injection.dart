@@ -10,6 +10,7 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/authenticated_clie
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/branch/branch_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_api.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/di/attendance_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
@@ -190,4 +191,5 @@ void setupDependencies() {
 
   setupAuthDependencies();
   setupMainDependencies();
+  setupAttendanceDependencies();
 }
