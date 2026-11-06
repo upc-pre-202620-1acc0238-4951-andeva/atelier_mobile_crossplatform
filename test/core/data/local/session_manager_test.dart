@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/jwt_claims.dart';
@@ -82,13 +83,16 @@ void main() {
       expect(await manager.getTokenExpiresAt(), isNull);
     });
 
-    test('un plan null borra el anterior; sin plan no se oculta nada', () async {
-      final manager = SessionManager();
-      await manager.save(_user());
-      final withoutPlan = jsonDecode(sessionJson())..remove('plan');
-      await manager.save(_user(json: jsonEncode(withoutPlan)));
-      expect((await manager.getSession())!.plan, isNull);
-    });
+    test(
+      'un plan null borra el anterior; sin plan no se oculta nada',
+      () async {
+        final manager = SessionManager();
+        await manager.save(_user());
+        final withoutPlan = jsonDecode(sessionJson())..remove('plan');
+        await manager.save(_user(json: jsonEncode(withoutPlan)));
+        expect((await manager.getSession())!.plan, isNull);
+      },
+    );
 
     test('updateAssignment con null borra sede y turno', () async {
       final manager = SessionManager();
@@ -230,4 +234,70 @@ void main() {
       ]);
     });
   });
+
+  group('watchSession', () {
+    test('emite al suscribirse y en cada cambio', () async {
+      final manager = SessionManager();
+      final seen = <String?>[];
+      final subscription = manager.watchSession().listen(
+        (session) => seen.add(session?.userId),
+      );
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+      expect(seen, [null]);
+
+      await manager.save(_user());
+      await pumpEventQueue();
+      expect(seen, [null, 'u1']);
+
+      await manager.clear();
+      await pumpEventQueue();
+      expect(seen, [null, 'u1', null]);
+    });
+
+    test('de dos avisos seguidos vale la última lectura', () async {
+      final manager = SessionManager();
+      await manager.save(_user());
+      final seen = <String?>[];
+      final subscription = manager.watchSession().listen(
+        (session) => seen.add(session?.userId),
+      );
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+      seen.clear();
+
+      unawaited(manager.clear());
+      manager.reload();
+      await pumpEventQueue();
+
+      expect(seen.last, isNull);
+    });
+
+    test('cancelar quita el listener y descarta la lectura en curso', () async {
+      final manager = _ObservableManager();
+      var delivered = 0;
+      final subscription = manager.watchSession().listen((_) => delivered++);
+      await subscription.cancel();
+      await pumpEventQueue();
+
+      expect(delivered, 0);
+      expect(manager.listening, isFalse);
+    });
+
+    test('si no puede leer el almacenamiento emite null', () async {
+      final storage = _MockSecureStorage();
+      when(() => storage.read(key: 'token'))
+          .thenThrow(Exception('Keychain bloqueado'));
+      final manager = SessionManager(
+        secure: storage,
+        preferences: SharedPreferencesAsync(),
+      );
+
+      expect(await manager.watchSession().first, isNull);
+    });
+  });
+}
+
+class _ObservableManager extends SessionManager {
+  bool get listening => hasListeners;
 }

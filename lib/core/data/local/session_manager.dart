@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:atelier_mobile_crossplatform/core/data/local/jwt_claims.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_store.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/authenticated_user_dto.dart';
@@ -120,6 +122,31 @@ class SessionManager extends ChangeNotifier implements SessionStore {
           assignedBranch == null &&
           selectedBranch == null,
     );
+  }
+
+  /// Sesión actual y sus cambios. Relee en cada aviso; de dos lecturas seguidas vale la última. Si el
+  /// almacenamiento seguro falla emite `null`, como `AppRoot`.
+  Stream<Session?> watchSession() {
+    return Stream.multi((controller) {
+      var lastRead = 0;
+      Future<void> read() async {
+        final current = ++lastRead;
+        Session? session;
+        try {
+          session = await getSession();
+        } on Exception catch (e) {
+          log('No se pudo leer la sesión: $e', name: 'SessionManager');
+        }
+        if (current == lastRead) controller.add(session);
+      }
+
+      addListener(read);
+      controller.onCancel = () {
+        lastRead = -1; // Una lectura en curso ya no tiene a quién avisar.
+        removeListener(read);
+      };
+      read();
+    });
   }
 
   /// Guarda la respuesta de sign-in, google-sign-in, invitations/accept o refresh.

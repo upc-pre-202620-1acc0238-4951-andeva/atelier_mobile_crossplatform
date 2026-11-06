@@ -137,4 +137,85 @@ void main() {
     expect(await database.select(database.telemetryReadings).get(), hasLength(1));
     expect(await database.select(database.appLocks).get(), hasLength(1));
   });
+
+  test('markSyncing solo pasa desde PENDING', () async {
+    await dao.enqueue(operation('a'));
+    await dao.enqueue(operation('b'));
+    await dao.markFailed('b', attempts: 1);
+
+    expect(await dao.markSyncing('a'), isTrue);
+    expect(await dao.markSyncing('a'), isFalse);
+    expect(await dao.markSyncing('b'), isFalse);
+    expect(await dao.markSyncing('missing'), isFalse);
+    expect((await dao.findById('b'))!.status, 'FAILED');
+  });
+
+  test('resetFailed solo reactiva FAILED y limpia el error', () async {
+    await dao.enqueue(operation('failed'));
+    await dao.enqueue(operation('pending', nextAttemptAt: 7));
+    await dao.enqueue(operation('syncing'));
+    await dao.enqueue(operation('outside'));
+    await dao.markFailed(
+      'failed',
+      attempts: 8,
+      httpStatus: 422,
+      code: 'CODE',
+      message: 'Falló',
+    );
+    await dao.markSyncing('syncing');
+    await dao.markFailed('outside', attempts: 1);
+
+    await dao.resetFailed(['failed', 'pending', 'syncing'], 100);
+
+    final failed = (await dao.findById('failed'))!;
+    expect(failed.status, 'PENDING');
+    expect(failed.attempts, 0);
+    expect(failed.nextAttemptAt, 100);
+    expect(failed.lastHttpStatus, isNull);
+    expect(failed.lastErrorCode, isNull);
+    expect(failed.lastErrorMessage, isNull);
+    expect((await dao.findById('pending'))!.nextAttemptAt, 7);
+    expect((await dao.findById('syncing'))!.status, 'SYNCING');
+    expect((await dao.findById('outside'))!.status, 'FAILED');
+  });
+
+  test('allDependentIds incluye a los hijos FAILED', () async {
+    await dao.enqueue(operation('parent'));
+    await dao.enqueue(
+      operation('failed').copyWith(dependsOn: const Value('parent')),
+    );
+    await dao.markFailed('failed', attempts: 1);
+
+    expect(await dao.allDependentIds('parent'), ['failed']);
+    expect(await dao.dependentIds('parent'), isEmpty);
+  });
+
+  test('discardUnlessSyncing borra todo o nada, y avisa al watch', () async {
+    await dao.enqueue(operation('a'));
+    await dao.enqueue(operation('b'));
+    await dao.enqueue(operation('c'));
+    final counts = <int>[];
+    final subscription = dao.watchPendingCount('u1').listen(counts.add);
+    addTearDown(subscription.cancel);
+    await expectLater(dao.watchPendingCount('u1').first, completion(3));
+
+    await dao.markSyncing('b');
+    expect(await dao.discardUnlessSyncing(['a', 'b']), isFalse);
+    expect(await dao.findById('a'), isNotNull);
+
+    expect(await dao.discardUnlessSyncing(['a', 'c']), isTrue);
+    expect(await dao.findById('a'), isNull);
+    expect(await dao.findById('c'), isNull);
+    expect(await dao.findById('b'), isNotNull);
+
+    expect(await dao.discardUnlessSyncing(const []), isFalse);
+    expect(await dao.discardUnlessSyncing(['missing']), isFalse);
+
+    await expectLater(
+      dao.watchPendingCount('u1').first,
+      completion(0),
+    );
+    await pumpEventQueue();
+    expect(counts.last, 0);
+  });
 }

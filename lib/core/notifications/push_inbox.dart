@@ -16,6 +16,7 @@ class PushInbox extends ChangeNotifier {
   PushDestination? consume() {
     final destination = _pending;
     _pending = null;
+    if (destination != null) notifyListeners();
     return destination;
   }
 }

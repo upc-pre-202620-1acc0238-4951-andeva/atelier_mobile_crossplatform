@@ -11,6 +11,7 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_obser
 import 'package:atelier_mobile_crossplatform/core/data/remote/branch/branch_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_api.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/auth_refresh_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/device_token_api.dart';
@@ -188,4 +189,5 @@ void setupDependencies() {
   );
 
   setupAuthDependencies();
+  setupMainDependencies();
 }

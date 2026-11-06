@@ -134,7 +134,7 @@ class SyncProcessor {
       final handler = handlers.find(operation.type);
       if (handler == null) continue; // Sin handler: queda PENDING, no se pierde.
 
-      await dao.markSyncing(operation.id);
+      if (!await dao.markSyncing(operation.id)) continue;
       final OperationResult result;
       try {
         result = await handler.send(operation);
