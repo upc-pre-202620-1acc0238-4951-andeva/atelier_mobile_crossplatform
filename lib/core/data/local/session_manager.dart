@@ -22,6 +22,8 @@ class SessionManager extends ChangeNotifier implements SessionStore {
   static const _permissions = 'permissions';
   static const _branchId = 'branch_id';
   static const _shiftId = 'shift_id';
+  static const _selectedBranchId = 'selected_branch_id';
+  static const _branchChoicePending = 'branch_choice_pending';
   static const _planTier = 'plan_tier';
   static const _planStatus = 'plan_status';
   static const _planAccessGranted = 'plan_access_granted';
@@ -41,6 +43,8 @@ class SessionManager extends ChangeNotifier implements SessionStore {
     _permissions,
     _branchId,
     _shiftId,
+    _selectedBranchId,
+    _branchChoicePending,
     _planTier,
     _planStatus,
     _planAccessGranted,
@@ -88,6 +92,8 @@ class SessionManager extends ChangeNotifier implements SessionStore {
     if (userId == null) return null;
 
     final tier = data[_planTier] as String?;
+    final assignedBranch = data[_branchId] as String?;
+    final selectedBranch = data[_selectedBranchId] as String?;
     return Session(
       userId: userId,
       email: data[_email] as String? ?? '',
@@ -107,8 +113,12 @@ class SessionManager extends ChangeNotifier implements SessionStore {
               aiDiagnosticsEnabled:
                   data[_aiDiagnosticsEnabled] as bool? ?? true,
             ),
-      branchId: data[_branchId] as String?,
+      branchId: assignedBranch ?? selectedBranch,
       shiftId: data[_shiftId] as String?,
+      needsBranchChoice:
+          data[_branchChoicePending] == true &&
+          assignedBranch == null &&
+          selectedBranch == null,
     );
   }
 
@@ -143,12 +153,38 @@ class SessionManager extends ChangeNotifier implements SessionStore {
     notifyListeners();
   }
 
-  /// Sede y turno de `GET /hr/employees/membership/{membershipId}`.
+  /// Sede y turno de `GET /hr/employees/membership/{membershipId}`. Con sede asignada ya no hay
+  /// nada que elegir; sin ella, la elegida a mano se conserva (un 404 posterior no la borra).
   Future<void> updateAssignment(String? branchId, String? shiftId) async {
     await _setOrRemove(_branchId, branchId);
     await _setOrRemove(_shiftId, shiftId);
+    if (branchId != null) {
+      await preferences.remove(_selectedBranchId);
+      await preferences.remove(_branchChoicePending);
+    }
     notifyListeners();
   }
+
+  /// El login no encontró perfil laboral (H33): se ofrece elegir sede una vez. Lleva un valor y
+  /// no es solo "marcar" para que no sobreviva una marca de un login que no llegó a guardarse.
+  Future<void> setBranchChoicePending(bool pending) async {
+    if (pending) {
+      await preferences.setBool(_branchChoicePending, true);
+    } else {
+      await preferences.remove(_branchChoicePending);
+    }
+    notifyListeners();
+  }
+
+  /// Sede elegida a mano. No toca `branch_id`, que se reescribe con cada lectura del perfil.
+  Future<void> selectBranch(String branchId) async {
+    await preferences.setString(_selectedBranchId, branchId);
+    await preferences.remove(_branchChoicePending);
+    notifyListeners();
+  }
+
+  /// "Elegir después": se entra sin sede y no se vuelve a ofrecer en esta sesión.
+  Future<void> dismissBranchChoice() => setBranchChoicePending(false);
 
   @override
   Future<void> clear() async {

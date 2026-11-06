@@ -12,8 +12,13 @@ class Session {
 
   /// `null`: sin plan conocido. No se oculta nada y decide el backend.
   final Plan? plan;
+
+  /// La asignada por el backend o, si no hay, la elegida a mano (H33).
   final String? branchId;
   final String? shiftId;
+
+  /// Sin perfil laboral y aún sin elegir sede (pantalla A5b).
+  final bool needsBranchChoice;
 
   const Session({
     required this.userId,
@@ -26,6 +31,7 @@ class Session {
     required this.plan,
     this.branchId,
     this.shiftId,
+    this.needsBranchChoice = false,
   });
 
   bool has(Permission permission) => permissions.contains(permission.value);
