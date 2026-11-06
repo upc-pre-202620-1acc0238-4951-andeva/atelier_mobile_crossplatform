@@ -112,7 +112,7 @@ Una sola tabla para todo lo que se captura sin red. Reemplaza `pending_sync_even
 | `type` | Endpoint | Payload | Idempotencia al reintentar |
 | --- | --- | --- | --- |
 | `CLOCK_IN` | `POST /hr/attendances/clock-in` | `{ branchId, shiftId, latitude, longitude, clockInTime }` | 409 = ya existe una jornada abierta → **se considera aplicada** |
-| `CLOCK_OUT` | `POST /hr/attendances/clock-out` | `{ attendanceId?, clockOutTime }` | 400 ("salida ya registrada" o reloj desajustado) y 404 ("sin jornada abierta" o salida sin ingreso) son ambiguos: se verifican con `history` del día. Si la jornada ya tiene salida → aplicada; si no → FAILED con el `message`. Sin red para verificar → se reintenta |
+| `CLOCK_OUT` | `POST /hr/attendances/clock-out` | `{ attendanceId?, clockOutTime }` | 400 ("salida ya registrada" o reloj desajustado) y 404 ("sin jornada abierta" o salida sin ingreso) son ambiguos: se verifican con `history` del día capturado y del anterior, por las jornadas nocturnas. Con `attendanceId`: esa jornada ya tiene salida → aplicada. Sin él: alguna jornada tiene salida igual o posterior a `clockOutTime` → aplicada; así la jornada cerrada de ayer no se confunde con esta salida. Si no → FAILED con el `message`. Sin red, 5xx, 408 o 429 al verificar → se reintenta; 401 → detener; otro 4xx → FAILED con el error original |
 | `SUBMIT_JUSTIFICATION` | `POST /hr/attendances/{attendanceId}/justification` | `{ attendanceId, reason }` (el id va en la ruta; el body es `{ reason }`) | 422 "ya justificada" → aplicada |
 | `UPLOAD_FILE` | `POST {SUPABASE_URL}/storage/v1/object/atelier/{ruta}` | archivo de `pending_uploads` | Misma ruta = mismo objeto (usar `x-upsert: true`) |
 | `ATTACH_INTAKE_IMAGE` | `POST /work-orders/{id}/intake-images` | `{ imageUrl, description }` | ✅ Misma `imageUrl` en la orden → devuelve la imagen ya guardada (R4) |
@@ -122,7 +122,7 @@ Una sola tabla para todo lo que se captura sin red. Reemplaza `pending_sync_even
 | `REGISTER_FAULT` | `POST /iot/faults` | `{ vehicleId, dtcCode, severity, description }` | ✅ Si el vehículo ya tiene ese DTC activo, devuelve esa falla (R3) |
 | `RESOLVE_FAULT` | `POST /iot/faults/{id}/resolve` | `{}` | ✅ Resolver dos veces devuelve 200 |
 
-`ATTACH_*` y `SUBMIT_PROPOSAL` dependen (`depends_on`) de su `UPLOAD_FILE`: el worker no los envía hasta que la subida termine. La URL pública es determinista (`{SUPABASE_URL}/storage/v1/object/public/{bucket}/{storage_path}`, `SupabaseUploader.publicUrlFor`), así que el payload de `ATTACH_*` se arma con la URL final **al capturar** y no hay que reescribirlo después. Si `UPLOAD_FILE` queda `FAILED`, sus dependientes pasan a `FAILED` con el mismo mensaje.
+`ATTACH_*` y `SUBMIT_PROPOSAL` dependen (`depends_on`) de su `UPLOAD_FILE`: el worker no los envía hasta que la subida termine. La URL pública es determinista (`{SUPABASE_URL}/storage/v1/object/public/{bucket}/{storage_path}`, `SupabaseUploader.publicUrlFor`), así que el payload de `ATTACH_*` se arma con la URL final **al capturar** y no hay que reescribirlo después. Si `UPLOAD_FILE` queda `FAILED`, sus dependientes pasan a `FAILED` con el mismo mensaje. Lo mismo vale para cualquier padre, también si el hijo se encola cuando el padre ya estaba `FAILED`: `SyncProcessor` lo falla en cascada en la siguiente vuelta, en lugar de dejarlo `PENDING` sin aviso. *Reintentar* reactiva toda la cadena.
 
 ### Cómo registra cada feature su tipo
 
@@ -303,7 +303,7 @@ Segundo plano (workmanager):   con red, cuando el sistema lo permita.
 2. tryAcquire(sync, 2 min). Si no se consigue, otro motor está sincronizando → terminar.
 3. Renovar el token si venció (ensureFresh). Devolver a PENDING lo que quedó en SYNCING (solo quien tiene el bloqueo puede hacerlo).
 4. Tomar operaciones PENDING del usuario actual con next_attempt_at <= ahora, ordenadas por created_at.
-   Saltar las que tienen depends_on sin completar.
+   Saltar las que tienen depends_on sin completar. Si el padre está FAILED → FAILED en cascada, con su mensaje.
 5. Por cada una: comprobar que el usuario no cambió (si cambió, terminar) → renovar el bloqueo →
    releer la fila (la UI pudo descartarla) → marcar SYNCING → llamar al endpoint → según la respuesta:
      2xx                         → borrar la operación (y su archivo local si era la última que lo usa)
@@ -884,7 +884,7 @@ Tocar "Marcar ingreso"
  → Al sincronizar: 201 → refrescar attendances; 422 fuera de geocerca → FAILED con la distancia; 409 → ya marcada
 ```
 
-La salida igual, con `CLOCK_OUT { clockOutTime }`. Si el ingreso de ese día aún está en cola, la salida se encola con `depends_on` = id del ingreso.
+La salida igual, con `CLOCK_OUT { clockOutTime }`. Si hay un ingreso en cola, la salida se encola con `depends_on` = id del ingreso. Cuenta el de hoy en cualquier estado, o el más reciente de otro día que no esté `FAILED`: así una salida de madrugada espera al ingreso de anoche, y un `FAILED` olvidado no tumba la salida de hoy. Si el de hoy está `FAILED` pero hay una jornada abierta en caché, la salida va sola, porque esa jornada es la que cierra.
 
 ### US13, US14, US28 — Fotos sin señal
 
@@ -967,5 +967,17 @@ Resultado en el emulador `Medium_Phone` (Android), paso 1:
 | Con el proceso muerto, el sistema arranca otro motor y la operación llega | `authorized=true` desde `engine=worker`, con el proceso de la UI confirmado muerto |
 | El worker renueva y la UI sigue con sesión | Un 401, una rotación y reintento correcto; la UI abierta ve `pendientes=0` y el refresh nuevo |
 | Refresh simultáneo con solapamiento real (refresh de 8 s, 4 peticiones de la UI en 401 durante esos 8 s) | Una sola rotación y ningún reuso; la sesión se conserva |
+
+Paso 4, con `integration_probe/attendance_probe_main.dart`, los casos de uso reales y GPS de `adb emu geo fix -77.0428 -12.0464` (el emulador solo entrega ubicación si llegan fixes mientras la app espera; hay que enviarlos durante la marcación):
+
+| Escenario | Evidencia |
+| --- | --- |
+| Marcar con red | `CLOCK_IN` y `CLOCK_OUT` directos, sin hora del dispositivo; la pantalla pasa a `ClockedIn` y `Completed` |
+| Marcar sin red (Wi-Fi, datos y `adb reverse` cortados) | Ingreso `Queued` con `intentos=1` tras el fallo de red; salida `Queued` con `depends_on` |
+| App muerta y red de vuelta | El worker corre con la UI muerta tras el backoff y envía `CLOCK_IN` y luego `CLOCK_OUT` con su `clockInTime` y `clockOutTime` capturados; la cola queda vacía |
+| Volver a abrir la app | `Completed`, cola en 0 |
+| Sin fix durante 30 s | `LocationUnavailableException`; no se marca ni se encola |
+
+Para que el corte sea real, el servidor simulado responde sin keep-alive: un socket abierto sobrevive a `adb reverse --remove`.
 
 Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.

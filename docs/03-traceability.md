@@ -220,6 +220,7 @@ Solo quedan fuera del backend los escenarios marcados 📱 (los resuelve la app)
 | H41 | US16 | iOS no expone la dirección MAC de un dispositivo BLE: solo un identificador propio de cada teléfono | En iOS `ObdDevice.matches(address)` no sugiere nada y la UI pide elegir el escáner de `GET /iot/devices` |
 | H42 | US06–US08, US13, US14, US19, US28 | iOS decide cuándo ejecutar el trabajo en segundo plano (puede no ejecutarlo nunca) y lo corta a los ~30 s | El envío de la cola se dispara también al encolar, al recuperar red y al volver a primer plano. En iOS, lo capturado puede no enviarse hasta que se abra la app: la pantalla de pendientes lo deja a la vista ([06](06-offline-sync.md) §3) |
 | H43 | US26 E2 y demás push | Las notificaciones en iOS necesitan APNs: cuenta de pago de Apple Developer, llave APNs en Firebase y la app iOS registrada en el proyecto `atelier-platform-ee4f5` | Pendiente de cuenta. Hasta entonces, en iOS la app funciona sin push: las pantallas recargan al abrirse |
+| H44 | US09, US10 | [api/hr.md](api/hr.md) no aclara si una asistencia `ABSENT` llega sin `clockIn`, y la tabla `attendances` lo exige | Una fila sin `clockIn` no entra en caché (`AttendanceDto.toEntity` devuelve `null`): esa falta no se ve en el historial ni admite descargo desde ahí. Hay que confirmarlo contra el backend |
 
 ## Huecos cerrados
 
@@ -227,7 +228,7 @@ Confirmados contra el código de `atelier-platform` 1.2.0.
 
 | Id | Historia | Pregunta | Qué hace el backend | Impacto en la app |
 | --- | --- | --- | --- | --- |
-| H2 | US06, US08 | Qué responde `GET /hr/attendances/employee/{membershipId}/status-today` sin jornada activa | **404** sin cuerpo. Con jornada del día, 200 con el `AttendanceResource` | El repositorio de `attendance` trata cualquier error o cuerpo vacío como "sin jornada", y eso incluye el 404. Conviene limitarlo al 404, para que un 401, 403 o 5xx no se muestre como "sin jornada" |
+| H2 | US06, US08 | Qué responde `GET /hr/attendances/employee/{membershipId}/status-today` sin jornada activa | **404** sin cuerpo. Con jornada del día, 200 con el `AttendanceResource` | El repositorio de `attendance` de esta app solo toma el 404 como "sin jornada": un 401, 403 o 5xx sube como error. En Android aún trata cualquier error o cuerpo vacío como "sin jornada" |
 | H3 | US30 | Si `startedAt` es el primer inicio o la última reanudación | Es el **primer inicio**: solo se asigna cuando es nulo. Cada reanudación suma la pausa a `totalPausedSeconds` | Ninguno: `ahora − startedAt − totalPausedSeconds` es correcto. El backend no valida `actualLaborHours` contra ese cálculo |
 | H4 | US27 | Qué `status` deja `POST /tasks/{taskId}/pause` | `ON_HOLD` con `holdReason` `BREAK` o `END_OF_SHIFT`. El mecánico la reanuda con `/start`; `DEFECTIVE_PART` solo con `/resume` (`hold_validate`) | Ninguno: `Task.isPausedByMechanic` vs `Task.isSuspended` se mantiene |
 | H7 | US27 E3 | Código HTTP del rechazo de una pausa `END_OF_SHIFT` anticipada | **422** con un `message` que indica la hora de fin del turno ("pause for a break instead") | Ninguno: se muestra el `message` y no se cambia la caché |

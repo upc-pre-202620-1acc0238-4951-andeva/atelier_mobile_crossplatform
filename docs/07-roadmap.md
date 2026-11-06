@@ -47,7 +47,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 1 | Núcleo `core/` | ✅ Android en emulador · iOS y teléfono físico sin comprobar | `feature/core` |
 | 2 | `auth` — sesión y acceso | ✅ Sin `presentation` · backend real, Google e iOS sin comprobar | `feature/auth` |
 | 3 | `main` — contenedor con pestañas por permiso | ✅ Sin `presentation` · push real e iOS sin comprobar | `feature/main` |
-| 4 | `attendance` — asistencia y turnos | ⬜ Pendiente | |
+| 4 | `attendance` — asistencia y turnos | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/attendance` |
 | 5 | `tasks` — tareas del mecánico | ⬜ Pendiente | |
 | 6 | `reception` + `workorders` — recepción y órdenes | ⬜ Pendiente | |
 | 7 | `inventory` — catálogo, lotes y alertas | ⬜ Pendiente | |
@@ -163,6 +163,31 @@ Para quien haga la presentación (no está escrito, porque solo es de UI):
 - **Cachés:** `branches`, `shifts`, `attendances`.
 - **Ubicación:** `LocationProvider` (contrato en dominio, implementación con `geolocator`), ubicación fresca, precisión ≤ 50 m, detectar ubicación simulada.
 - **Sin red en iOS:** la marcación queda en cola hasta que se abra la app (H42). Que se note en la pantalla.
+
+**Hecho en el paso 4.** Los siete casos de uso, `AttendanceApi`, `AttendanceDao`, `ShiftDao`, `BranchDao`, `AttendanceCache`, `GeolocatorLocationProvider` y los handlers `CLOCK_IN`, `CLOCK_OUT` y `SUBMIT_JUSTIFICATION`, registrados en `setupAttendanceDependencies()`. Sin cambio de esquema. Núcleo extendido: `BranchDto.latitude` / `longitude`, `BusinessTime.addDays`, `PendingOperationDao.findForUserByType` y `SessionManager.switchOn`, que ahora también usa `PendingOperationRepositoryImpl`. `SyncProcessor` falla en cascada lo encolado sobre un padre que ya está `FAILED` ([06](06-offline-sync.md) §3).
+
+Diferencias con Android, a propósito:
+
+- **La geocerca y la ubicación simulada avisan, no bloquean.** Android bloquea desde el commit `c20f1d2`, pero estos documentos dicen que decide el backend ([06](06-offline-sync.md) §6). Quien marca fuera recibe 422 con la distancia, o `FAILED` con ese `message` si iba en cola. Contrapartida: el backend no detecta la ubicación simulada. Sí se bloquea sin fix o con precisión peor que 50 m.
+- `CLOCK_OUT` verifica su 400 o 404 con `history` del día capturado y del anterior: Android solo mira el capturado, y una salida ya aplicada de una jornada nocturna queda `FAILED`. Si la verificación falla con 5xx, 408 o 429 se reintenta; Android solo reintenta sin red.
+- La salida también espera al ingreso en cola de un día anterior, salvo que esté `FAILED`.
+- `watchToday` calcula el día en cada emisión: Android lo fija al suscribirse y queda viejo tras la medianoche.
+- Solo el 404 de `status-today` es "sin jornada" (H2).
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- `ClockInResult`: `outcome` dice qué pasó, `geofence` trae la distancia para el aviso (es `null` si la sede no está en caché) e `isMockLocation` avisa de la ubicación simulada.
+- `Recorded` confirma. `Queued`: "Marcación guardada · se enviará al recuperar señal"; en iOS, que se enviará al abrir la app (H42). `AlreadyQueued` lleva a "Pendientes de sincronizar".
+- `TodayAttendance` decide el botón: `NotClockedIn` → ingreso; `ClockedIn` → salida; `ClockInQueued` y `ClockOutQueued` muestran la hora capturada; `Completed` → resumen.
+- El permiso de ubicación se pide dentro de `LocationProvider`, al marcar. Mostrar cada excepción de `attendance_errors.dart`, y el `message` del backend en `ApiException`.
+- "Revisa la hora de tu teléfono" si el backend rechaza la hora capturada, y descargo si pasaron más de 12 h. `Attendance.syncedAt` da el "Actualizado hace N min".
+- Mostrar *Marcar ingreso*, *Marcar salida* e historial según `attendanceClockIn`, `attendanceClockOut` y `attendanceReadOwn`.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en emulador** con worker y GPS reales ([06](06-offline-sync.md) §8). La prueba destapó dos errores que las pruebas unitarias no veían, ya corregidos: el diálogo de Google de cada marcación ([04](04-mobile-integration.md) §7) y un `upsert` que no borraba los campos que el backend enviaba en `null`.
+- Sin comprobar: backend real (si `history` filtra por la fecha de `clockIn` y si guarda `clockOutTime` tal cual), teléfono físico (GPS bajo techo con `LocationManager`), ubicación simulada (`adb emu geo fix` no cuenta como tal), iOS (`isMocked` y el diálogo de permiso) y los push `SHIFT_REMINDER` y `JUSTIFICATION_REVIEWED`.
+- Riesgos que se heredan de Android: un `history` en vuelo puede borrar con `replaceRange` una marcación recién guardada (se corrige en el siguiente refresh y marcar otra vez da 409), y tratar todo 422 de descargo como "ya aplicada" ([06](06-offline-sync.md) §3) podría perder el motivo si la causa fue otra regla.
 
 ## Paso 5 — `tasks`
 
