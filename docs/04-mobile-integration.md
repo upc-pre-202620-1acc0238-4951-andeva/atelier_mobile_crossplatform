@@ -125,7 +125,7 @@ ios/Runner/GoogleService-Info.plist
 2. En `FirebaseMessaging.instance.onTokenRefresh`: reenviarlo si hay sesión.
 3. Al cerrar sesión: `PUT /api/v1/users/me/device-token { "fcmToken": null }` y luego `POST /api/v1/auth/sign-out`.
 
-> `firebase_messaging` 17 marca `getToken()` y `onTokenRefresh` como obsoletos en favor de `register()` y `onRegistered`, que entregan un **Firebase Installation ID**, no un token de registro. Se siguen usando los primeros, igual que la app nativa, porque es lo que hoy recibe el backend. Por eso `flutter analyze` muestra dos avisos `deprecated_member_use` ahí. Migrar exige comprobar antes que `atelier-platform` pueda enviar a un FID.
+> `firebase_messaging` 17 marca `getToken()` y `onTokenRefresh` como obsoletos en favor de `register()` y `onRegistered`, que entregan un **Firebase Installation ID**, no un token de registro. Se siguen usando los primeros, igual que la app nativa, porque es lo que hoy recibe el backend. Esos dos usos llevan `// ignore: deprecated_member_use` con el motivo, para que `flutter analyze` siga en verde. Migrar exige comprobar antes que `atelier-platform` pueda enviar a un FID.
 
 El backend envía mensajes con `notification` (título y cuerpo en español) y `data`. La app enruta según `data.type`:
 
@@ -149,7 +149,7 @@ Cómo se reciben en Flutter:
 | Abierta | `FirebaseMessaging.onMessage` | El sistema **no** muestra nada: se dibuja con `flutter_local_notifications` |
 | En segundo plano y se toca | `FirebaseMessaging.onMessageOpenedApp` | `PushRouter` → `PushInbox` |
 | Cerrada y se toca | `FirebaseMessaging.instance.getInitialMessage()` | Lo mismo, al arrancar |
-| En segundo plano, sin tocar | `FirebaseMessaging.onBackgroundMessage` | Corre en otro motor: **no hace nada**; el sistema ya muestra la notificación |
+| En segundo plano, sin tocar | Ninguna: `onBackgroundMessage` **no se registra** | Correría en otro motor sin nada que hacer; el sistema ya muestra la notificación |
 
 Reglas:
 
@@ -157,6 +157,7 @@ Reglas:
 - Android 13+ e iOS piden permiso en tiempo de ejecución (tras el login, con explicación previa).
 - El push es un aviso: la pantalla siempre recarga los datos desde la API.
 - Un `data.type` desconocido se ignora sin fallar (el backend puede agregar tipos nuevos).
+- Sin `google-services.json`, `Firebase.initializeApp` falla: se registra en el log, la app abre igual y no se envía token. **Recibir un push real está sin comprobar:** falta el archivo.
 - **Solo iOS:** requiere la llave APNs en Firebase, la capacidad *Push Notifications* y el modo de fondo `remote-notification`. Ver H43 en [03](03-traceability.md#huecos-abiertos).
 
 ---
@@ -179,6 +180,7 @@ image_picker (cámara o galería) → flutter_image_compress (JPEG, lado mayor 1
 | Propuesta adicional (US14) | `{tenantId}/work-orders/{workOrderId}/proposals/{uuid}.jpg` |
 | Comprobante de compra recibida (US34 E2) | `{tenantId}/purchase-orders/{purchaseOrderId}/receipt/{uuid}.jpg`. Se sube **en línea** justo antes de `PUT /inventory/purchase-orders/{id}/receive`, no por la cola |
 
+- `minWidth` y `minHeight` de `flutter_image_compress` fijan el lado **menor**: con 1600 en ambos, una foto de 4000×3000 saldría de 2133×1600. `compressionMinSide` calcula el valor que deja el lado mayor en 1600 y se pasa el mismo en los dos, así no importa si el plugin mide la foto antes o después de la rotación EXIF. Comprobado en un emulador Android con JPEG reales: 4000×3000 sale 1600×1200, 3000×4000 sale 1200×1600, una foto con rotación EXIF sale 1200×1600 y una de 800×600 no se agranda. En iOS, **sin comprobar**.
 - El backend valida que la URL sea `https`, del host de Supabase configurado y que contenga `/storage/v1/object/` y `/atelier/`. Cualquier otra URL → 400.
 - El bucket debe permitir `INSERT` con la anon key (política de Storage) y lectura pública.
 - Subida con `x-upsert: true` y un `http.Client` simple, **sin** `AuthenticatedClient`: a Supabase no se le envía el JWT del backend.
@@ -337,7 +339,7 @@ iOS no tiene manifiesto de permisos, pero exige un texto por cada uno: **sin el 
 
 El proyecto iOS usa Swift Package Manager y no tiene `Podfile`. Con SPM, `permission_handler` activa cada permiso leyendo su clave en `Info.plist`, y las notificaciones vienen activas por defecto: no hay macros que declarar. Si se compila desde Xcode.app y no con `flutter build ios`, hay que ejecutar una vez en la Mac `launchctl setenv PERMISSION_HANDLER_INFO_PLIST <ruta absoluta a ios/Runner/Info.plist>`; si no encuentra el archivo, todos los permisos quedan en `denied`. **Sin comprobar:** falta compilar en una Mac.
 
-`workmanager` también necesita registrar la tarea en `AppDelegate.swift`. Se hace en el paso 1, junto con el worker, y el identificador debe coincidir con `SyncScheduler.taskName`.
+`AppDelegate.swift` registra los plugins del motor del worker (`setPluginRegistrantCallback`) y la tarea `atelier.sync` (`registerPeriodicTask`). Ese identificador debe coincidir con `SyncScheduler.taskName`, con `periodicName` y con `BGTaskSchedulerPermittedIdentifiers`. **Sin comprobar:** falta compilar en una Mac.
 
 ---
 

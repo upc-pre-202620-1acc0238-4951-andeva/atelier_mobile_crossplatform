@@ -18,7 +18,7 @@ Reglas para todas las sesiones:
 4. **Antes de empezar:** el paso anterior debe estar commiteado y el árbol limpio (`git status`). La rama nueva sale de `develop` (o de la rama del paso anterior si aún no se mergeó).
 5. **Una sesión por rama:** no trabajar dos sesiones a la vez sobre los mismos archivos.
 6. **Reutilizar el núcleo** (`core/`, paso 1). No crear otro cliente HTTP, otra cola ni otro manejo de sesión.
-7. **Cada paso incluye sus pantallas:** `domain`, `application`, `infrastructure` y `presentation`. Donde Android ya tiene la pantalla, se porta; donde no, se hace funcional con los componentes de `core/designsystem`.
+7. **Capas de cada paso:** `domain`, `application` e `infrastructure`. `presentation` y `core/designsystem` no se construyen salvo que el usuario lo pida (decisión tomada en el paso 1): hasta entonces, `AppRoot` muestra marcadores sin estilo. Las pantallas que cada paso enumera abajo describen el alcance funcional que esa capa cubrirá.
 8. **Al terminar:** los comandos de abajo en verde, docs actualizados si cambió algo y este archivo marcado.
 
 ```bash
@@ -44,7 +44,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | # | Paso | Estado | Rama |
 | --- | --- | --- | --- |
 | 0 | Configuración general (`pubspec`, identificador, plataformas) | ✅ Android · iOS sin comprobar | `feature/foundations` |
-| 1 | Núcleo `core/` | ⬜ Pendiente | |
+| 1 | Núcleo `core/` | ✅ Android en emulador · iOS y teléfono físico sin comprobar | `feature/core` |
 | 2 | `auth` — sesión y acceso | ⬜ Pendiente | |
 | 3 | `main` — contenedor con pestañas por permiso | ⬜ Pendiente | |
 | 4 | `attendance` — asistencia y turnos | ⬜ Pendiente | |
@@ -91,8 +91,10 @@ Base que usan todas las features. Detalle en [05](05-flutter-architecture.md) §
 | `SupabaseUploader`, `StoragePaths`, `PhotoCapture` | `core/media` | Comprimir y subir fotos; URL pública determinista |
 | `PushRouter`, `PushInbox`, `DeviceTokenRegistrar`, `NotificationChannels` | `core/notifications` | Abrir la pantalla correcta al tocar un push |
 | `ConnectivityObserver`, `PdfDownloader` | `core/data/remote` | Deshabilitar acciones "en línea"; descargar PDFs |
-| `MaterialTheme` y componentes | `core/designsystem` | Tema Atelier en claro y oscuro |
-| `AppRoot` | `navigation/` | Login o app según la sesión |
+| `SyncTriggers` | `core/data/sync` | Enviar la cola al abrir, al recuperar red y al volver a primer plano |
+| `AppRoot` | `navigation/` | Login o app según la sesión (marcadores sin estilo) |
+
+`MaterialTheme` y los componentes de `core/designsystem` quedan fuera de este paso (regla 7). Se dejaron para el paso que los use: `Session.needsBranchChoice` (paso 2), `watchSession` y las consultas de la pantalla de pendientes (paso 3) y los DAO de cada feature.
 
 **Primero se prueba lo que no existe en Android:** dos conexiones sobre el mismo archivo, `CrossIsolateLock` y el refresh desde dos motores. Es el mayor riesgo técnico del proyecto.
 
@@ -177,11 +179,11 @@ Base que usan todas las features. Detalle en [05](05-flutter-architecture.md) §
 
 | Tema | Detalle | Afecta |
 | --- | --- | --- |
-| Dos motores | `CrossIsolateLock` y las escrituras concurrentes se probaron con dos conexiones en pruebas unitarias; falta comprobar con `workmanager` real, y `LocalChangeNotifier` solo se compiló | Paso 1 |
+| Dos motores | Comprobado en emulador con `workmanager` real ([06](06-offline-sync.md) §8); falta un teléfono físico, por el ahorro de batería de cada fabricante | Paso 1 |
 | iOS sin comprobar | Desde Windows no se compila iOS. `Info.plist`, los permisos con Swift Package Manager, `AppDelegate`, Keychain en segundo plano y `BGTaskScheduler` necesitan una Mac | Todos |
 | Cuenta de Apple Developer | Sin ella no hay push en iOS ni instalación estable en iPhones (H43) | Pasos 1, 2 |
 | Adaptador ELM327 BLE | Sin uno no se puede probar el escáner en iOS (H40) | Paso 8 |
 | Segundo plano en iOS | Solo es una mejora: lo capturado puede no salir hasta abrir la app (H42) | Pasos 1, 4, 5, 6, 8 |
-| Configuración local | Faltan `config/dev.json`, `google-services.json` y `GoogleService-Info.plist` | Pasos 2, 5, 6 |
+| Configuración local | Faltan `google-services.json` y `GoogleService-Info.plist` | Pasos 2, 5, 6 |
 | Identificador compartido | Con `com.andeva.atelier.mobile`, la app nativa y esta no conviven en un mismo Android ([04](04-mobile-integration.md) §1) | Pruebas |
 | Huecos del backend | H9, H26–H31, H34–H39 siguen abiertos y se heredan tal cual ([03](03-traceability.md#huecos-abiertos)) | Pasos 5–9 |
