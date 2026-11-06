@@ -384,4 +384,36 @@ void main() {
     expect(handler.sent, ['a']);
     expect((await dao.findById('b'))!.status, 'PENDING');
   });
+
+  test('no envía lo que la UI descartó justo antes de marcarlo', () async {
+    final racing = _DiscardingDao(database);
+    final raced = SyncProcessor(
+      dao: racing,
+      session: session,
+      lock: lock,
+      handlers: registry,
+      scheduler: scheduler,
+      maxAttemptsMessage: 'No se pudo sincronizar',
+      ensureFreshToken: session.getAuthToken,
+      now: () => clock,
+    );
+    final handler = handle((_) async => const Applied());
+    await enqueue('a');
+
+    expect(await raced.run(), SyncOutcome.completed);
+
+    expect(handler.sent, isEmpty);
+    expect(await dao.findById('a'), isNull);
+  });
+}
+
+/// La UI, en otra conexión, descarta entre la última lectura y el marcado.
+class _DiscardingDao extends PendingOperationDao {
+  _DiscardingDao(super.attachedDatabase);
+
+  @override
+  Future<bool> markSyncing(String id) async {
+    await deleteById(id);
+    return super.markSyncing(id);
+  }
 }
