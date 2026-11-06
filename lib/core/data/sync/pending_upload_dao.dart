@@ -22,4 +22,9 @@ class PendingUploadDao extends DatabaseAccessor<AppDatabase>
   Future<void> deleteById(String id) {
     return (delete(pendingUploads)..where((t) => t.id.equals(id))).go();
   }
+
+  Stream<List<PendingUploadEntity>> watchByTarget(String target) {
+    return (select(pendingUploads)..where((t) => t.target.equals(target)))
+        .watch();
+  }
 }

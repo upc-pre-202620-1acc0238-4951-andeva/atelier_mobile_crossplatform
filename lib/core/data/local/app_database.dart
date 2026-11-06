@@ -12,6 +12,7 @@ import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/branch_table.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_table.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_table.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/local/voucher_table.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/predictive_alert_table.dart';
@@ -21,7 +22,9 @@ import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/l
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/part_table.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/appointment_table.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/customer_table.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_table.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/local/task_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/local/task_table.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/local/work_order_table.dart';
 import 'package:drift/drift.dart';
@@ -60,6 +63,9 @@ part 'app_database.g.dart';
     AttendanceDao,
     ShiftDao,
     BranchDao,
+    TaskDao,
+    VehicleDao,
+    BayDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

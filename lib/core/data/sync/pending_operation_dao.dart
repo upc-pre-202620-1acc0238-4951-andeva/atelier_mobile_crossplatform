@@ -211,6 +211,20 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  Stream<List<PendingOperationEntity>> watchByTypeAndDedupePrefix(
+    String type,
+    String dedupePrefix,
+  ) {
+    return (select(pendingOperations)
+          ..where(
+            (t) =>
+                t.type.equals(type) &
+                t.dedupeKey.like('$dedupePrefix%'),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .watch();
+  }
+
   Future<void> _update(String id, PendingOperationsCompanion changes) {
     return (update(
       pendingOperations,
