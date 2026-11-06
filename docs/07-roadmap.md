@@ -46,7 +46,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 0 | Configuración general (`pubspec`, identificador, plataformas) | ✅ Android · iOS sin comprobar | `feature/foundations` |
 | 1 | Núcleo `core/` | ✅ Android en emulador · iOS y teléfono físico sin comprobar | `feature/core` |
 | 2 | `auth` — sesión y acceso | ✅ Sin `presentation` · backend real, Google e iOS sin comprobar | `feature/auth` |
-| 3 | `main` — contenedor con pestañas por permiso | ⬜ Pendiente | |
+| 3 | `main` — contenedor con pestañas por permiso | ✅ Sin `presentation` · push real e iOS sin comprobar | `feature/main` |
 | 4 | `attendance` — asistencia y turnos | ⬜ Pendiente | |
 | 5 | `tasks` — tareas del mecánico | ⬜ Pendiente | |
 | 6 | `reception` + `workorders` — recepción y órdenes | ⬜ Pendiente | |
@@ -136,6 +136,24 @@ Para quien haga la presentación (no está escrito, porque solo es de UI):
 - **Incluye:** `MainPage` con `NavigationBar` e `IndexedStack`, pestañas según `NavigationItem` y permisos ([05](05-flutter-architecture.md) §5.5), aviso si `plan.accessGranted == false`, ícono con el contador de pendientes y pantalla "Pendientes de sincronizar" con *Reintentar* / *Descartar* ([06](06-offline-sync.md) §3). Android todavía no tiene esta última pantalla.
 - **Pestañas, como en Android:** con `operations:tasks:track_time` → Inicio · Tareas · (Órdenes si `work_orders:create`) · OBD-II (si `canUseTelemetry()`) · Perfil; sin él → Inicio · Órdenes · Recepción · Stock · Ajustes.
 - **Consume** `PushInbox` para abrir el destino del push.
+
+**Hecho en el paso 3.** Los siete casos de uso, sin endpoints: todo es local. Núcleo extendido: `SessionManager.watchSession`, `PendingOperationDao.resetFailed` / `allDependentIds` / `discardUnlessSyncing`, `markSyncing` condicionado y `core/domain/push_destination.dart`. `LocalChangeNotifier.listenInUi` ahora recibe `sync`.
+
+Diferencias con Android, a propósito:
+
+- *Reintentar* y *Descartar* escriben en una sola sentencia, y `markSyncing` solo pasa desde `PENDING`: el worker es otra conexión ([06](06-offline-sync.md) §3).
+- La UI sincroniza cuando el worker avisa que terminó. Lo reintentado o encolado mientras él envía no estaba en su lote, `requestSync` lo ignora por `keep` y `nextAttemptAfter` solo ve intentos futuros.
+- `SessionRepository` y `PushDestinationRepository` no existen en Android: los casos de uso dependen solo del dominio de su feature, como en `auth`.
+- El contador no incluye `SYNCING` ([06](06-offline-sync.md) §3); Android cuenta todos los estados. La lista sí los muestra.
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- `MainPage`, `NavigationBar` + `IndexedStack`, `NavigationItem`, perfil y "Pendientes de sincronizar". Los textos de cada `type` de la cola también son de esa capa.
+- **Regla de pestañas**, igual que `MainTab.tabsFor` de Android. Con `tasksTrackTime`: Inicio · Tareas (si `tasksRead`) · Órdenes (si `workOrdersCreate`) · OBD-II (si `canUseTelemetry()`) · Perfil. Sin él: Inicio · Órdenes (si `workOrdersRead`) · Recepción (si `vehiclesCreate`) · Stock (si `partsRead`) · Ajustes. `NavigationItem.requires` de [05](05-flutter-architecture.md) §5.5 admite un solo permiso y no alcanza para expresarla: hay que ajustarlo.
+- Aviso de plan: `session.hasSubscriptionAccess() == false`. Contador en la última pestaña, como Android.
+- `DiscardPendingOperationUseCase` devuelve `false` si algo de la cadena se está enviando: es un aviso, no un error. Tras matarse el worker, una fila puede seguir `SYNCING` hasta la siguiente vuelta del sync.
+- Push: `ObservePushDestinationUseCase` repite el valor al suscribirse y emite `null` al consumir. Consumirlo solo en `MainPage`, que no existe mientras `needsBranchChoice`, y traducirlo a la página cuando exista su feature.
+- Sin comprobar: push real (falta `google-services.json`) e iOS.
 
 ## Paso 4 — `attendance`
 

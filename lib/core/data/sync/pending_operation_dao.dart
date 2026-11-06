@@ -50,10 +50,15 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
     return query.map((row) => row.read(next)).getSingle();
   }
 
-  Future<void> markSyncing(String id) => _update(
-    id,
-    const PendingOperationsCompanion(status: Value('SYNCING')),
-  );
+  /// `false` si ya no estaba PENDING: la UI, en otra conexión, pudo descartarla tras la última lectura.
+  Future<bool> markSyncing(String id) async {
+    final updated =
+        await (update(pendingOperations)..where(
+              (t) => t.id.equals(id) & t.status.equals('PENDING'),
+            ))
+            .write(const PendingOperationsCompanion(status: Value('SYNCING')));
+    return updated > 0;
+  }
 
   Future<void> markRetry(
     String id, {
@@ -125,16 +130,46 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
         .write(const PendingOperationsCompanion(status: Value('PENDING')));
   }
 
-  /// Acción "Reintentar" de la pantalla de pendientes.
-  Future<void> retry(String id, int now) {
-    return _update(
-      id,
-      PendingOperationsCompanion(
-        status: const Value('PENDING'),
-        attempts: const Value(0),
-        nextAttemptAt: Value(now),
-      ),
+  /// Acción "Reintentar" con toda su cadena. Una sola sentencia: si el sync volviera a fallar al
+  /// padre antes de reactivar al hijo, este quedaría PENDING esperando para siempre.
+  Future<void> resetFailed(List<String> ids, int now) {
+    return (update(pendingOperations)..where(
+          (t) => t.id.isIn(ids) & t.status.equals('FAILED'),
+        ))
+        .write(
+          PendingOperationsCompanion(
+            status: const Value('PENDING'),
+            attempts: const Value(0),
+            nextAttemptAt: Value(now),
+            lastHttpStatus: const Value(null),
+            lastErrorCode: const Value(null),
+            lastErrorMessage: const Value(null),
+          ),
+        );
+  }
+
+  /// Hijos directos en cualquier estado, a diferencia de [dependentIds].
+  Future<List<String>> allDependentIds(String parentId) {
+    final query = selectOnly(pendingOperations)
+      ..addColumns([pendingOperations.id])
+      ..where(pendingOperations.dependsOn.equals(parentId));
+    return query.map((row) => row.read(pendingOperations.id)!).get();
+  }
+
+  /// Acción "Descartar" con toda su cadena. Una sola sentencia: el worker, en otra conexión, podría
+  /// empezar a enviar entre comprobar y borrar. `false` si algo se está enviando: no borra nada.
+  Future<bool> discardUnlessSyncing(List<String> ids) async {
+    if (ids.isEmpty) return false;
+    final marks = List.filled(ids.length, '?').join(', ');
+    final variables = [for (final id in ids) Variable.withString(id)];
+    final deleted = await customUpdate(
+      'DELETE FROM pending_operations WHERE id IN ($marks) AND NOT EXISTS ('
+      "SELECT 1 FROM pending_operations WHERE id IN ($marks) AND status = 'SYNCING')",
+      variables: [...variables, ...variables],
+      updates: {pendingOperations},
+      updateKind: UpdateKind.delete,
     );
+    return deleted > 0;
   }
 
   Future<void> deleteById(String id) {

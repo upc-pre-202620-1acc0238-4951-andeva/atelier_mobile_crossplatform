@@ -247,6 +247,7 @@ lib/
 │   │   ├── network_exception.dart     # Sin red o sin respuesta
 │   │   ├── permission.dart
 │   │   ├── plan.dart
+│   │   ├── push_destination.dart      # Pantalla que abre cada push, sin Flutter
 │   │   └── session.dart
 │   ├── media/
 │   │   ├── photo_capture.dart         # Foto → pending_uploads → UPLOAD_FILE + ATTACH_*

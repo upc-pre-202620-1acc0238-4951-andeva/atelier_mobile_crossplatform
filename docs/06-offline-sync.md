@@ -260,12 +260,20 @@ El aviso a la UI usa `IsolateNameServer`, que es de todo el proceso y sí cruza 
 class LocalChangeNotifier {
   static const _portName = 'atelier_ui_port';
 
-  /// Se llama en `main()`, en el motor de la UI.
-  static void listenInUi(AppDatabase database, SessionManager session) {
+  /// Se llama en `main()`, en el motor de la UI. [sync] corre al terminar el worker: lo reintentado
+  /// o encolado mientras él enviaba no estaba en su lote y `requestSync` lo ignoró por `keep`.
+  static void listenInUi(
+    AppDatabase database,
+    SessionManager session, {
+    required void Function() sync,
+  }) {
     final port = ReceivePort();
     IsolateNameServer.removePortNameMapping(_portName);
     IsolateNameServer.registerPortWithName(port.sendPort, _portName);
-    port.listen((_) => refresh(database, session));
+    port.listen((_) {
+      refresh(database, session);
+      sync();
+    });
   }
 
   /// Lo que otro motor pudo cambiar: filas y sesión. También se llama al volver a primer plano.
@@ -357,6 +365,7 @@ Future<bool> runSyncTask() async {
 ### Reglas de producto
 
 - **Mostrar siempre lo pendiente.** Un ícono en la barra superior con el número de operaciones `PENDING`/`FAILED` y una pantalla "Pendientes de sincronizar" con el `message` del backend y las acciones *Reintentar* y *Descartar*.
+- **Reintentar y descartar actúan sobre toda la cadena, en una sola sentencia.** *Reintentar* reactiva lo `FAILED` de la operación, sus ancestros y sus descendientes; así el sync no puede volver a fallar al padre antes de reactivar al hijo, que quedaría esperándolo para siempre. *Descartar* se lleva a los descendientes y, si la operación es la única hija de un `UPLOAD_FILE`, también la subida, su fila y su foto. Un `CLOCK_IN` no se borra con su `CLOCK_OUT`. Si algo de la cadena está `SYNCING` no borra nada, y `markSyncing` solo pasa desde `PENDING`: el worker es otra conexión, y lo descartado no se envía.
 - **Cambio de usuario.** La cola es por `user_id`: al cerrar sesión con operaciones pendientes, avisar ("Tienes 3 marcaciones sin enviar"). Si se confirma, se conservan y se envían cuando ese mismo usuario vuelva a entrar. Nunca se envían con el token de otro usuario.
 - **Sesión vencida sin red.** Si el refresh token (30 días) vence con operaciones pendientes, tras entrar, se envían. El login no muestra un aviso: sin sesión ya no se sabe de quién son y `GetPendingOperationCountUseCase` devuelve 0, igual que en Android.
 - **Hora del dispositivo.** Se guarda en UTC (`Instant`) al capturar. Si el reloj del teléfono está desajustado más de 2 min hacia el futuro, el backend rechaza la marcación (400): mostrar "Revisa la hora de tu teléfono".

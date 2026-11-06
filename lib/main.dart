@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/local_change_notifier.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_scheduler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_triggers.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_worker.dart';
@@ -32,7 +33,11 @@ Future<void> main() async {
     await Workmanager().initialize(callbackDispatcher);
     await getIt<SyncScheduler>().schedulePeriodic();
   });
-  LocalChangeNotifier.listenInUi(database, session);
+  LocalChangeNotifier.listenInUi(
+    database,
+    session,
+    sync: getIt<SyncProcessor>().runDetached,
+  );
   await _bestEffort('Disparadores', getIt<SyncTriggers>().start);
 
   runApp(MainApp(session: session));
