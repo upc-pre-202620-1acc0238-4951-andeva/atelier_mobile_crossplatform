@@ -980,4 +980,18 @@ Paso 4, con `integration_probe/attendance_probe_main.dart`, los casos de uso rea
 
 Para que el corte sea real, el servidor simulado responde sin keep-alive: un socket abierto sobrevive a `adb reverse --remove`.
 
+Paso 5, con `integration_probe/tasks_probe_main.dart`, los casos de uso reales, una imagen generada que pasa por la compresión real y Supabase apuntando al servidor simulado (`--dart-define=SUPABASE_URL=http://localhost:8099 --dart-define=SUPABASE_ANON_KEY=probe`, además de `API_BASE_URL`). El servidor simula H9 y H36–H39 tal como los documenta [03](03-traceability.md), así que esto no demuestra el contrato real:
+
+| Escenario | Evidencia |
+| --- | --- |
+| Mis tareas | Orden `t2:IN_PROGRESS`, `t3:ON_HOLD`, `t1:ASSIGNED`, con placa y bahía |
+| Ciclo de vida | Iniciar, pausar, reanudar (`totalPausedSeconds` acumulado) y cerrar; al cerrar sale de la lista. El fin de turno anticipado da 422 con su `message` y la tarea sigue en curso |
+| Suspensión | Motivo enviado recortado; rechazar la deja en curso; aprobar la suspende; el mecánico recibe 422 con `/start` y la levanta `/resume` |
+| Repuestos | Búsqueda con un `name` nulo y un agotado; imputar sin precio; 409 de stock con su `message`; corregir cantidad ignora el cuerpo sin `productId` (H9, H38); devolver deja la línea (H37) |
+| Sin red (Wi-Fi, datos y `adb reverse` cortados; `Active default network: none`) | El refresh y una acción lanzan `NetworkException`, la caché sigue visible y la cola no crece |
+| Foto sin red | `UPLOAD_FILE` y `ATTACH_TASK_EVIDENCE` con `depends_on`, `intentos=1` y `Sin conexión` tras el fallo de red; `archivo=true` en `PendingEvidence`; nada llega al servidor |
+| App muerta y red de vuelta | Sin proceso (`pidof` vacío), el worker corre tras el backoff (88 s) y envía la subida y luego el adjunto con la URL final |
+| Volver a abrir la app | Cola en 0, `files/pending` vacío y una evidencia por foto, sin repetidas |
+
+
 Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.
