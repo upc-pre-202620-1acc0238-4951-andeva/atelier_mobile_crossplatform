@@ -235,6 +235,40 @@ void main() {
     });
   });
 
+  group('switchOn', () {
+    test('cambia de consulta solo si cambia la clave y cancela la anterior', () async {
+      final manager = SessionManager();
+      final queries = <String?>[];
+      var cancelled = 0;
+      final seen = <String>[];
+      final subscription = manager
+          .switchOn<String?, String>((session) => session?.userId, (user) {
+            queries.add(user);
+            final controller = StreamController<String>(
+              onCancel: () => cancelled++,
+            );
+            controller.add('filas de $user');
+            return controller.stream;
+          })
+          .listen(seen.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+      expect(seen, ['filas de null']);
+
+      await manager.save(_user());
+      await pumpEventQueue();
+      expect(seen.last, 'filas de u1');
+      expect(cancelled, 1);
+
+      await manager.updateAssignment('b1', 's1');
+      await pumpEventQueue();
+      expect(queries, [null, 'u1'], reason: 'el usuario no cambió');
+
+      await subscription.cancel();
+      expect(cancelled, 2);
+    });
+  });
+
   group('watchSession', () {
     test('emite al suscribirse y en cada cambio', () async {
       final manager = SessionManager();

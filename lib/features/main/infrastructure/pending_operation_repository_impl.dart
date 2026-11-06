@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -95,27 +94,10 @@ class PendingOperationRepositoryImpl implements PendingOperationRepository {
 
   /// Cambia sola al cambiar de usuario: nunca se ve la cola de otro (06 §3, "Cambio de usuario").
   Stream<T> _forCurrentUser<T>(T empty, Stream<T> Function(String) query) {
-    return Stream.multi((controller) {
-      StreamSubscription<T>? rows;
-      final users = session
-          .watchSession()
-          .map((current) => current?.userId)
-          .distinct()
-          .listen((userId) {
-            unawaited(rows?.cancel());
-            rows = null;
-            if (userId == null) {
-              controller.add(empty);
-            } else {
-              rows = query(userId)
-                  .listen(controller.add, onError: controller.addError);
-            }
-          }, onError: controller.addError);
-      controller.onCancel = () async {
-        await users.cancel();
-        await rows?.cancel();
-      };
-    });
+    return session.switchOn<String?, T>(
+      (current) => current?.userId,
+      (userId) => userId == null ? Stream.value(empty) : query(userId),
+    );
   }
 
   Future<PendingOperationEntity?> _ownOperation(String id) async {

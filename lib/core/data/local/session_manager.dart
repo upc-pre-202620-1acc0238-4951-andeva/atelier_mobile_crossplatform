@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/jwt_claims.dart';
@@ -146,6 +147,25 @@ class SessionManager extends ChangeNotifier implements SessionStore {
         removeListener(read);
       };
       read();
+    });
+  }
+
+  /// Resultado de [query] para lo que [key] toma de la sesión. Cambia de consulta solo cuando
+  /// cambia la clave, y deja de escuchar la anterior.
+  Stream<T> switchOn<K, T>(
+    K Function(Session? session) key,
+    Stream<T> Function(K key) query,
+  ) {
+    return Stream.multi((controller) {
+      StreamSubscription<T>? rows;
+      final keys = watchSession().map(key).distinct().listen((current) {
+        unawaited(rows?.cancel());
+        rows = query(current).listen(controller.add, onError: controller.addError);
+      }, onError: controller.addError);
+      controller.onCancel = () async {
+        await keys.cancel();
+        await rows?.cancel();
+      };
     });
   }
 

@@ -36,6 +36,16 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  Future<List<PendingOperationEntity>> findForUserByType(
+    String userId,
+    String type,
+  ) {
+    return (select(pendingOperations)
+          ..where((t) => t.userId.equals(userId) & t.type.equals(type))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
   /// Próximo intento futuro, para reprogramar el worker tras el backoff. Solo futuros: lo que
   /// espera a su padre o no tiene handler ya venció y reprogramaría el worker en bucle.
   Future<int?> nextAttemptAfter(String userId, int now) {
