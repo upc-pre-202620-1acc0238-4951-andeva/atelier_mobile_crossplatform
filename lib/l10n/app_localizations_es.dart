@@ -11,4 +11,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get appTitle => 'Atelier';
+
+  @override
+  String get syncFailedMaxAttempts => 'No se pudo sincronizar';
+
+  @override
+  String get errorStorageNotConfigured =>
+      'Falta configurar el almacenamiento de fotos';
+
+  @override
+  String get errorStorageUploadFailed => 'No se pudo subir la foto';
+
+  @override
+  String get errorPendingPhotoMissing => 'La foto ya no está en el teléfono';
+
+  @override
+  String get notificationChannelTasks => 'Tareas';
+
+  @override
+  String get notificationChannelAttendance => 'Asistencia';
+
+  @override
+  String get notificationChannelInventory => 'Inventario';
+
+  @override
+  String get placeholderSignedOut => 'Inicio de sesión';
+
+  @override
+  String get placeholderSignedIn => 'Sesión iniciada';
 }

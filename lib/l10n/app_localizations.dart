@@ -99,6 +99,60 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Atelier'**
   String get appTitle;
+
+  /// Operación de la cola que agotó sus reintentos
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo sincronizar'**
+  String get syncFailedMaxAttempts;
+
+  /// Falta la configuración de Supabase
+  ///
+  /// In es, this message translates to:
+  /// **'Falta configurar el almacenamiento de fotos'**
+  String get errorStorageNotConfigured;
+
+  /// Supabase rechazó la subida
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo subir la foto'**
+  String get errorStorageUploadFailed;
+
+  /// Foto en cola cuyo archivo local ya no existe
+  ///
+  /// In es, this message translates to:
+  /// **'La foto ya no está en el teléfono'**
+  String get errorPendingPhotoMissing;
+
+  /// Canal de notificaciones de Android
+  ///
+  /// In es, this message translates to:
+  /// **'Tareas'**
+  String get notificationChannelTasks;
+
+  /// Canal de notificaciones de Android
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia'**
+  String get notificationChannelAttendance;
+
+  /// Canal de notificaciones de Android
+  ///
+  /// In es, this message translates to:
+  /// **'Inventario'**
+  String get notificationChannelInventory;
+
+  /// Marcador hasta que exista el paso 2
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio de sesión'**
+  String get placeholderSignedOut;
+
+  /// Marcador hasta que exista el paso 3
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión iniciada'**
+  String get placeholderSignedIn;
 }
 
 class _AppLocalizationsDelegate
