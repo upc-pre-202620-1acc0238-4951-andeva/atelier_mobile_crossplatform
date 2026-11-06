@@ -9,6 +9,7 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/session/authentica
 import 'package:atelier_mobile_crossplatform/core/data/sync/local_change_notifier.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_scheduler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_worker.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
@@ -69,7 +70,11 @@ Future<void> main() async {
   debugPrint('PROBE etapa 3 workmanager');
   await Workmanager().initialize(probeDispatcher);
   debugPrint('PROBE etapa 4 sesión');
-  LocalChangeNotifier.listenInUi(database, session);
+  LocalChangeNotifier.listenInUi(
+    database,
+    session,
+    sync: getIt<SyncProcessor>().runDetached,
+  );
 
   if (await session.getSession() == null) {
     final seed = await http.get(_control('/control/session'));
