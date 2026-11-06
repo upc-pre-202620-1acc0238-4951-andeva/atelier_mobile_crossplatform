@@ -1,5 +1,7 @@
+import 'package:decimal/decimal.dart';
+
 class CompleteTaskRequestDto {
-  final double actualLaborHours;
+  final Decimal actualLaborHours;
   final String? notes;
 
   const CompleteTaskRequestDto({
@@ -8,7 +10,7 @@ class CompleteTaskRequestDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'actualLaborHours': actualLaborHours,
+        'actualLaborHours': actualLaborHours.toDouble(),
         if (notes != null) 'notes': notes,
       };
 }
