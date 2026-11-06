@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:atelier_mobile_crossplatform/core/data/combine_latest.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/branch/branch_api.dart';
@@ -90,7 +91,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       (key) {
         if (key == null) return Stream.value(const NotClockedIn());
         final (userId, membershipId) = key;
-        return _combine(
+        return combineLatest2(
           attendanceDao.watchLatest(membershipId),
           pendingOperationDao.watchForUser(userId),
           (latest, operations) {
@@ -134,7 +135,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       (key) {
         final (branchId, shiftId) = key;
         if (shiftId == null) return Stream.value(null);
-        return _combine(
+        return combineLatest2(
           shiftDao.watchById(shiftId),
           branchId == null
               ? Stream<BranchEntity?>.value(null)
@@ -439,40 +440,5 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   static DateTime _utc(int millis) {
     return DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
-  }
-
-  /// Emite cuando cualquiera cambia, una vez que ambos tienen valor. Sin `rxdart` (05 §2).
-  static Stream<R> _combine<A, B, R>(
-    Stream<A> first,
-    Stream<B> second,
-    R Function(A, B) combine,
-  ) {
-    return Stream.multi((controller) {
-      late A a;
-      late B b;
-      var hasA = false;
-      var hasB = false;
-      void emit() {
-        if (hasA && hasB) controller.add(combine(a, b));
-      }
-
-      final subscriptions = [
-        first.listen((value) {
-          a = value;
-          hasA = true;
-          emit();
-        }, onError: controller.addError),
-        second.listen((value) {
-          b = value;
-          hasB = true;
-          emit();
-        }, onError: controller.addError),
-      ];
-      controller.onCancel = () async {
-        for (final subscription in subscriptions) {
-          await subscription.cancel();
-        }
-      };
-    });
   }
 }
