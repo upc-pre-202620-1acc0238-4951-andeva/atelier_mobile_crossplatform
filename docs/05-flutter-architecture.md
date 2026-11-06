@@ -209,7 +209,8 @@ lib/
 │   │   │   ├── app_lock_table.dart    # Tabla app_locks (propia de Flutter)
 │   │   │   ├── cross_isolate_lock.dart # Exclusión entre motores (06 §3)
 │   │   │   ├── jwt_claims.dart        # Lee `exp` del JWT para token_expires_at
-│   │   │   └── session_manager.dart   # Sesión: tokens cifrados + preferencias
+│   │   │   ├── session_manager.dart   # Sesión: tokens cifrados + preferencias
+│   │   │   └── session_store.dart     # Interfaz mínima para probar sin plugins
 │   │   ├── remote/
 │   │   │   ├── api_client.dart        # get/post/put/delete → JSON o ApiException
 │   │   │   ├── authenticated_client.dart # "Authorization", "Accept-Language" y un reintento tras 401
@@ -229,8 +230,9 @@ lib/
 │   │       ├── upload_file_handler.dart # UPLOAD_FILE (núcleo)
 │   │       ├── sync_processor.dart    # Algoritmo de 06 §3, sin Flutter (testeable)
 │   │       ├── sync_scheduler.dart    # Trabajo único, reintento y periódico
+│   │       ├── sync_triggers.dart     # Al abrir, al recuperar red y al volver a primer plano
 │   │       └── sync_worker.dart       # callbackDispatcher de workmanager
-│   ├── designsystem/
+│   ├── designsystem/                  # Aún no existe: fuera del paso 1 (07)
 │   │   ├── component/                 # AtelierTopBar, AtelierButton, StatusChip, MoneyText…
 │   │   └── theme/
 │   │       └── theme.dart             # MaterialTheme, como el del profesor, con la marca Atelier
@@ -620,71 +622,13 @@ class NetworkException implements Exception {
   String toString() => message;
 }
 
-// core/data/remote/api_client.dart
-class ApiClient {
-  final http.Client client;
-  final String baseUrl;
-
-  const new({required this.client, required this.baseUrl});
-
-  Future<dynamic> get(String path, {Map<String, String>? query}) {
-    return _send(() => client.get(_uri(path, query)));
-  }
-
-  Future<dynamic> post(String path, {Object? body}) {
-    return _send(
-      () => client.post(
-        _uri(path, null),
-        headers: const {'Content-Type': 'application/json'},
-        body: body == null ? null : jsonEncode(body),
-      ),
-    );
-  }
-
-  // put y delete son iguales a post.
-
-  Uri _uri(String path, Map<String, String>? query) {
-    return Uri.parse('$baseUrl$path').replace(queryParameters: query);
-  }
-
-  Future<dynamic> _send(Future<http.Response> Function() call) async {
-    final http.Response response;
-    try {
-      response = await call().timeout(const Duration(seconds: 60)); // Render despierta en frío
-    } on TimeoutException {
-      throw const NetworkException('El servidor no respondió');
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
-
-    final text = utf8.decode(response.bodyBytes);
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return text.isEmpty ? null : jsonDecode(text); // 204 → null
-    }
-    throw _toApiException(response.statusCode, text);
-  }
-
-  ApiException _toApiException(int status, String text) {
-    try {
-      final Map<String, dynamic> json = jsonDecode(text);
-      return ApiException(
-        httpStatus: status,
-        code: json['code'] as String? ?? 'UNKNOWN',
-        message: json['message'] as String? ?? 'Error del servidor',
-        details: (json['details'] as List? ?? const []).cast<String>(),
-      );
-    } on FormatException {
-      return ApiException(
-        httpStatus: status,
-        code: 'UNKNOWN',
-        message: 'Error del servidor',
-      );
-    }
-  }
-}
 ```
+
+`lib/core/data/remote/api_client.dart` expone `get`, `post`, `put`, `delete` y `getBytes` (PDFs), con `headers` opcional, y devuelve el JSON ya decodificado o `null` en un 204:
+
+- `IOException` (red y TLS), `ClientException` y timeout → `NetworkException`. No basta `SocketException`.
+- Un error cuyo cuerpo no sea un objeto JSON, o traiga tipos inesperados (Render o un proxy pueden responder HTML), → `ApiException` con mensaje genérico. Nunca un `TypeError`.
+- El timeout de 60 s (Render despierta en frío) es **por intento** y vive en `AuthenticatedClient`. Si envolviera todo el flujo, la UI vería "sin respuesta" mientras el `POST` reintentado tras el refresh todavía puede llegar.
 
 > **Timeout y dinero:** `.timeout` deja de esperar, pero no cancela la petición: el `POST` pudo llegar al backend. Por eso emitir y cobrar siguen las reglas de H28 ([03](03-traceability.md#huecos-abiertos)): tras un `NetworkException`, se relee antes de reintentar. A diferencia de OkHttp, `package:http` no reintenta por su cuenta.
 
@@ -692,185 +636,30 @@ class ApiClient {
 
 `AuthenticatedClient` reemplaza a `AuthInterceptor` y `TokenAuthenticator`. Es el único cliente que reciben los `Api`.
 
-```dart
-// core/data/remote/authenticated_client.dart
-class AuthenticatedClient extends http.BaseClient {
-  final http.Client inner;
-  final SessionStore session;
-  final TokenRefresher refresher;
+`lib/core/data/remote/authenticated_client.dart` envía `Accept-Language: es` y:
 
-  AuthenticatedClient({
-    required this.inner,
-    required this.session,
-    required this.refresher,
-  });
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final token = await session.getAuthToken();
-    final first = await inner.send(_copy(request, token));
-
-    if (first.statusCode != 401) return first;
-    if (PublicEndpoints.isPublic(request.method, request.url)) return first; // credenciales, no sesión
-
-    final fresh = await refresher.refreshIfStale(token);
-    if (fresh == null) return first;
-    await first.stream.drain<void>();
-    return inner.send(_copy(request, fresh));                                // reintenta una sola vez
-  }
-
-  http.BaseRequest _copy(http.BaseRequest original, String? token) {
-    if (original is! http.Request) {
-      throw ArgumentError('Solo http.Request se puede reintentar');
-    }
-    final copy = http.Request(original.method, original.url)
-      ..headers.addAll(original.headers)
-      ..headers['Accept-Language'] = 'es'
-      ..followRedirects = original.followRedirects
-      ..bodyBytes = original.bodyBytes;
-    if (token != null) copy.headers['Authorization'] = 'Bearer $token';
-    return copy;
-  }
-}
-```
+- No pone token en las rutas públicas (`PublicEndpoints`) y respeta un `Authorization` explícito: el paso 2 llama a `membership` con el token aún sin guardar.
+- Ante un 401 en ruta privada pide a `TokenRefresher` un token nuevo y reintenta **una sola vez**. Un 401 en ruta pública son credenciales, no sesión.
 
 El refresh **rota** el `refreshToken` ([api/README.md](api/README.md) §2): un segundo refresh con el token viejo responde 401 y cerraría la sesión. Android lo evita con `synchronized`. En Flutter hay dos niveles:
 
 1. **Dentro de un motor:** Dart corre en un solo hilo, así que basta compartir el `Future` en curso.
 2. **Entre motores:** el worker de `workmanager` corre en otro motor, con su propia memoria. Ahí lo que comparten es el archivo de Drift, y se usa `CrossIsolateLock` ([06](06-offline-sync.md) §3).
 
-```dart
-// core/data/remote/token_refresher.dart
-class TokenRefresher {
-  final SessionStore session;
-  final CrossIsolateLock lock;
-  final http.Client refreshClient;   // Sin AuthenticatedClient: si no, entraría en bucle
-  final String baseUrl;
+`lib/core/data/remote/token_refresher.dart` aplica esos dos niveles:
 
-  TokenRefresher({
-    required this.session,
-    required this.lock,
-    required this.refreshClient,
-    required this.baseUrl,
-  });
+- `refreshIfStale(tokenViejo)`: si otro ya renovó, devuelve el token actual sin llamar al backend. `ensureFresh()` renueva antes de enviar si el token venció (04 §5).
+- Espera el bloqueo hasta cubrir su lease (90 s), no 10 s: con Render en frío el otro motor puede tardar 60 s, y rendirse antes devolvería un 401 sin necesidad.
+- Con un 200 guarda la **respuesta completa** (`save(dto)`): el plan y los permisos también se actualizan en cada refresh. Decodifica con `utf8.decode(bodyBytes)`, y un 200 ilegible no cierra la sesión.
+- Solo un 401 del refresh cierra la sesión. Sin red, o con un 5xx, la sesión se conserva y se reintenta luego.
 
-  Future<String?>? _inFlight;
+`lib/core/data/local/session_manager.dart` guarda la sesión (claves en [06](06-offline-sync.md) §5). Sus reglas:
 
-  /// Varios 401 a la vez comparten el mismo refresh (dentro del isolate).
-  Future<String?> refreshIfStale(String? staleToken) {
-    return _inFlight ??= _refresh(
-      staleToken,
-    ).whenComplete(() => _inFlight = null);
-  }
-
-  Future<String?> _refresh(String? staleToken) async {
-    // Entre motores: el otro lado puede estar rotando el mismo refreshToken.
-    for (var i = 0; i < 20; i++) {
-      final acquired = await lock.tryAcquire(
-        CrossIsolateLock.tokenRefresh,
-        const Duration(seconds: 90),
-      );
-      if (acquired) {
-        try {
-          return await _refreshHoldingLock(staleToken);
-        } finally {
-          await lock.release(CrossIsolateLock.tokenRefresh);
-        }
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-    }
-    return null; // Se conserva la sesión; se reintenta luego.
-  }
-
-  Future<String?> _refreshHoldingLock(String? staleToken) async {
-    final current = await session.getAuthToken();
-    if (current == null) return null;
-    if (staleToken != null && current != staleToken) return current; // otro ya renovó
-
-    final refreshToken = await session.getRefreshToken();
-    if (refreshToken == null) return null;
-
-    final http.Response response;
-    try {
-      response = await refreshClient
-          .post(
-            Uri.parse('$baseUrl/api/v1/auth/refresh'),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'refreshToken': refreshToken}),
-          )
-          .timeout(const Duration(seconds: 60));
-    } on Exception {
-      return null; // Sin red: se conserva la sesión.
-    }
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> json = jsonDecode(response.body);
-      final token = json['token'] as String;
-      await session.saveTokens(token, json['refreshToken'] as String);
-      return token;
-    }
-    if (response.statusCode == 401) await session.clear();
-    return null;
-  }
-}
-```
-
-El `SessionManager` real guarda la respuesta completa de sesión (`save(dto)`, claves en [06](06-offline-sync.md) §5). Su base es esta:
-
-```dart
-// core/data/local/session_manager.dart
-class SessionManager extends ChangeNotifier implements SessionStore {
-  static const _token = 'token';
-  static const _refreshToken = 'refresh_token';
-  static const _permissions = 'permissions';
-  static const _installed = 'installed';
-
-  final FlutterSecureStorage secure;
-  final SharedPreferencesAsync preferences;
-
-  SessionManager({
-    this.secure = const FlutterSecureStorage(
-      iOptions: IOSOptions(
-        // El worker debe poder leerlo con el teléfono bloqueado.
-        accessibility: KeychainAccessibility.first_unlock,
-      ),
-    ),
-    SharedPreferencesAsync? preferences,
-  }) : preferences = preferences ?? SharedPreferencesAsync();
-
-  /// El Keychain de iOS sobrevive a desinstalar la app: sin la marca, se limpia.
-  Future<void> clearIfReinstalled() async {
-    if (await preferences.getBool(_installed) == true) return;
-    await secure.deleteAll();
-    await preferences.setBool(_installed, true);
-  }
-
-  @override
-  Future<String?> getAuthToken() => secure.read(key: _token);
-
-  @override
-  Future<String?> getRefreshToken() => secure.read(key: _refreshToken);
-
-  @override
-  Future<void> saveTokens(String token, String refreshToken) async {
-    await secure.write(key: _token, value: token);
-    await secure.write(key: _refreshToken, value: refreshToken);
-    notifyListeners();
-  }
-
-  Future<Set<String>> getPermissions() async {
-    return (await preferences.getStringList(_permissions) ?? const []).toSet();
-  }
-
-  @override
-  Future<void> clear() async {
-    await secure.delete(key: _token);
-    await secure.delete(key: _refreshToken);
-    await preferences.remove(_permissions);
-    notifyListeners();
-  }
-}
-```
+- **Orden de `save`:** preferencias → `refresh_token` → `token`. iOS puede matar al worker entre dos escrituras: así el corte deja un refresh válido. Al revés, un token nuevo con el refresh viejo perdería la sesión.
+- **`clear` usa una lista de claves y no borra `installed`:** si la borrara, el siguiente arranque ejecutaría `clearIfReinstalled` y cerraría la sesión ya renovada.
+- **`reload()`** avisa a los oyentes cuando otro motor cambió la sesión. No guarda nada en memoria.
+- **Keychain con `first_unlock`:** el worker debe poder leerlo con el teléfono bloqueado.
+- `Session.needsBranchChoice` y sus claves (H33) llegan en el paso 2, que es quien las usa.
 
 - Se usa `SharedPreferencesAsync`, no `SharedPreferences`: esta última guarda una copia en memoria y un motor no vería lo que escribió el otro.
 - `AppRoot` escucha este `ChangeNotifier`: al borrarse la sesión vuelve al login solo (§5.5).
@@ -878,7 +667,7 @@ class SessionManager extends ChangeNotifier implements SessionStore {
 
 #### Base de datos con Drift
 
-**Tabla.** Reemplaza a `@Entity`. Las columnas pasan a `snake_case` solas y `.named()` se usa solo cuando difieren. Las 18 tablas están en [06](06-offline-sync.md) §5.
+**Tabla.** Reemplaza a `@Entity`. Las columnas pasan a `snake_case` solas y `.named()` se usa solo cuando difieren. Las 19 tablas están en [06](06-offline-sync.md) §5.
 
 ```dart
 // features/tasks/infrastructure/local/task_table.dart (versión corta)
@@ -950,19 +739,23 @@ part 'app_database.g.dart';
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-    : super(executor ?? driftDatabase(name: 'atelier_db'));
+    : super(
+        executor ??
+            driftDatabase(
+              name: 'atelier_db',
+              native: const DriftNativeOptions(setup: configureConnection),
+            ),
+      );
+
+  /// Antes de migrar: la migración es la escritura con más riesgo de bloqueo. `busy_timeout`
+  /// primero, porque cambiar a WAL también puede encontrar el archivo ocupado.
+  static void configureConnection(CommonDatabase database) {
+    database.execute('PRAGMA busy_timeout = 5000');
+    database.execute('PRAGMA journal_mode = WAL');
+  }
 
   @override
   int get schemaVersion => 1;
-
-  @override
-  MigrationStrategy get migration => MigrationStrategy(
-    // onUpgrade: stepByStep(...) cuando exista la versión 2
-    beforeOpen: (details) async {
-      await customStatement('PRAGMA journal_mode = WAL');
-      await customStatement('PRAGMA busy_timeout = 5000');
-    },
-  );
 
   /// Avisa a los `watch()` de este motor que otro motor escribió en el archivo.
   void notifyExternalChanges() {
@@ -971,9 +764,9 @@ class AppDatabase extends _$AppDatabase {
 }
 ```
 
-- `WAL` y `busy_timeout` son obligatorios: la UI y el worker abren el mismo archivo por separado. No se usa `shareAcrossIsolates`, porque solo funciona dentro del mismo motor.
+- `WAL` y `busy_timeout` son obligatorios: la UI y el worker abren el mismo archivo por separado. Van en `configureConnection`, pasado a `driftDatabase(native: DriftNativeOptions(setup: ...))`, y `busy_timeout` primero. En `beforeOpen` correrían **después** de la migración, justo la escritura con más riesgo de bloqueo. No se usa `shareAcrossIsolates`, porque solo funciona dentro del mismo motor.
 - El parámetro `executor` permite usar una base en memoria en los tests.
-- **Después de cambiar una tabla o un DAO:** `dart run build_runner build --delete-conflicting-outputs`. Los `*.g.dart` **se versionan**, para que `flutter run` funcione recién clonado y los cambios de esquema se vean en la revisión.
+- **Después de cambiar una tabla o un DAO:** `dart run build_runner build --delete-conflicting-outputs`. Los `*.g.dart` **se versionan**, para que `flutter run` funcione recién clonado y los cambios de esquema se vean en la revisión. `build_runner` 2.17 avisa que esa opción ya no existe y la ignora: no es un error.
 - **Al cambiar el esquema:** subir `schemaVersion` y ejecutar `dart run drift_dev make-migrations`, que guarda el esquema en `drift_schemas/` y genera los pasos y las pruebas. Los esquemas se versionan.
 
 #### Offline-first (Drift como fuente única de la verdad)
@@ -1245,31 +1038,9 @@ Navigator.push(
 
 El profesor cambia de flujo con `pushReplacement` al tocar un botón. Atelier necesita más: si el refresh falla con 401, debe volver al login desde cualquier pantalla. Por eso la raíz observa la sesión (lo mismo que hace `AppNavHost` en Android):
 
-```dart
-// navigation/app_root.dart
-class AppRoot extends StatelessWidget {
-  const AppRoot({super.key});
+`lib/navigation/app_root.dart` es un `StatefulWidget` que escucha `SessionManager` y relee **solo al recibir el aviso**. Un `Future` creado en `build` volvería al spinner con cualquier reconstrucción. Mientras relee mantiene la pantalla actual, y de dos lecturas seguidas vale la más reciente.
 
-  @override
-  Widget build(BuildContext context) {
-    final session = getIt<SessionManager>();
-    return ListenableBuilder(
-      listenable: session,
-      builder: (context, child) {
-        return FutureBuilder<String?>(
-          future: session.getAuthToken(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
-            }
-            return snapshot.data == null ? const LoginPage() : const MainPage();
-          },
-        );
-      },
-    );
-  }
-}
-```
+Hasta los pasos 2 y 3 muestra marcadores sin estilo en lugar de `LoginPage` y `MainPage`. El enrutado por `needsBranchChoice` llega con el paso 2.
 
 Las pestañas salen de la sesión. Con `IndexedStack`, cada pestaña conserva su estado y su `Navigator`; el `MainPage` del profesor las reconstruye al cambiar, porque ahí el ViewModel es un singleton.
 

@@ -207,7 +207,7 @@ En Android, el `SyncWorker` y la UI viven en el mismo proceso y comparten memori
 
 | Problema | Qué pasaría | Solución |
 | --- | --- | --- |
-| **Dos escritores en el archivo** | `database is locked` | `PRAGMA journal_mode = WAL` y `busy_timeout = 5000` en `beforeOpen` |
+| **Dos escritores en el archivo** | `database is locked` | `busy_timeout = 5000` y `journal_mode = WAL` al abrir la conexión, antes de migrar ([05](05-flutter-architecture.md) §5.3) |
 | **Dos refresh a la vez** | El segundo usa un `refreshToken` ya rotado, recibe 401 y **cierra la sesión** | `CrossIsolateLock` alrededor del refresh ([05](05-flutter-architecture.md) §5.3) |
 | **Dos sincronizaciones a la vez** | Una devolvería a `PENDING` lo que la otra está enviando, y se duplicarían envíos | `CrossIsolateLock.sync`: quien no lo consigue termina sin hacer nada |
 | **Los `watch()` no se enteran** | La UI abierta no ve lo que escribió el worker | `LocalChangeNotifier`: el worker avisa a la UI, que llama a `notifyExternalChanges()`. Además, se llama al volver a primer plano |
@@ -237,8 +237,8 @@ class CrossIsolateLock {
     );
     final row = await (database.select(
       database.appLocks,
-    )..where((t) => t.name.equals(name))).getSingle();
-    return row.owner == owner;
+    )..where((t) => t.name.equals(name))).getSingleOrNull(); // Otro pudo liberarlo entre las dos.
+    return row?.owner == owner;
   }
 
   Future<void> release(String name) async {
@@ -249,7 +249,9 @@ class CrossIsolateLock {
 }
 ```
 
-Volver a llamar a `tryAcquire` con el mismo dueño **renueva** el vencimiento: `SyncProcessor` lo hace antes de cada operación.
+Volver a llamar a `tryAcquire` con el mismo dueño **renueva** el vencimiento: `SyncProcessor` lo hace antes de cada operación y cada 30 s mientras envía. Por eso el lease sigue en 2 min aunque una operación pueda tardar 3 (intento, refresh y reintento): si el sistema mata al motor, el otro no queda bloqueado mucho tiempo.
+
+Como el mismo dueño renueva, el bloqueo **no excluye dentro de un motor**. Dos disparadores en la UI (encolar y volver la red) ganarían los dos, y el segundo devolvería a `PENDING` lo que el primero envía. Por eso `SyncProcessor.run()` es de un solo vuelo: comparte el `Future` en curso y, si llegó otra petición, da una vuelta más.
 
 El aviso a la UI usa `IsolateNameServer`, que es de todo el proceso y sí cruza motores. Si la app está cerrada no hay nadie escuchando, y no pasa nada:
 
@@ -259,41 +261,52 @@ class LocalChangeNotifier {
   static const _portName = 'atelier_ui_port';
 
   /// Se llama en `main()`, en el motor de la UI.
-  static void listenInUi(AppDatabase database) {
+  static void listenInUi(AppDatabase database, SessionManager session) {
     final port = ReceivePort();
     IsolateNameServer.removePortNameMapping(_portName);
     IsolateNameServer.registerPortWithName(port.sendPort, _portName);
-    port.listen((_) => database.notifyExternalChanges());
+    port.listen((_) => refresh(database, session));
   }
 
-  /// Se llama en el worker al terminar. Si la UI no está abierta, no hace nada.
+  /// Lo que otro motor pudo cambiar: filas y sesión. También se llama al volver a primer plano.
+  static void refresh(AppDatabase database, SessionManager session) {
+    database.notifyExternalChanges();
+    session.reload();
+  }
+
+  /// Se llama en el worker al terminar, también si falló.
   static void notifyUi() {
     IsolateNameServer.lookupPortByName(_portName)?.send(null);
   }
 }
 ```
 
+Avisar solo a Drift no basta: si el worker borra la sesión (refresh 401), `AppRoot` debe enterarse para volver al login.
+
 ### Algoritmo de `SyncProcessor`
 
 `SyncProcessor` no conoce Flutter ni `workmanager`, así se puede probar con Drift en memoria. Corre en dos lugares:
 
 ```text
-Primer plano (motor de la UI): al encolar, al recuperar red, al volver a la app.
+Primer plano (motor de la UI): al abrir, al encolar, al recuperar red, al volver a la app.
 Segundo plano (workmanager):   con red, cuando el sistema lo permita.
 
 1. Si no hay sesión → terminar (las operaciones quedan PENDING).
 2. tryAcquire(sync, 2 min). Si no se consigue, otro motor está sincronizando → terminar.
-3. Devolver a PENDING lo que quedó en SYNCING (solo quien tiene el bloqueo puede hacerlo).
+3. Renovar el token si venció (ensureFresh). Devolver a PENDING lo que quedó en SYNCING (solo quien tiene el bloqueo puede hacerlo).
 4. Tomar operaciones PENDING del usuario actual con next_attempt_at <= ahora, ordenadas por created_at.
    Saltar las que tienen depends_on sin completar.
-5. Por cada una: renovar el bloqueo → marcar SYNCING → llamar al endpoint → según la respuesta:
+5. Por cada una: comprobar que el usuario no cambió (si cambió, terminar) → renovar el bloqueo →
+   releer la fila (la UI pudo descartarla) → marcar SYNCING → llamar al endpoint → según la respuesta:
      2xx                         → borrar la operación (y su archivo local si era la última que lo usa)
      409/400/404/422 "ya aplicada" (tabla de tipos) → borrar
      401                         → AuthenticatedClient renueva; si falla, PENDING y detener
      otro 4xx (regla de negocio) → FAILED con code y message (no se reintenta solo)
      5xx, timeout, sin red       → PENDING, attempts+1, next_attempt_at = ahora + min(2^attempts, 60) min
+     error inesperado del handler → igual que 5xx: un payload dañado no debe bloquear la cola
 6. Si attempts llega a 8 → FAILED ("No se pudo sincronizar").
-7. Al terminar: liberar el bloqueo, refrescar las cachés afectadas y avisar a la UI.
+7. Al terminar: liberar el bloqueo, refrescar las cachés afectadas, reprogramar el worker para el próximo
+   intento FUTURO (nextAttemptAfter; contar los ya vencidos lo reprogramaría en bucle) y avisar a la UI.
 ```
 
 ### Worker y disparadores
@@ -305,55 +318,36 @@ Segundo plano (workmanager):   con red, cuando el sistema lo permita.
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     setupDependencies();
-    try {
-      await getIt<SyncProcessor>().run();
-      LocalChangeNotifier.notifyUi();
-      return true;
-    } catch (e) {
-      debugPrint('Sync falló: $e');
-      return false;
-    } finally {
-      await getIt<AppDatabase>().close(); // Si no, el motor deja el archivo abierto.
-      await getIt.reset();
-    }
+    return runSyncTask();
   });
 }
 
-// core/data/sync/sync_scheduler.dart
-class SyncScheduler {
-  static const uniqueName = 'atelier-sync';
-  static const periodicName = 'atelier-sync-periodic';
-  static const taskName = 'atelier.sync';
-
-  final Workmanager workmanager;
-
-  SyncScheduler({Workmanager? workmanager})
-    : workmanager = workmanager ?? Workmanager();
-
-  Future<void> requestSync() {
-    return workmanager.registerOneOffTask(
-      uniqueName,
-      taskName,
-      constraints: Constraints(networkType: NetworkType.connected),
-      existingWorkPolicy: ExistingWorkPolicy.keep,
+/// Corre la cola una vez y deja el motor limpio. Requiere `setupDependencies()`.
+Future<bool> runSyncTask() async {
+  try {
+    // iOS corta a los ~30 s sin avisar (H42): se procesa lo que alcance en menos de eso.
+    await getIt<SyncProcessor>().run(
+      budget: Platform.isIOS ? const Duration(seconds: 25) : null,
     );
-  }
-
-  Future<void> schedulePeriodic() {
-    return workmanager.registerPeriodicTask(
-      periodicName,
-      taskName,
-      frequency: const Duration(minutes: 15),
-      constraints: Constraints(networkType: NetworkType.connected),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-    );
+    return true;
+  } on Exception catch (e) {
+    debugPrint('Sync falló: $e');
+    return false;
+  } finally {
+    LocalChangeNotifier.notifyUi();
+    await getIt<AppDatabase>().close(); // Si no, el motor deja el archivo abierto.
+    await getIt.reset();
   }
 }
 ```
 
+`main()` llama a `Workmanager().initialize(callbackDispatcher)` antes de programar nada. `SyncScheduler` (`lib/core/data/sync/sync_scheduler.dart`) ofrece `requestSync` (trabajo único con red), `requestSyncAt` (reintento con `initialDelay`, con su propio nombre para no bloquear un envío inmediato) y `schedulePeriodic` (15 min).
+
+> **iOS, sin comprobar:** `workmanager_apple` 0.9.11 usa el `uniqueName` del periódico como id de `BGTaskScheduler`. Por eso `periodicName` es `atelier.sync`, el mismo `taskName` permitido en `Info.plist`; con otro nombre fallaría.
+
 | Disparador | Android | iOS |
 | --- | --- | --- |
-| Al encolar, al recuperar red (`ConnectivityObserver`), al volver a primer plano (`AppLifecycleListener`) | ✅ `SyncProcessor` directo en la UI | ✅ Igual |
+| Al abrir, al encolar, al recuperar red y al volver a primer plano (`SyncTriggers`, con `ConnectivityObserver` y `AppLifecycleListener`) | ✅ `SyncProcessor` directo en la UI | ✅ Igual |
 | Trabajo único con restricción de red | ✅ WorkManager | ⚠️ `BGTaskScheduler`: iOS decide cuándo, y lo corta a los ~30 s |
 | Periódico cada 15 min | ✅ WorkManager | ⚠️ Solo una pista: puede tardar horas o no ocurrir |
 | Reintento tras el backoff | ✅ `requestSyncAt` | ⚠️ Hay que programarlo a mano, sin garantía |
@@ -889,8 +883,12 @@ image_picker → comprimir (JPEG 1600 px, 80 %) → guardar en getApplicationSup
  → pending_uploads { storage_path = {tenantId}/work-orders/{woId}/{intake|tasks/{taskId}|proposals}/{uuid}.jpg }
  → pending_operations UPLOAD_FILE { uploadId } + ATTACH_… { imageUrl = publicUrlFor(storage_path) } (depends_on = UPLOAD_FILE)
  → La galería de la tarea muestra la foto local con un ícono de "pendiente"
- → Al subir: la foto ya está en Supabase → se borran el archivo local y la fila de pending_uploads; luego se envía ATTACH_…
+ → Al subir: la foto ya está en Supabase → se borran la fila de pending_uploads y el archivo local; luego se envía ATTACH_…
 ```
+
+- **El sync se dispara después de encolar las dos** (`dispatch: false` en la primera). Si `UPLOAD_FILE` fallara antes de existir `ATTACH_…`, la cascada no la vería y quedaría esperando para siempre a un padre en `FAILED`.
+- **Primero se borra la fila:** un corte entre ambos borrados deja un archivo huérfano. Al revés, el reintento no encontraría el archivo y fallaría una foto que sí se subió.
+- Un 401 de Supabase es de la anon key, no de la sesión: la operación pasa a `FAILED` y la cola sigue.
 
 La propuesta adicional (US14) puede **capturarse** sin red, pero su envío y la notificación al cliente ocurren al sincronizar.
 
@@ -937,3 +935,27 @@ Con R3 y R4, todas las operaciones de la cola se pueden reintentar sin duplicar 
 9. Limpieza al cerrar sesión (cachés) y aviso si hay operaciones pendientes.
 10. Tests: DAO en memoria (`NativeDatabase.memory()`), dos conexiones al mismo archivo (bloqueo y escritura concurrente), `SyncProcessor` con `MockClient` y respuestas simuladas (2xx, 409 "ya aplicada", 422, 5xx, timeout).
 11. En un dispositivo real: cerrar la app con operaciones en cola y comprobar que se envían, que la sesión no se cierra cuando el worker renueva el token y que la UI abierta ve lo que escribió el worker.
+
+**Cómo repetir el punto 11 sin tocar el backend real.** `tool/sync_mock_server.dart` simula el refresh con rotación y registra cada petición; `integration_probe/sync_probe_main.dart` es una app mínima con el mismo núcleo y un worker real. El emulador no llega al equipo por `10.0.2.2` si el firewall de Windows lo bloquea, por eso se usa `adb reverse`:
+
+```bash
+dart run tool/sync_mock_server.dart 8099
+```
+
+```bash
+adb reverse tcp:8099 tcp:8099
+```
+
+```bash
+flutter run -t integration_probe/sync_probe_main.dart --dart-define=API_BASE_URL=http://localhost:8099
+```
+
+Resultado en el emulador `Medium_Phone` (Android), paso 1:
+
+| Escenario | Evidencia en el registro del servidor |
+| --- | --- |
+| Con el proceso muerto, el sistema arranca otro motor y la operación llega | `authorized=true` desde `engine=worker`, con el proceso de la UI confirmado muerto |
+| El worker renueva y la UI sigue con sesión | Un 401, una rotación y reintento correcto; la UI abierta ve `pendientes=0` y el refresh nuevo |
+| Refresh simultáneo con solapamiento real (refresh de 8 s, 4 peticiones de la UI en 401 durante esos 8 s) | Una sola rotación y ningún reuso; la sesión se conserva |
+
+Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.
