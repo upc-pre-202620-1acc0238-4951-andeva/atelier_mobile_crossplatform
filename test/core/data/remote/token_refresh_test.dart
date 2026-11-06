@@ -290,4 +290,42 @@ void main() {
       expect(session.clears, 0);
     });
   });
+
+  group('un refresh en curso no pisa la sesión', () {
+    test('cerrar sesión durante el POST: no la resucita', () async {
+      final server = MockClient((_) async {
+        await session.clear();
+        return sessionResponse();
+      });
+
+      expect(await refresher(server).refreshIfStale('old-token'), isNull);
+      expect(session.saved, isNull);
+      expect(session.token, isNull);
+      expect(session.refreshToken, isNull);
+    });
+
+    test('otro login durante el POST: no lo pisa', () async {
+      final server = MockClient((_) async {
+        session.token = 'other-user-token';
+        session.refreshToken = 'other-user-refresh';
+        return sessionResponse();
+      });
+
+      expect(await refresher(server).refreshIfStale('old-token'), isNull);
+      expect(session.saved, isNull);
+      expect(session.token, 'other-user-token');
+      expect(session.refreshToken, 'other-user-refresh');
+    });
+
+    test('un 401 tardío no borra la sesión de otro login', () async {
+      final server = MockClient((_) async {
+        session.token = 'other-user-token';
+        return http.Response('{}', 401);
+      });
+
+      expect(await refresher(server).refreshIfStale('old-token'), isNull);
+      expect(session.clears, 0);
+      expect(session.token, 'other-user-token');
+    });
+  });
 }
