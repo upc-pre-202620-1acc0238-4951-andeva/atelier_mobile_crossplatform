@@ -133,6 +133,12 @@ void main() {
         DateTime.utc(2026, 10, 20, 5),
       );
     });
+
+    test('addDays cruza meses y años', () {
+      expect(BusinessTime.addDays('2026-10-24', -30), '2026-09-24');
+      expect(BusinessTime.addDays('2026-12-31', 1), '2027-01-01');
+      expect(BusinessTime.addDays('2028-03-01', -1), '2028-02-29');
+    });
   });
 
   group('Money', () {

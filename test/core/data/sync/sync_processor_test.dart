@@ -221,6 +221,23 @@ void main() {
     }
   });
 
+  test('lo encolado sobre un padre ya FAILED falla con su mensaje', () async {
+    final handler = respond(() async => throw _api(422));
+    await enqueue('a', createdAt: 1);
+    await processor.run();
+
+    await enqueue('b', dependsOn: 'a', createdAt: 2);
+    await enqueue('c', dependsOn: 'b', createdAt: 3);
+    await processor.run();
+
+    expect(handler.sent, ['a']);
+    for (final id in ['b', 'c']) {
+      final row = (await dao.findById(id))!;
+      expect(row.status, 'FAILED', reason: id);
+      expect(row.lastErrorMessage, 'Mensaje 422', reason: id);
+    }
+  });
+
   test('401 deja la operación pendiente y detiene la vuelta', () async {
     final handler = respond(() async => throw _api(401));
     await enqueue('a', createdAt: 1);
