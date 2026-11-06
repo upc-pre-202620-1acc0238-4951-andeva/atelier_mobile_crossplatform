@@ -8,7 +8,9 @@ import 'package:atelier_mobile_crossplatform/core/data/local/session_store.dart'
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/authenticated_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/branch/branch_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_api.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/auth_refresh_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/device_token_api.dart';
@@ -92,6 +94,9 @@ void setupDependencies() {
   );
   getIt.registerLazySingleton<EmployeeApi>(
     () => EmployeeApi(client: getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<BranchApi>(
+    () => BranchApi(client: getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<OperationHandlerRegistry>(
@@ -181,4 +186,6 @@ void setupDependencies() {
       strings: strings(),
     ),
   );
+
+  setupAuthDependencies();
 }

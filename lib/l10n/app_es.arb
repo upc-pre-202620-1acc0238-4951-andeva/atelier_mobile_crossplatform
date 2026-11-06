@@ -34,7 +34,11 @@
   },
   "placeholderSignedOut": "Inicio de sesión",
   "@placeholderSignedOut": {
-    "description": "Marcador hasta que exista el paso 2"
+    "description": "Marcador hasta que exista la pantalla de login"
+  },
+  "placeholderBranchChoice": "Elegir sede",
+  "@placeholderBranchChoice": {
+    "description": "Marcador hasta que exista la pantalla A5b"
   },
   "placeholderSignedIn": "Sesión iniciada",
   "@placeholderSignedIn": {

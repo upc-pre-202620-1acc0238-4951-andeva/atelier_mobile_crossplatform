@@ -142,11 +142,17 @@ abstract class AppLocalizations {
   /// **'Inventario'**
   String get notificationChannelInventory;
 
-  /// Marcador hasta que exista el paso 2
+  /// Marcador hasta que exista la pantalla de login
   ///
   /// In es, this message translates to:
   /// **'Inicio de sesión'**
   String get placeholderSignedOut;
+
+  /// Marcador hasta que exista la pantalla A5b
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir sede'**
+  String get placeholderBranchChoice;
 
   /// Marcador hasta que exista el paso 3
   ///
