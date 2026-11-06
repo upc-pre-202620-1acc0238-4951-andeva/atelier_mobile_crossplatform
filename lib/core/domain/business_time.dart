@@ -17,5 +17,12 @@ class BusinessTime {
     return DateTime.parse('${date}T00:00:00Z').subtract(limaOffset);
   }
 
+  /// Otro día de Lima (`yyyy-MM-dd`). En UTC, sin saltos de horario.
+  static String addDays(String date, int days) {
+    return DateTime.parse(
+      '${date}T00:00:00Z',
+    ).add(Duration(days: days)).toIso8601String().substring(0, 10);
+  }
+
   String today() => limaDate(now());
 }

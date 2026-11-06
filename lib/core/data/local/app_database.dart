@@ -6,8 +6,11 @@ import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_da
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_table.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_table.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/attendance_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/attendance_table.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/branch_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/branch_table.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_table.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_table.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/local/voucher_table.dart';
@@ -54,6 +57,9 @@ part 'app_database.g.dart';
     PendingUploadDao,
     CacheMetadataDao,
     CacheMaintenanceDao,
+    AttendanceDao,
+    ShiftDao,
+    BranchDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

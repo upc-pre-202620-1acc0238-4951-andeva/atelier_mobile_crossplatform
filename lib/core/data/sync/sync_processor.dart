@@ -130,7 +130,18 @@ class SyncProcessor {
       final latest = await dao.findById(operation.id);
       if (latest == null || latest.status != 'PENDING') continue;
       final parentId = operation.dependsOn;
-      if (parentId != null && await dao.findById(parentId) != null) continue;
+      final parent = parentId == null ? null : await dao.findById(parentId);
+      if (parent != null) {
+        // El padre pudo fallar antes de encolarse el hijo: la cascada de `_fail` no lo vio.
+        if (parent.status == 'FAILED') {
+          await _failWithDependents(
+            operation.id,
+            code: parent.lastErrorCode,
+            message: parent.lastErrorMessage,
+          );
+        }
+        continue;
+      }
       final handler = handlers.find(operation.type);
       if (handler == null) continue; // Sin handler: queda PENDING, no se pierde.
 
@@ -206,6 +217,23 @@ class SyncProcessor {
       code: code,
       message: message,
     );
+    await _failDependents(id, code: code, message: message);
+  }
+
+  Future<void> _failWithDependents(
+    String id, {
+    String? code,
+    String? message,
+  }) async {
+    await dao.failAsDependent(id, code: code, message: message);
+    await _failDependents(id, code: code, message: message);
+  }
+
+  Future<void> _failDependents(
+    String id, {
+    String? code,
+    String? message,
+  }) async {
     final pending = await dao.dependentIds(id);
     while (pending.isNotEmpty) {
       final dependent = pending.removeLast();

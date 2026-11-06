@@ -11,6 +11,8 @@ void main(List<String> args) async {
   var refresh = 'refresh-$generation';
   var refreshDelay = Duration.zero;
   var rotations = 0;
+  Map<String, Object?>? attendance;
+  var attendances = 0;
 
   void log(String line) {
     stdout.writeln('${DateTime.now().toIso8601String()} $line');
@@ -22,7 +24,15 @@ void main(List<String> args) async {
     'fullName': 'Andrés Sonda',
     'token': access,
     'tokenType': 'Bearer',
-    'permissions': ['operations:tasks:read'],
+    'permissions': [
+      'operations:tasks:read',
+      'iam:branches:read',
+      'hr:attendance:clock_in',
+      'hr:attendance:clock_out',
+      'hr:attendance:read_own',
+      'hr:shifts:read',
+      'hr:justifications:create',
+    ],
     'refreshToken': refresh,
     'membershipId': 'probe-membership',
     'activeTenant': {'id': 'probe-tenant', 'name': 'Taller', 'taxId': '1'},
@@ -37,6 +47,8 @@ void main(List<String> args) async {
     final body = await utf8.decoder.bind(request).join();
     final path = request.uri.path;
     request.response.headers.contentType = ContentType.json;
+    // Sin keep-alive: un socket abierto sobrevive a `adb reverse --remove` y el corte de red no sería real.
+    request.response.persistentConnection = false;
     var status = 200;
     var answer = '{}';
 
@@ -73,6 +85,73 @@ void main(List<String> args) async {
           status = 401;
           answer = '{"code":"UNAUTHORIZED","message":"Token vencido"}';
         }
+      case '/api/v1/hr/employees/membership/probe-membership':
+        answer = jsonEncode({
+          'id': 'probe-profile',
+          'branchId': 'probe-branch',
+          'assignedShiftId': 'probe-shift',
+        });
+      case '/api/v1/branches':
+        answer = jsonEncode([
+          {
+            'id': 'probe-branch',
+            'name': 'Sede Lima',
+            'latitude': -12.0464,
+            'longitude': -77.0428,
+            'geofenceRadiusMeters': 100,
+            'isActive': true,
+          },
+        ]);
+      case '/api/v1/hr/work-shifts/probe-shift':
+        answer = jsonEncode({
+          'id': 'probe-shift',
+          'name': 'Mañana',
+          'startTime': '08:00:00',
+          'endTime': '17:00:00',
+          'gracePeriodMinutes': 15,
+          'isActive': true,
+          'restDays': ['SUNDAY'],
+        });
+      case '/api/v1/hr/attendances/clock-in':
+        final sent = jsonDecode(body) as Map;
+        log('CLOCK_IN $body');
+        attendance = {
+          'id': 'probe-attendance-${++attendances}',
+          'branchId': sent['branchId'],
+          'membershipId': 'probe-membership',
+          'shiftId': sent['shiftId'],
+          'clockIn': sent['clockInTime'] ?? _nowUtc(),
+          'status': 'ON_TIME',
+          'latitude': sent['latitude'],
+          'longitude': sent['longitude'],
+          'distanceToBranchMeters': 5.0,
+        };
+        status = 201;
+        answer = jsonEncode(attendance);
+      case '/api/v1/hr/attendances/clock-out':
+        final sent = jsonDecode(body) as Map;
+        log('CLOCK_OUT $body abierta=${attendance?['id']}');
+        final open = attendance;
+        if (open == null || open['clockOut'] != null) {
+          status = 404;
+          answer = '{"code":"NOT_FOUND","message":"Sin jornada abierta"}';
+        } else {
+          open['clockOut'] = sent['clockOutTime'] ?? _nowUtc();
+          open['workedMinutes'] = 480;
+          answer = jsonEncode(open);
+        }
+      case '/api/v1/hr/attendances/employee/probe-membership/status-today':
+        log('STATUS_TODAY');
+        final open = attendance;
+        if (open == null || open['clockOut'] != null) {
+          status = 404;
+          answer = '{"code":"NOT_FOUND","message":"Sin jornada"}';
+        } else {
+          answer = jsonEncode(open);
+        }
+      case '/api/v1/hr/attendances/employee/probe-membership/history':
+        log('HISTORY ${request.uri.query}');
+        answer = jsonEncode([?attendance]);
       default:
         status = 404;
     }
@@ -83,6 +162,8 @@ void main(List<String> args) async {
     await request.response.close();
   });
 }
+
+String _nowUtc() => DateTime.now().toUtc().toIso8601String();
 
 String _jwt(int generation) {
   final exp = DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch ~/ 1000;
