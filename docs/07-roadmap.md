@@ -48,7 +48,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 2 | `auth` — sesión y acceso | ✅ Sin `presentation` · backend real, Google e iOS sin comprobar | `feature/auth` |
 | 3 | `main` — contenedor con pestañas por permiso | ✅ Sin `presentation` · push real e iOS sin comprobar | `feature/main` |
 | 4 | `attendance` — asistencia y turnos | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/attendance` |
-| 5 | `tasks` — tareas del mecánico | ⬜ Pendiente | |
+| 5 | `tasks` — tareas del mecánico | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/tasks`, `feature/tasks-closure` |
 | 6 | `reception` + `workorders` — recepción y órdenes | ⬜ Pendiente | |
 | 7 | `inventory` — catálogo, lotes y alertas | ⬜ Pendiente | |
 | 8 | `diagnostics` — OBD-II, DTC e informe IA | ⬜ Pendiente | |
@@ -198,22 +198,31 @@ Comprobado y sin comprobar:
 - **Caché:** `tasks` (+ `vehicles` y `bays` para placa y bahía). **Push:** `TASK_ASSIGNED`, `TASK_PAUSED`, `TASK_RESUMED`, `TASK_SUSPENSION_REQUESTED`, `TASK_PART_CHARGED`.
 - **Cuidado (H37, H38, H9):** corregir la cantidad de un repuesto no tiene efecto real y *Devolver* deja la línea visible, por errores del backend.
 
-**Hecho en el paso 5.** Los 18 casos de uso, contratos de dominio, validaciones de entrada (`TaskValidation`), `TaskApi`, `InventoryApi`, `VehicleApi`, `WorkBayApi`, `TaskDao`, `VehicleDao`, `BayDao`, `TaskRepositoryImpl`, `PreferencesPausedElapsedStore`, `TaskEvidenceCapture` y el handler `ATTACH_TASK_EVIDENCE` registrado en `setupTasksDependencies()`. Generación Drift actualizada con `TaskWithRefs`, ordenamiento SQLite ponderado (`IN_PROGRESS` > `ON_HOLD` > resto) y refresco enriquecido de bahías (TTL 30s) y vehículos (TTL 7 días). Cobertura completa con 48 tests unitarios y de integración para tareas (324 tests globales en verde, 0 advertencias en `flutter analyze`).
+**Hecho en el paso 5.** Los 18 casos de uso, `TaskValidation`, `TaskApi`, `InventoryApi`, `VehicleApi`, `WorkBayApi`, `TaskDao`, `VehicleDao`, `BayDao`, `TaskRepositoryImpl`, `PreferencesPausedElapsedStore`, `TaskEvidenceCapture` y el handler `ATTACH_TASK_EVIDENCE`, registrados en `setupTasksDependencies()`. Sin cambio de esquema. Núcleo extendido: `decimalFromJson`, `combineLatest2` (antes copiada en `attendance`), `PendingUploadDao.watchByTarget` y `PendingOperationDao.watchByTypeAndDedupePrefix`. `SessionManager.clear` borra también las claves `task_paused_elapsed_*`.
 
 Diferencias con Android, a propósito:
 
-- `TaskRepository` y casos de uso usan Clean Architecture + DDD estricto sin paquetes de terceros (`freezed`, `json_serializable`, `dio`, etc.). Todos los DTOs se serializan a mano.
-- Los casos de uso lanzan `ApiException` / `NetworkException` en lugar de retornar `Result` con sellos de error.
-- Las fotos de desmontaje y montaje usan la cola determinista `pending_operations` (`ATTACH_TASK_EVIDENCE` con dependencia explícita en `UPLOAD_FILE`), permitiendo previsualización inmediata y reintentos automáticos tras pérdida de señal.
-- Los tiempos de pausa del cronómetro se persisten localmente en `PausedElapsedStore` respaldado por `SharedPreferencesAsync`.
-- Al completar una tarea (`COMPLETED`), se retira inmediatamente de la caché local de tareas activas del mecánico para reflejar el estado del taller en tiempo real.
+- `refreshMyTasks` sin sesión no hace nada; Android devuelve un fallo. Sin sesión no existe `MainPage`, y lanzar solo daría un error sin `message` que mostrar.
+- `PendingEvidence.localFilePath` es absoluta y se resuelve al leer: `pending_uploads` guarda la ruta relativa porque en iOS la carpeta de la app cambia al actualizarla.
+- El tiempo en pausa va en `SharedPreferencesAsync`, y por eso lo borra `SessionManager.clear`; en Android lo hace el DataStore de la sesión.
+- El recorte de textos (`notes`, `missingItemDescription`, `query`) está en los casos de uso, no en el repositorio.
 
 Para quien haga la presentación (no está escrito, porque solo es de UI):
 
-- `TasksPage` muestra las tareas activas ordenadas por estado (`IN_PROGRESS` primero, luego `ON_HOLD`).
-- Al pulsar en una tarea, `TaskDetailPage` ofrece acciones contextuales según el estado actual (Iniciar, Pausar, Solicitar Suspensión, Reanudar, Finalizar, Adjuntar Evidencia, Agregar/Modificar Repuestos).
-- `SuggestLaborHoursUseCase` calcula automáticamente el tiempo sugerido para el cierre (`CompleteTask`), descontando el tiempo acumulado en pausa.
-- `ObservePendingEvidenceUseCase` alimenta la sección de fotos pendientes o en proceso de subida en la vista de detalle de la tarea.
+- **Permiso por acción:** lista y detalle con `tasksRead` · *Iniciar*, *Pausar* y *Reanudar* con `tasksTrackTime` · fotos con `tasksUploadPhotos` · *Solicitar suspensión* con `tasksHoldRequest` · *Aprobar*, *Rechazar* y *Levantar* con `tasksHoldValidate` (H6) · *Finalizar* con `tasksComplete` · *Imputar* con `tasksChargeParts` o `workOrdersUpdate` · *Corregir cantidad* y *Devolver* solo con `workOrdersUpdate`.
+- **Botón según el estado:** `Task.isPausedByMechanic` → *Reanudar* con `StartTaskUseCase`; `Task.isSuspended` → solo un supervisor, con `ResumeSuspendedTaskUseCase`; `Task.hasPendingSuspension` → a la espera del supervisor. El supervisor llega por el push `TASK_SUSPENSION_REQUESTED` y `GetTaskDetailUseCase`: no hay endpoint que liste las pendientes (H5).
+- **Cerrar:** precargar `SuggestLaborHoursUseCase` (`null` si nunca se inició) y que el mecánico la confirme. `Decimal`, no `double`, también en lo que escriba. La tarea cerrada sale de Mis tareas.
+- **Fotos:** `AttachTaskEvidenceUseCase` funciona siempre sin red; pedir antes el permiso de cámara. `ObservePendingEvidenceUseCase` da `localFilePath` para la miniatura, y tras subir, `imageUrl`. Una foto ya registrada desaparece de ahí: recargar con `GetTaskDetailUseCase`. `FAILED` se maneja en "Pendientes de sincronizar".
+- **Errores:** `InvalidTaskInputException(field)` antes de llamar; `ApiException` con su `message`, como el 422 de fin de turno anticipado (H7) y el 409 de stock; `NetworkException` en todo lo que es en línea (deshabilitar con `ConnectivityObserver`).
+- **Backend, se hereda:** tras *Corregir cantidad* mostrar lo que devuelve el caso de uso, que recarga la tarea, y que hoy la cantidad no cambia (H9, H38). *Devolver* deja la línea visible aunque el stock volvió: riesgo de devolverla dos veces (H37). El nombre llega como `Product <uuid>` (H36) y el servicio como «Service» (H39).
+- `plate` y `bayName` son `null` hasta cargarlos o sin permiso. Un `name` de repuesto puede llegar vacío.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en emulador** con worker y compresión reales contra el servidor simulado ([06](06-offline-sync.md) §8). La prueba destapó un error que las pruebas unitarias no veían, ya corregido: `localFilePath` era relativa y la miniatura no se habría podido abrir.
+- Sin comprobar: backend real (los casos H5–H9 y H36–H39 solo están simulados como los documenta [03](03-traceability.md)), Supabase real, cámara y `image_picker`, teléfono físico, los push `TASK_*` e iOS.
+
+Para los pasos 6, 7 y 9: `setupTasksDependencies` registra `VehicleDao`, `BayDao`, `VehicleApi`, `WorkBayApi` e `InventoryApi`. `get_it` lanza error si se registran dos veces: al crear esas features, reutilizarlos o moverlos a su `setup<Feature>Dependencies()`.
 
 ## Paso 6 — `reception` + `workorders`
 

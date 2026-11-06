@@ -1,13 +1,15 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:atelier_mobile_crossplatform/core/data/combine_latest.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_dao.dart';
@@ -61,6 +63,7 @@ class TaskRepositoryImpl implements TaskRepository {
   final PendingUploadDao pendingUploadDao;
   final TaskEvidenceCapture evidenceCapture;
   final SessionManager session;
+  final Future<Directory> Function() supportDirectory;
   final DateTime Function() now;
 
   TaskRepositoryImpl({
@@ -76,6 +79,7 @@ class TaskRepositoryImpl implements TaskRepository {
     required this.pendingUploadDao,
     required this.evidenceCapture,
     required this.session,
+    required this.supportDirectory,
     this.now = DateTime.now,
   });
 
@@ -177,7 +181,7 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<TaskDetail> complete(
     TaskId id,
-    double actualLaborHours, {
+    Decimal actualLaborHours, {
     String? notes,
   }) async {
     final dto = await taskApi.complete(
@@ -213,12 +217,17 @@ class TaskRepositoryImpl implements TaskRepository {
       TaskEvidenceCapture.target,
     );
 
-    return _combineLatest2(operationsStream, uploadsStream, (
-      operations,
-      uploads,
-    ) {
+    return combineLatest2(
+      operationsStream,
+      uploadsStream,
+      (operations, uploads) => (operations, uploads),
+    ).asyncMap((rows) async {
+      final (operations, uploads) = rows;
+      // `pending_uploads` guarda la ruta relativa: en iOS la carpeta cambia al actualizar la app.
+      final directory = await supportDirectory();
       final localFiles = {
-        for (final upload in uploads) upload.id: upload.localFilePath,
+        for (final upload in uploads)
+          upload.id: '${directory.path}/${upload.localFilePath}',
       };
       final prefix = TaskEvidenceCapture.evidencePrefix(id.value);
 
@@ -257,7 +266,7 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<TaskProduct> addPart(
     TaskId id,
     String productId,
-    double quantity,
+    Decimal quantity,
   ) async {
     final dto = await taskApi.addProduct(
       id.value,
@@ -270,7 +279,7 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<TaskDetail> updatePartQuantity(
     TaskId id,
     String productId,
-    double quantity,
+    Decimal quantity,
   ) async {
     await taskApi.updateProduct(
       id.value,
@@ -344,10 +353,10 @@ class TaskRepositoryImpl implements TaskRepository {
           .map(
             (dto) => BaysCompanion(
               id: Value(dto.id),
-              branchId: Value(dto.branchId),
-              name: Value(dto.name),
-              bayType: Value(dto.bayType),
-              status: Value(dto.status),
+              branchId: Value(dto.branchId ?? branchId),
+              name: Value(dto.name ?? ''),
+              bayType: Value(dto.bayType ?? ''),
+              status: Value(dto.status ?? ''),
               currentWorkOrderId: Value(dto.currentWorkOrderId),
               syncedAt: Value(timestamp),
             ),
@@ -361,8 +370,10 @@ class TaskRepositoryImpl implements TaskRepository {
           recordCount: Value(companions.length),
         ),
       );
-    } catch (_) {
-      // Ignorado si falla
+    } on ApiException {
+      // La bahía es un extra: se sigue con la caché. Un bug o un fallo de Drift sí suben.
+    } on NetworkException {
+      // Igual: sin red se sigue con la caché.
     }
   }
 
@@ -373,8 +384,8 @@ class TaskRepositoryImpl implements TaskRepository {
         id: Value(dto.id),
         plate: Value(dto.plate),
         vin: Value(dto.vin),
-        brand: Value(dto.brand),
-        model: Value(dto.model),
+        brand: Value(dto.brand ?? ''),
+        model: Value(dto.model ?? ''),
         year: Value(dto.year),
         engineType: Value(dto.engineType),
         currentOwnerId: Value(dto.currentOwnerId),
@@ -389,8 +400,10 @@ class TaskRepositoryImpl implements TaskRepository {
           recordCount: const Value(1),
         ),
       );
-    } catch (_) {
-      // Ignorado si falla
+    } on ApiException {
+      // La placa es un extra: se sigue con la caché. Un bug o un fallo de Drift sí suben.
+    } on NetworkException {
+      // Igual: sin red se sigue con la caché.
     }
   }
 
@@ -415,7 +428,7 @@ class TaskRepositoryImpl implements TaskRepository {
       mechanicId: row.task.mechanicId,
       status: TaskStatus.fromString(row.task.status),
       description: row.task.description,
-      estimatedHours: double.tryParse(row.task.estimatedHours ?? ''),
+      estimatedHours: Decimal.tryParse(row.task.estimatedHours ?? ''),
       holdReason: HoldReason.fromString(row.task.holdReason),
       missingItemDescription: row.task.missingItemDescription,
       pendingSuspensionReason: row.task.pendingSuspensionReason,
@@ -460,7 +473,7 @@ class TaskRepositoryImpl implements TaskRepository {
       id: dto.id,
       productId: dto.productId,
       productName: dto.productName,
-      quantity: dto.quantity ?? 0.0,
+      quantity: dto.quantity ?? Decimal.zero,
       unitPrice: _toMoney(dto.unitPrice, dto.currency),
       totalAmount: _toMoney(dto.totalAmount, dto.currency),
     );
@@ -478,11 +491,11 @@ class TaskRepositoryImpl implements TaskRepository {
   PartOption _toDomainPartOption(PartItemDto dto) {
     return PartOption(
       id: dto.id,
-      name: dto.name,
+      name: dto.name ?? '',
       sku: dto.sku,
       category: dto.category,
       basePrice: dto.basePrice,
-      totalStock: dto.totalStock ?? 0.0,
+      totalStock: dto.totalStock ?? Decimal.zero,
       unitOfMeasure: dto.unitOfMeasure,
     );
   }
@@ -507,60 +520,13 @@ class TaskRepositoryImpl implements TaskRepository {
     );
   }
 
-  Money? _toMoney(double? amount, String? currency) {
-    if (amount == null) return null;
-    final curr = currency ?? Money.pen;
-    if (curr != Money.pen && curr != Money.usd) return null;
-    return Money(
-      amount: Decimal.parse(amount.toStringAsFixed(2)),
-      currency: curr,
-    );
-  }
-
-  Stream<R> _combineLatest2<A, B, R>(
-    Stream<A> streamA,
-    Stream<B> streamB,
-    R Function(A a, B b) combiner,
-  ) {
-    late StreamController<R> controller;
-    A? lastA;
-    B? lastB;
-    bool hasA = false;
-    bool hasB = false;
-    StreamSubscription<A>? subA;
-    StreamSubscription<B>? subB;
-
-    void update() {
-      if (hasA && hasB && !controller.isClosed) {
-        controller.add(combiner(lastA as A, lastB as B));
-      }
+  /// `null` si falta el monto o la moneda, o si `Money` no los admite.
+  Money? _toMoney(Decimal? amount, String? currency) {
+    if (amount == null || currency == null) return null;
+    try {
+      return Money(amount: amount, currency: currency);
+    } on ArgumentError {
+      return null;
     }
-
-    controller = StreamController<R>(
-      onListen: () {
-        subA = streamA.listen(
-          (a) {
-            lastA = a;
-            hasA = true;
-            update();
-          },
-          onError: controller.addError,
-        );
-        subB = streamB.listen(
-          (b) {
-            lastB = b;
-            hasB = true;
-            update();
-          },
-          onError: controller.addError,
-        );
-      },
-      onCancel: () async {
-        await subA?.cancel();
-        await subB?.cancel();
-      },
-    );
-
-    return controller.stream;
   }
 }

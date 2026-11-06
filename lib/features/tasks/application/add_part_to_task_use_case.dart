@@ -3,6 +3,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart'
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_validation.dart';
+import 'package:decimal/decimal.dart';
 
 /// Imputar un repuesto con el precio de catálogo (US23 E1/E3, US35 E1). En línea.
 class AddPartToTaskUseCase {
@@ -10,7 +11,7 @@ class AddPartToTaskUseCase {
 
   const AddPartToTaskUseCase({required this.repository});
 
-  Future<TaskProduct> execute(TaskId id, String productId, double quantity) {
+  Future<TaskProduct> execute(TaskId id, String productId, Decimal quantity) {
     if (!TaskValidation.isQuantity(quantity)) {
       throw const InvalidTaskInputException('quantity');
     }

@@ -55,6 +55,9 @@ class SessionManager extends ChangeNotifier implements SessionStore {
     _aiDiagnosticsEnabled,
   };
 
+  /// Una clave por tarea: no caben en [_sessionKeys], pero tampoco deben sobrevivir a la sesión.
+  static const taskPausedElapsedPrefix = 'task_paused_elapsed_';
+
   final FlutterSecureStorage secure;
   final SharedPreferencesAsync preferences;
 
@@ -237,7 +240,10 @@ class SessionManager extends ChangeNotifier implements SessionStore {
   Future<void> clear() async {
     await secure.delete(key: _token);
     await secure.delete(key: _refreshToken);
-    await preferences.clear(allowList: _sessionKeys);
+    final taskKeys = (await preferences.getKeys()).where(
+      (key) => key.startsWith(taskPausedElapsedPrefix),
+    );
+    await preferences.clear(allowList: {..._sessionKeys, ...taskKeys});
     notifyListeners();
   }
 

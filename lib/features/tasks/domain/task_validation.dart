@@ -1,9 +1,11 @@
+import 'package:decimal/decimal.dart';
+
 class TaskValidation {
   static const notesMax = 1000;
   static const missingItemMax = 500;
   static const evidenceDescriptionMax = 500;
 
-  static bool isLaborHours(double value) => value >= 0;
+  static bool isLaborHours(Decimal value) => value >= Decimal.zero;
 
   static bool isNotes(String? value) =>
       value == null || value.trim().length <= notesMax;
@@ -14,5 +16,5 @@ class TaskValidation {
   static bool isEvidenceDescription(String value) =>
       value.length <= evidenceDescriptionMax;
 
-  static bool isQuantity(double value) => value > 0;
+  static bool isQuantity(Decimal value) => value > Decimal.zero;
 }

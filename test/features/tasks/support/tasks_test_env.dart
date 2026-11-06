@@ -105,7 +105,7 @@ Map<String, Object?> detailJson({
   String status = 'IN_PROGRESS',
   String description = 'Cambio de aceite y filtro',
   double price = 120.0,
-  String currency = 'PEN',
+  String? currency = 'PEN',
   String? holdReason,
   String? missingItemDescription,
   int totalPausedSeconds = 0,
@@ -143,22 +143,20 @@ Map<String, Object?> productJson({
   String id = 'tp1',
   String productId = 'p1',
   String name = 'Aceite Sintético 5W-30',
-  String? sku = 'ACE-5W30',
   double quantity = 4.0,
   double unitPrice = 35.0,
-  double subtotal = 140.0,
-  String? chargedAt = '2026-11-06T10:30:00.000Z',
+  double totalAmount = 140.0,
+  String? currency = 'PEN',
 }) {
   return {
     'id': id,
+    'taskId': 't1',
     'productId': productId,
     'productName': name,
-    'name': name,
-    'sku': sku,
     'quantity': quantity,
     'unitPrice': unitPrice,
-    'subtotal': subtotal,
-    'chargedAt': chargedAt,
+    'totalAmount': totalAmount,
+    'currency': currency,
   };
 }
 
@@ -320,6 +318,7 @@ class TasksTestEnv {
     pendingUploadDao: db.pendingUploadDao,
     evidenceCapture: evidenceCapture,
     session: session,
+    supportDirectory: () async => tempDir,
     now: () => clock,
   );
 

@@ -1,5 +1,6 @@
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/labor_time.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task.dart';
+import 'package:decimal/decimal.dart';
 
 /// Horas hombre para precargar al cerrar (US30 E1): desde `startedAt` menos lo pausado.
 class SuggestLaborHoursUseCase {
@@ -7,7 +8,7 @@ class SuggestLaborHoursUseCase {
 
   const SuggestLaborHoursUseCase({this.now = DateTime.now});
 
-  double? execute(Task task) {
+  Decimal? execute(Task task) {
     final startedAt = task.startedAt;
     if (startedAt == null) return null;
     return LaborTime.suggestedHours(startedAt, task.totalPausedSeconds, now());

@@ -20,7 +20,7 @@ class RequestSuspensionUseCase {
     }
     return repository.requestSuspension(
       id,
-      missingItemDescription,
+      missingItemDescription.trim(),
       inventoryItemId: inventoryItemId,
     );
   }

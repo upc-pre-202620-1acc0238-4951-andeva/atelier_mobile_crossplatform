@@ -7,6 +7,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
+import 'package:decimal/decimal.dart';
 
 abstract class TaskRepository {
   Stream<List<Task>> observeMyTasks();
@@ -35,7 +36,7 @@ abstract class TaskRepository {
 
   Future<TaskDetail> complete(
     TaskId id,
-    double actualLaborHours, {
+    Decimal actualLaborHours, {
     String? notes,
   });
 
@@ -50,12 +51,12 @@ abstract class TaskRepository {
 
   Future<List<PartOption>> searchParts(String query);
 
-  Future<TaskProduct> addPart(TaskId id, String productId, double quantity);
+  Future<TaskProduct> addPart(TaskId id, String productId, Decimal quantity);
 
   Future<TaskDetail> updatePartQuantity(
     TaskId id,
     String productId,
-    double quantity,
+    Decimal quantity,
   );
 
   Future<void> removePart(TaskId id, String productId);

@@ -1,5 +1,7 @@
+import 'package:atelier_mobile_crossplatform/core/data/remote/json_decimal.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/task_product_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_image_dto.dart';
+import 'package:decimal/decimal.dart';
 
 class WorkOrderTaskDto {
   final String id;
@@ -10,7 +12,7 @@ class WorkOrderTaskDto {
   final String? mechanicName;
   final String? status;
   final String? description;
-  final double? price;
+  final Decimal? price;
   final String? currency;
   final String? holdReason;
   final String? missingItemDescription;
@@ -54,7 +56,7 @@ class WorkOrderTaskDto {
       mechanicName: json['mechanicName'] as String?,
       status: json['status'] as String?,
       description: json['description'] as String?,
-      price: (json['price'] as num?)?.toDouble(),
+      price: decimalFromJson(json['price']),
       currency: json['currency'] as String?,
       holdReason: json['holdReason'] as String?,
       missingItemDescription: json['missingItemDescription'] as String?,
