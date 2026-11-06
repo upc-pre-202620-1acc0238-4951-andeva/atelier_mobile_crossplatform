@@ -198,6 +198,23 @@ Comprobado y sin comprobar:
 - **Caché:** `tasks` (+ `vehicles` y `bays` para placa y bahía). **Push:** `TASK_ASSIGNED`, `TASK_PAUSED`, `TASK_RESUMED`, `TASK_SUSPENSION_REQUESTED`, `TASK_PART_CHARGED`.
 - **Cuidado (H37, H38, H9):** corregir la cantidad de un repuesto no tiene efecto real y *Devolver* deja la línea visible, por errores del backend.
 
+**Hecho en el paso 5.** Los 18 casos de uso, contratos de dominio, validaciones de entrada (`TaskValidation`), `TaskApi`, `InventoryApi`, `VehicleApi`, `WorkBayApi`, `TaskDao`, `VehicleDao`, `BayDao`, `TaskRepositoryImpl`, `PreferencesPausedElapsedStore`, `TaskEvidenceCapture` y el handler `ATTACH_TASK_EVIDENCE` registrado en `setupTasksDependencies()`. Generación Drift actualizada con `TaskWithRefs`, ordenamiento SQLite ponderado (`IN_PROGRESS` > `ON_HOLD` > resto) y refresco enriquecido de bahías (TTL 30s) y vehículos (TTL 7 días). Cobertura completa con 48 tests unitarios y de integración para tareas (324 tests globales en verde, 0 advertencias en `flutter analyze`).
+
+Diferencias con Android, a propósito:
+
+- `TaskRepository` y casos de uso usan Clean Architecture + DDD estricto sin paquetes de terceros (`freezed`, `json_serializable`, `dio`, etc.). Todos los DTOs se serializan a mano.
+- Los casos de uso lanzan `ApiException` / `NetworkException` en lugar de retornar `Result` con sellos de error.
+- Las fotos de desmontaje y montaje usan la cola determinista `pending_operations` (`ATTACH_TASK_EVIDENCE` con dependencia explícita en `UPLOAD_FILE`), permitiendo previsualización inmediata y reintentos automáticos tras pérdida de señal.
+- Los tiempos de pausa del cronómetro se persisten localmente en `PausedElapsedStore` respaldado por `SharedPreferencesAsync`.
+- Al completar una tarea (`COMPLETED`), se retira inmediatamente de la caché local de tareas activas del mecánico para reflejar el estado del taller en tiempo real.
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- `TasksPage` muestra las tareas activas ordenadas por estado (`IN_PROGRESS` primero, luego `ON_HOLD`).
+- Al pulsar en una tarea, `TaskDetailPage` ofrece acciones contextuales según el estado actual (Iniciar, Pausar, Solicitar Suspensión, Reanudar, Finalizar, Adjuntar Evidencia, Agregar/Modificar Repuestos).
+- `SuggestLaborHoursUseCase` calcula automáticamente el tiempo sugerido para el cierre (`CompleteTask`), descontando el tiempo acumulado en pausa.
+- `ObservePendingEvidenceUseCase` alimenta la sección de fotos pendientes o en proceso de subida en la vista de detalle de la tarea.
+
 ## Paso 6 — `reception` + `workorders`
 
 - **Historias:** US11, US44, US12–US15, US22, US24, US25, US36, US33 E2, US35 E2 · **API:** [api/crm.md](api/crm.md), [api/operations.md](api/operations.md) · **Android:** `features/reception`, `features/workorders`

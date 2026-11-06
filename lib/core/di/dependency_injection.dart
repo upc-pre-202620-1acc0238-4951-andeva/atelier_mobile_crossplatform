@@ -7,12 +7,9 @@ import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dar
 import 'package:atelier_mobile_crossplatform/core/data/local/session_store.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/authenticated_client.dart';
-import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/branch/branch_api.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_api.dart';
-import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/di/attendance_dependencies.dart';
-import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
-import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/auth_refresh_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/device_token_api.dart';
@@ -33,6 +30,10 @@ import 'package:atelier_mobile_crossplatform/core/media/supabase_uploader.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/device_token_registrar.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_messaging_service.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/di/attendance_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/di/tasks_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -192,4 +193,5 @@ void setupDependencies() {
   setupAuthDependencies();
   setupMainDependencies();
   setupAttendanceDependencies();
+  setupTasksDependencies();
 }

@@ -1,0 +1,566 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
+import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/remote/work_bay_api.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_api.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/part_item_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/vehicle_api.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/hold_reason.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/pause_reason.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_evidence.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_repository.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/local/task_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/add_task_product_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/assigned_task_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/attach_task_evidence_payload.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/complete_task_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/hold_task_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/pause_task_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/task_api.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/task_product_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/update_task_product_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_image_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/repository/task_evidence_capture.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/sync/attach_task_evidence_handler.dart';
+import 'package:decimal/decimal.dart';
+import 'package:drift/drift.dart';
+
+class TaskRepositoryImpl implements TaskRepository {
+  static const scopeMyTasks = 'tasks:my';
+  static const baysTtlMillis = 30 * 1000; // 30s
+  static const vehiclesTtlMillis = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  final TaskApi taskApi;
+  final InventoryApi inventoryApi;
+  final VehicleApi vehicleApi;
+  final WorkBayApi bayApi;
+  final TaskDao taskDao;
+  final VehicleDao vehicleDao;
+  final BayDao bayDao;
+  final CacheMetadataDao cacheMetadataDao;
+  final PendingOperationDao pendingOperationDao;
+  final PendingUploadDao pendingUploadDao;
+  final TaskEvidenceCapture evidenceCapture;
+  final SessionManager session;
+  final DateTime Function() now;
+
+  TaskRepositoryImpl({
+    required this.taskApi,
+    required this.inventoryApi,
+    required this.vehicleApi,
+    required this.bayApi,
+    required this.taskDao,
+    required this.vehicleDao,
+    required this.bayDao,
+    required this.cacheMetadataDao,
+    required this.pendingOperationDao,
+    required this.pendingUploadDao,
+    required this.evidenceCapture,
+    required this.session,
+    this.now = DateTime.now,
+  });
+
+  @override
+  Stream<List<Task>> observeMyTasks() {
+    return taskDao.observeAll().map((rows) => rows.map(_toDomainTask).toList());
+  }
+
+  @override
+  Stream<Task?> observeTask(TaskId id) {
+    return taskDao.observeById(id.value).map(
+          (row) => row == null ? null : _toDomainTask(row),
+        );
+  }
+
+  @override
+  Future<void> refreshMyTasks() async {
+    final currentSession = await session.getSession();
+    if (currentSession == null ||
+        !currentSession.has(Permission.tasksRead)) {
+      return;
+    }
+    final timestamp = now().millisecondsSinceEpoch;
+    final dtos = await taskApi.getMyTasks();
+    final rows = dtos.map((dto) => _toTasksCompanion(dto, timestamp)).toList();
+    await taskDao.replaceMine(rows);
+    await cacheMetadataDao.upsert(
+      CacheMetadataCompanion(
+        scope: const Value(scopeMyTasks),
+        lastSyncedAt: Value(timestamp),
+        recordCount: Value(rows.length),
+      ),
+    );
+    await _enrich(rows, currentSession, timestamp);
+  }
+
+  @override
+  Future<TaskDetail> getDetail(TaskId id) async {
+    final dto = await taskApi.getTask(id.value);
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> start(TaskId id) async {
+    final dto = await taskApi.start(id.value);
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> pause(TaskId id, PauseReason reason) async {
+    final dto = await taskApi.pause(
+      id.value,
+      PauseTaskRequestDto(reason: reason.value),
+    );
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> requestSuspension(
+    TaskId id,
+    String missingItemDescription, {
+    String? inventoryItemId,
+  }) async {
+    final dto = await taskApi.requestHold(
+      id.value,
+      HoldTaskRequestDto(
+        missingItemDescription: missingItemDescription,
+        inventoryItemId: inventoryItemId,
+      ),
+    );
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> approveSuspension(TaskId id) async {
+    final dto = await taskApi.approveHold(id.value);
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> rejectSuspension(TaskId id) async {
+    final dto = await taskApi.rejectHold(id.value);
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> resume(TaskId id) async {
+    final dto = await taskApi.resume(id.value);
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<TaskDetail> complete(
+    TaskId id,
+    double actualLaborHours, {
+    String? notes,
+  }) async {
+    final dto = await taskApi.complete(
+      id.value,
+      CompleteTaskRequestDto(actualLaborHours: actualLaborHours, notes: notes),
+    );
+    await _saveIfMine(dto);
+    return _toDomainDetail(dto);
+  }
+
+  @override
+  Future<void> attachEvidence(
+    TaskId id,
+    String workOrderId,
+    File photo,
+    String description,
+  ) {
+    return evidenceCapture.capture(
+      taskId: id.value,
+      workOrderId: workOrderId,
+      photo: photo,
+      description: description,
+    );
+  }
+
+  @override
+  Stream<List<PendingEvidence>> observePendingEvidence(TaskId id) {
+    final operationsStream = pendingOperationDao.watchByTypeAndDedupePrefix(
+      AttachTaskEvidenceHandler.type,
+      TaskEvidenceCapture.evidencePrefix(id.value),
+    );
+    final uploadsStream = pendingUploadDao.watchByTarget(
+      TaskEvidenceCapture.target,
+    );
+
+    return _combineLatest2(operationsStream, uploadsStream, (
+      operations,
+      uploads,
+    ) {
+      final localFiles = {
+        for (final upload in uploads) upload.id: upload.localFilePath,
+      };
+      final prefix = TaskEvidenceCapture.evidencePrefix(id.value);
+
+      return operations.map((operation) {
+        final payload = AttachTaskEvidencePayload.fromJson(
+          jsonDecode(operation.payload) as Map<String, dynamic>,
+        );
+        final photoId = operation.dedupeKey.startsWith(prefix)
+            ? operation.dedupeKey.substring(prefix.length)
+            : '';
+        return PendingEvidence(
+          operationId: operation.id,
+          localFilePath: localFiles[photoId],
+          imageUrl: payload.imageUrl,
+          description: payload.description,
+          status: operation.status,
+          lastErrorMessage: operation.lastErrorMessage,
+          capturedAt: DateTime.fromMillisecondsSinceEpoch(
+            operation.createdAt,
+            isUtc: true,
+          ),
+        );
+      }).toList();
+    });
+  }
+
+  @override
+  Future<List<PartOption>> searchParts(String query) async {
+    final dtos = await inventoryApi.getItems(
+      search: query.isEmpty ? null : query,
+    );
+    return dtos.map(_toDomainPartOption).toList();
+  }
+
+  @override
+  Future<TaskProduct> addPart(
+    TaskId id,
+    String productId,
+    double quantity,
+  ) async {
+    final dto = await taskApi.addProduct(
+      id.value,
+      AddTaskProductRequestDto(productId: productId, quantity: quantity),
+    );
+    return _toDomainProduct(dto);
+  }
+
+  @override
+  Future<TaskDetail> updatePartQuantity(
+    TaskId id,
+    String productId,
+    double quantity,
+  ) async {
+    await taskApi.updateProduct(
+      id.value,
+      productId,
+      UpdateTaskProductRequestDto(quantity: quantity),
+    );
+    return getDetail(id);
+  }
+
+  @override
+  Future<void> removePart(TaskId id, String productId) {
+    return taskApi.removeProduct(id.value, productId);
+  }
+
+  Future<void> _saveIfMine(WorkOrderTaskDto dto) async {
+    if (dto.status == 'COMPLETED' || dto.status == 'CANCELLED') {
+      await taskDao.deleteById(dto.id);
+      return;
+    }
+    await taskDao.mergeDetail(
+      id: dto.id,
+      status: dto.status ?? '',
+      description: dto.description ?? '',
+      serviceName: dto.serviceName,
+      mechanicId: dto.mechanicId,
+      holdReason: dto.holdReason,
+      missingItemDescription: dto.missingItemDescription,
+      pendingSuspensionReason: dto.pendingSuspensionReason,
+      startedAt: DateTime.tryParse(dto.startedAt ?? '')?.millisecondsSinceEpoch,
+      totalPausedSeconds: dto.totalPausedSeconds ?? 0,
+      syncedAt: now().millisecondsSinceEpoch,
+    );
+  }
+
+  Future<void> _enrich(
+    List<TasksCompanion> rows,
+    Session currentSession,
+    int timestamp,
+  ) async {
+    if (currentSession.has(Permission.baysRead)) {
+      final branchIds = rows
+          .map((r) => r.branchId.value)
+          .whereType<String>()
+          .toSet();
+      for (final branchId in branchIds) {
+        if (await _isStale('bays:$branchId', baysTtlMillis, timestamp)) {
+          await _refreshBays(branchId, timestamp);
+        }
+      }
+    }
+    if (currentSession.has(Permission.vehiclesRead)) {
+      final vehicleIds = rows
+          .map((r) => r.vehicleId.value)
+          .toSet();
+      for (final vehicleId in vehicleIds) {
+        if (await _isStale(
+          'vehicles:$vehicleId',
+          vehiclesTtlMillis,
+          timestamp,
+        )) {
+          await _refreshVehicle(vehicleId, timestamp);
+        }
+      }
+    }
+  }
+
+  Future<void> _refreshBays(String branchId, int timestamp) async {
+    try {
+      final dtos = await bayApi.getBays(branchId);
+      final companions = dtos
+          .map(
+            (dto) => BaysCompanion(
+              id: Value(dto.id),
+              branchId: Value(dto.branchId),
+              name: Value(dto.name),
+              bayType: Value(dto.bayType),
+              status: Value(dto.status),
+              currentWorkOrderId: Value(dto.currentWorkOrderId),
+              syncedAt: Value(timestamp),
+            ),
+          )
+          .toList();
+      await bayDao.replaceBranch(branchId, companions);
+      await cacheMetadataDao.upsert(
+        CacheMetadataCompanion(
+          scope: Value('bays:$branchId'),
+          lastSyncedAt: Value(timestamp),
+          recordCount: Value(companions.length),
+        ),
+      );
+    } catch (_) {
+      // Ignorado si falla
+    }
+  }
+
+  Future<void> _refreshVehicle(String vehicleId, int timestamp) async {
+    try {
+      final dto = await vehicleApi.getVehicle(vehicleId);
+      final companion = VehiclesCompanion(
+        id: Value(dto.id),
+        plate: Value(dto.plate),
+        vin: Value(dto.vin),
+        brand: Value(dto.brand),
+        model: Value(dto.model),
+        year: Value(dto.year),
+        engineType: Value(dto.engineType),
+        currentOwnerId: Value(dto.currentOwnerId),
+        currentMileage: Value(dto.currentMileage),
+        syncedAt: Value(timestamp),
+      );
+      await vehicleDao.saveFromServer(companion);
+      await cacheMetadataDao.upsert(
+        CacheMetadataCompanion(
+          scope: Value('vehicles:$vehicleId'),
+          lastSyncedAt: Value(timestamp),
+          recordCount: const Value(1),
+        ),
+      );
+    } catch (_) {
+      // Ignorado si falla
+    }
+  }
+
+  Future<bool> _isStale(String scope, int ttlMillis, int timestamp) async {
+    final entry = await cacheMetadataDao.get(scope);
+    if (entry == null) return true;
+    return timestamp - entry.lastSyncedAt >= ttlMillis;
+  }
+
+  Task _toDomainTask(TaskWithRefs row) {
+    return Task(
+      id: TaskId(row.task.id),
+      workOrderId: row.task.workOrderId,
+      workOrderNumber: row.task.workOrderNumber,
+      workOrderStatus: row.task.workOrderStatus,
+      vehicleId: row.task.vehicleId,
+      plate: row.plate,
+      branchId: row.task.branchId,
+      bayId: row.task.bayId,
+      bayName: row.bayName,
+      serviceName: row.task.serviceName,
+      mechanicId: row.task.mechanicId,
+      status: TaskStatus.fromString(row.task.status),
+      description: row.task.description,
+      estimatedHours: double.tryParse(row.task.estimatedHours ?? ''),
+      holdReason: HoldReason.fromString(row.task.holdReason),
+      missingItemDescription: row.task.missingItemDescription,
+      pendingSuspensionReason: row.task.pendingSuspensionReason,
+      startedAt: row.task.startedAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              row.task.startedAt!,
+              isUtc: true,
+            )
+          : null,
+      totalPausedSeconds: row.task.totalPausedSeconds,
+    );
+  }
+
+  TaskDetail _toDomainDetail(WorkOrderTaskDto dto) {
+    return TaskDetail(
+      id: TaskId(dto.id),
+      workOrderId: dto.workOrderId,
+      serviceId: dto.serviceId,
+      serviceName: dto.serviceName,
+      mechanicId: dto.mechanicId,
+      mechanicName: dto.mechanicName,
+      status: TaskStatus.fromString(dto.status),
+      description: dto.description ?? '',
+      price: _toMoney(dto.price, dto.currency),
+      currency: dto.currency,
+      holdReason: HoldReason.fromString(dto.holdReason),
+      missingItemDescription: dto.missingItemDescription,
+      totalPausedSeconds: dto.totalPausedSeconds ?? 0,
+      startedAt: DateTime.tryParse(dto.startedAt ?? '')?.toUtc(),
+      completedAt: DateTime.tryParse(dto.completedAt ?? '')?.toUtc(),
+      pendingSuspensionReason: dto.pendingSuspensionReason,
+      pendingSuspensionRequestedAt:
+          DateTime.tryParse(dto.pendingSuspensionRequestedAt ?? '')?.toUtc(),
+      products: (dto.products ?? []).map(_toDomainProduct).toList(),
+      evidenceImages:
+          (dto.evidenceImages ?? []).map(_toDomainEvidence).toList(),
+    );
+  }
+
+  TaskProduct _toDomainProduct(TaskProductDto dto) {
+    return TaskProduct(
+      id: dto.id,
+      productId: dto.productId,
+      productName: dto.productName,
+      quantity: dto.quantity ?? 0.0,
+      unitPrice: _toMoney(dto.unitPrice, dto.currency),
+      totalAmount: _toMoney(dto.totalAmount, dto.currency),
+    );
+  }
+
+  TaskEvidence _toDomainEvidence(WorkOrderTaskImageDto dto) {
+    return TaskEvidence(
+      id: dto.id,
+      imageUrl: dto.imageUrl,
+      description: dto.description,
+      uploadedAt: DateTime.tryParse(dto.uploadedAt ?? '')?.toUtc(),
+    );
+  }
+
+  PartOption _toDomainPartOption(PartItemDto dto) {
+    return PartOption(
+      id: dto.id,
+      name: dto.name,
+      sku: dto.sku,
+      category: dto.category,
+      basePrice: dto.basePrice,
+      totalStock: dto.totalStock ?? 0.0,
+      unitOfMeasure: dto.unitOfMeasure,
+    );
+  }
+
+  TasksCompanion _toTasksCompanion(AssignedTaskDto dto, int timestamp) {
+    return TasksCompanion(
+      id: Value(dto.taskId),
+      workOrderId: Value(dto.workOrderId),
+      workOrderNumber: Value(dto.workOrderNumber),
+      workOrderStatus: Value(dto.workOrderStatus),
+      vehicleId: Value(dto.vehicleId),
+      branchId: Value(dto.branchId),
+      bayId: Value(dto.bayId),
+      status: Value(dto.status ?? 'ASSIGNED'),
+      description: Value(dto.description ?? ''),
+      estimatedHours: Value(dto.estimatedHours?.toString()),
+      startedAt: Value(
+        DateTime.tryParse(dto.startedAt ?? '')?.millisecondsSinceEpoch,
+      ),
+      totalPausedSeconds: Value(dto.totalPausedSeconds ?? 0),
+      syncedAt: Value(timestamp),
+    );
+  }
+
+  Money? _toMoney(double? amount, String? currency) {
+    if (amount == null) return null;
+    final curr = currency ?? Money.pen;
+    if (curr != Money.pen && curr != Money.usd) return null;
+    return Money(
+      amount: Decimal.parse(amount.toStringAsFixed(2)),
+      currency: curr,
+    );
+  }
+
+  Stream<R> _combineLatest2<A, B, R>(
+    Stream<A> streamA,
+    Stream<B> streamB,
+    R Function(A a, B b) combiner,
+  ) {
+    late StreamController<R> controller;
+    A? lastA;
+    B? lastB;
+    bool hasA = false;
+    bool hasB = false;
+    StreamSubscription<A>? subA;
+    StreamSubscription<B>? subB;
+
+    void update() {
+      if (hasA && hasB && !controller.isClosed) {
+        controller.add(combiner(lastA as A, lastB as B));
+      }
+    }
+
+    controller = StreamController<R>(
+      onListen: () {
+        subA = streamA.listen(
+          (a) {
+            lastA = a;
+            hasA = true;
+            update();
+          },
+          onError: controller.addError,
+        );
+        subB = streamB.listen(
+          (b) {
+            lastB = b;
+            hasB = true;
+            update();
+          },
+          onError: controller.addError,
+        );
+      },
+      onCancel: () async {
+        await subA?.cancel();
+        await subB?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+}
