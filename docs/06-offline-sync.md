@@ -358,7 +358,7 @@ Future<bool> runSyncTask() async {
 
 - **Mostrar siempre lo pendiente.** Un ícono en la barra superior con el número de operaciones `PENDING`/`FAILED` y una pantalla "Pendientes de sincronizar" con el `message` del backend y las acciones *Reintentar* y *Descartar*.
 - **Cambio de usuario.** La cola es por `user_id`: al cerrar sesión con operaciones pendientes, avisar ("Tienes 3 marcaciones sin enviar"). Si se confirma, se conservan y se envían cuando ese mismo usuario vuelva a entrar. Nunca se envían con el token de otro usuario.
-- **Sesión vencida sin red.** Si el refresh token (30 días) vence con operaciones pendientes, el login vuelve a mostrar el aviso; tras entrar, se envían.
+- **Sesión vencida sin red.** Si el refresh token (30 días) vence con operaciones pendientes, tras entrar, se envían. El login no muestra un aviso: sin sesión ya no se sabe de quién son y `GetPendingOperationCountUseCase` devuelve 0, igual que en Android.
 - **Hora del dispositivo.** Se guarda en UTC (`Instant`) al capturar. Si el reloj del teléfono está desajustado más de 2 min hacia el futuro, el backend rechaza la marcación (400): mostrar "Revisa la hora de tu teléfono".
 - **Marcaciones viejas.** Una marcación de ingreso con más de 12 h no se acepta (400): el colaborador debe enviar un descargo.
 
@@ -853,6 +853,7 @@ Reemplaza `auth_session` del informe. `token` y `refresh_token` van en `flutter_
 | `membership_id` | sesión | Lo piden los endpoints propios de HR |
 | `permissions` | sesión (`List<String>`, convertida a `Set`) | Incluye `ROLE_*` |
 | `branch_id`, `shift_id` | `GET /hr/employees/membership/{membershipId}` | Sede y turno asignados |
+| `selected_branch_id`, `branch_choice_pending` | Elección de sede (H33) | Sede elegida a mano y marca para ofrecerla. La sede asignada siempre las reemplaza |
 | `plan_tier`, `plan_status`, `plan_access_granted`, `iot_telemetry_enabled`, `ai_diagnostics_enabled` | `plan` de la sesión | Ocultar diagnóstico OBD-II e informe IA si el plan no los incluye; aviso si `accessGranted` es falso. Se actualiza en cada `refresh` |
 
 No se guarda avatar (el backend no lo tiene) ni el radio de geocerca (está en `branches`).

@@ -100,6 +100,78 @@ void main() {
       expect(session.shiftId, isNull);
     });
 
+    group('elegir sede (H33)', () {
+      late SessionManager session;
+
+      setUp(() async {
+        session = SessionManager();
+        await session.save(_user());
+      });
+
+      test('pendiente: pide elegir hasta tener sede', () async {
+        await session.setBranchChoicePending(true);
+        expect((await session.getSession())!.needsBranchChoice, isTrue);
+
+        await session.selectBranch('elegida');
+
+        final chosen = await session.getSession();
+        expect(chosen!.branchId, 'elegida');
+        expect(chosen.needsBranchChoice, isFalse);
+      });
+
+      test('"elegir después" entra sin sede y no vuelve a pedirla', () async {
+        await session.setBranchChoicePending(true);
+
+        await session.dismissBranchChoice();
+
+        final current = await session.getSession();
+        expect(current!.branchId, isNull);
+        expect(current.needsBranchChoice, isFalse);
+      });
+
+      test('la asignada reemplaza a la elegida y quita la marca', () async {
+        await session.setBranchChoicePending(true);
+        await session.selectBranch('elegida');
+
+        await session.updateAssignment('asignada', 's1');
+        expect((await session.getSession())!.branchId, 'asignada');
+
+        await session.updateAssignment(null, null);
+        expect((await session.getSession())!.branchId, isNull);
+      });
+
+      test('un perfil sin sede (404) conserva la elegida', () async {
+        await session.selectBranch('elegida');
+
+        await session.updateAssignment(null, null);
+
+        expect((await session.getSession())!.branchId, 'elegida');
+      });
+
+      test('cada cambio avisa, para que AppRoot cambie de pantalla', () async {
+        var notifications = 0;
+        session.addListener(() => notifications++);
+
+        await session.setBranchChoicePending(true);
+        await session.selectBranch('elegida');
+        await session.dismissBranchChoice();
+
+        expect(notifications, 3);
+      });
+
+      test('clear borra sede elegida y marca', () async {
+        await session.selectBranch('elegida');
+        await session.setBranchChoicePending(true);
+
+        await session.clear();
+        await session.save(_user());
+
+        final current = await session.getSession();
+        expect(current!.branchId, isNull);
+        expect(current.needsBranchChoice, isFalse);
+      });
+    });
+
     test('clear borra todo y avisa', () async {
       final manager = SessionManager();
       await manager.save(_user());

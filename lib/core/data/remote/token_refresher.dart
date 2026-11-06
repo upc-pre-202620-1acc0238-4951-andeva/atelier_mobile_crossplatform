@@ -89,6 +89,12 @@ class TokenRefresher {
       return null; // Sin red: se conserva la sesión.
     }
 
+    // Bajo el bloqueo nadie más renueva: si cambió, se cerró sesión o entró otro usuario durante el
+    // POST. Guardar resucitaría o pisaría la sesión, y un 401 (refresh ya revocado) borraría la nueva.
+    // shortcut: queda una ventana de milisegundos entre esta lectura y el save, y el refresh
+    // rotado de ese caso vence solo a los 30 días; cerrarla exigiría que el sign-out esperara el bloqueo.
+    if (await session.getAuthToken() != current) return null;
+
     if (response.statusCode == 200) {
       // Completa, no solo los tokens: `plan` y permisos se actualizan en cada refresh (06 §5).
       final AuthenticatedUserDto user;

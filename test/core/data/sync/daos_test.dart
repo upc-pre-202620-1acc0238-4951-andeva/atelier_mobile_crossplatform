@@ -51,6 +51,17 @@ void main() {
     expect(batch.map((e) => e.id), ['early', 'late']);
   });
 
+  test('los contadores cuentan PENDING y FAILED, solo del usuario', () async {
+    await dao.enqueue(operation('pending'));
+    await dao.enqueue(operation('failed'));
+    await dao.markFailed('failed', attempts: 1, code: 'X', message: 'x');
+    await dao.enqueue(operation('syncing'));
+    await dao.markSyncing('syncing');
+    await dao.enqueue(operation('other', userId: 'u2'));
+
+    expect(await dao.watchPendingCount('u1').first, 2);
+  });
+
   test('resetSyncing solo afecta al usuario indicado', () async {
     await dao.enqueue(operation('mine'));
     await dao.enqueue(operation('other', userId: 'u2'));
