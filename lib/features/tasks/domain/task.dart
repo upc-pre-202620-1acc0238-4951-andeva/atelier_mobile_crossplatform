@@ -1,6 +1,7 @@
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/hold_reason.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
+import 'package:decimal/decimal.dart';
 
 class Task {
   final TaskId id;
@@ -16,7 +17,7 @@ class Task {
   final String? mechanicId;
   final TaskStatus? status;
   final String description;
-  final double? estimatedHours;
+  final Decimal? estimatedHours;
   final HoldReason? holdReason;
   final String? missingItemDescription;
   final String? pendingSuspensionReason;
