@@ -218,6 +218,7 @@ lib/
 │   │   │   ├── pdf_downloader.dart    # PDFs → cacheDir/pdfs (04 §8)
 │   │   │   ├── public_endpoints.dart  # Rutas sin token
 │   │   │   ├── token_refresher.dart   # Un solo refresh aunque haya varios 401
+│   │   │   ├── branch/                # BranchApi: lo usan auth y attendance
 │   │   │   ├── employee/              # EmployeeApi: lo usan auth, attendance y workorders
 │   │   │   └── session/               # AuthRefreshApi, DeviceTokenApi y sus DTOs
 │   │   └── sync/
@@ -652,6 +653,7 @@ El refresh **rota** el `refreshToken` ([api/README.md](api/README.md) §2): un s
 - Espera el bloqueo hasta cubrir su lease (90 s), no 10 s: con Render en frío el otro motor puede tardar 60 s, y rendirse antes devolvería un 401 sin necesidad.
 - Con un 200 guarda la **respuesta completa** (`save(dto)`): el plan y los permisos también se actualizan en cada refresh. Decodifica con `utf8.decode(bodyBytes)`, y un 200 ilegible no cierra la sesión.
 - Solo un 401 del refresh cierra la sesión. Sin red, o con un 5xx, la sesión se conserva y se reintenta luego.
+- Antes de usar la respuesta comprueba que el token siga siendo el del inicio: si no, se cerró sesión o entró otro usuario durante el `POST`, y se descarta para no resucitar, pisar ni borrar la sesión. El cierre de sesión no espera el bloqueo.
 
 `lib/core/data/local/session_manager.dart` guarda la sesión (claves en [06](06-offline-sync.md) §5). Sus reglas:
 
@@ -659,7 +661,7 @@ El refresh **rota** el `refreshToken` ([api/README.md](api/README.md) §2): un s
 - **`clear` usa una lista de claves y no borra `installed`:** si la borrara, el siguiente arranque ejecutaría `clearIfReinstalled` y cerraría la sesión ya renovada.
 - **`reload()`** avisa a los oyentes cuando otro motor cambió la sesión. No guarda nada en memoria.
 - **Keychain con `first_unlock`:** el worker debe poder leerlo con el teléfono bloqueado.
-- `Session.needsBranchChoice` y sus claves (H33) llegan en el paso 2, que es quien las usa.
+- `Session.needsBranchChoice` (H33): sin perfil laboral y sin sede. Al iniciar sesión se escriben sede y marca **antes** de `save`, que es lo que hace visible la sesión: `AppRoot` la ve completa en su primera lectura.
 
 - Se usa `SharedPreferencesAsync`, no `SharedPreferences`: esta última guarda una copia en memoria y un motor no vería lo que escribió el otro.
 - `AppRoot` escucha este `ChangeNotifier`: al borrarse la sesión vuelve al login solo (§5.5).
@@ -1040,7 +1042,7 @@ El profesor cambia de flujo con `pushReplacement` al tocar un botón. Atelier ne
 
 `lib/navigation/app_root.dart` es un `StatefulWidget` que escucha `SessionManager` y relee **solo al recibir el aviso**. Un `Future` creado en `build` volvería al spinner con cualquier reconstrucción. Mientras relee mantiene la pantalla actual, y de dos lecturas seguidas vale la más reciente.
 
-Hasta los pasos 2 y 3 muestra marcadores sin estilo en lugar de `LoginPage` y `MainPage`. El enrutado por `needsBranchChoice` llega con el paso 2.
+Hasta que se construya la capa de presentación muestra marcadores sin estilo en lugar de `LoginPage`, la pantalla de elegir sede (cuando `needsBranchChoice`) y `MainPage`.
 
 Las pestañas salen de la sesión. Con `IndexedStack`, cada pestaña conserva su estado y su `Navigator`; el `MainPage` del profesor las reconstruye al cambiar, porque ahí el ViewModel es un singleton.
 
