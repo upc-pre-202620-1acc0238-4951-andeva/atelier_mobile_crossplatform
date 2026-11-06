@@ -67,6 +67,31 @@ void main() {
     expect(find.text('Sesión iniciada'), findsOneWidget);
   });
 
+  testWidgets('sin perfil laboral muestra elegir sede, y luego la app', (
+    tester,
+  ) async {
+    session.current = const Session(
+      userId: 'u1',
+      email: 'm@taller.pe',
+      fullName: 'Andrés',
+      tenantId: 't1',
+      tenantName: 'Taller',
+      membershipId: 'm1',
+      permissions: {},
+      plan: null,
+      needsBranchChoice: true,
+    );
+
+    await tester.pumpWidget(MainApp(session: session));
+    await tester.pumpAndSettle();
+    expect(find.text('Elegir sede'), findsOneWidget);
+
+    session.current = _session;
+    session.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(find.text('Sesión iniciada'), findsOneWidget);
+  });
+
   testWidgets('si otro motor borra la sesión vuelve al login', (tester) async {
     session.current = _session;
     await tester.pumpWidget(MainApp(session: session));

@@ -53,7 +53,7 @@ class AppConfig {
 | `API_BASE_URL` | URL del servicio web en Render | `ApiClient` |
 | `GOOGLE_WEB_CLIENT_ID` | Google Cloud Console → Credenciales → cliente OAuth **Web** (el mismo que el backend acepta en `GOOGLE_CLIENT_ID`) | `serverClientId` de `google_sign_in` |
 | Cliente OAuth **Android** | Google Cloud Console → cliente Android con el package `com.andeva.atelier.mobile` y el SHA-1 de la llave debug/release | Necesario para que Google entregue el `idToken`. No se configura en el backend: el `aud` es el **Web client ID** |
-| `GOOGLE_IOS_CLIENT_ID` | Google Cloud Console → cliente **iOS** con el bundle id | `clientId` de `google_sign_in` en iOS, más el *URL scheme* invertido en `Info.plist` |
+| `GOOGLE_IOS_CLIENT_ID` | Google Cloud Console → cliente **iOS** con el bundle id | `clientId` de `google_sign_in` en iOS, más el *URL scheme* invertido en `Info.plist`. **Falta agregarlo** (hace falta el client ID real) y Google en iOS está **sin comprobar**. Sin este valor, `GoogleSignInUseCase` responde `notConfigured` |
 | `android/app/google-services.json` | Firebase Console → proyecto `atelier-platform-ee4f5` → app Android | FCM. **No se versiona** |
 | `ios/Runner/GoogleService-Info.plist` | El mismo proyecto → app iOS (hay que registrarla) | FCM. **No se versiona** |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | Supabase → Project Settings → API | Subida directa de fotos |
@@ -121,7 +121,7 @@ ios/Runner/GoogleService-Info.plist
 
 ## 2. Notificaciones push (FCM)
 
-1. Al iniciar sesión: pedir permiso, obtener el token con `FirebaseMessaging.instance.getToken()` y enviarlo con `PUT /api/v1/users/me/device-token { "fcmToken": "…" }`.
+1. Al iniciar sesión: obtener el token con `FirebaseMessaging.instance.getToken()` y enviarlo con `PUT /api/v1/users/me/device-token { "fcmToken": "…" }`. Después, la UI explica y pide el permiso (`RequestNotificationPermissionUseCase`, con `permission_handler`), que vuelve a registrar el token: en iOS `getToken` falla sin APNs. **iOS sin comprobar:** `permission_handler` activa cada permiso con macros que el proyecto, sin `Podfile`, aún no define.
 2. En `FirebaseMessaging.instance.onTokenRefresh`: reenviarlo si hay sesión.
 3. Al cerrar sesión: `PUT /api/v1/users/me/device-token { "fcmToken": null }` y luego `POST /api/v1/auth/sign-out`.
 

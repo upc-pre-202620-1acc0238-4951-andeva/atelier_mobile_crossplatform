@@ -58,16 +58,18 @@ class _AppRootState extends State<AppRoot> {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    // shortcut: marcadores sin estilo; los pasos 2 y 3 ponen el login y MainPage.
+    final session = _current;
+    // shortcut: marcadores sin estilo, hasta que se construya la capa de presentación (07, regla 7).
     return Scaffold(
       body: Center(
         child: !_loaded
             ? const CircularProgressIndicator()
-            : Text(
-                _current == null
-                    ? strings.placeholderSignedOut
-                    : strings.placeholderSignedIn,
-              ),
+            : Text(switch (session) {
+                null => strings.placeholderSignedOut,
+                Session(needsBranchChoice: true) =>
+                  strings.placeholderBranchChoice,
+                _ => strings.placeholderSignedIn,
+              }),
       ),
     );
   }

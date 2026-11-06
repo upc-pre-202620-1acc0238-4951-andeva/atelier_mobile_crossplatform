@@ -45,7 +45,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | --- | --- | --- | --- |
 | 0 | Configuración general (`pubspec`, identificador, plataformas) | ✅ Android · iOS sin comprobar | `feature/foundations` |
 | 1 | Núcleo `core/` | ✅ Android en emulador · iOS y teléfono físico sin comprobar | `feature/core` |
-| 2 | `auth` — sesión y acceso | ⬜ Pendiente | |
+| 2 | `auth` — sesión y acceso | ✅ Sin `presentation` · backend real, Google e iOS sin comprobar | `feature/auth` |
 | 3 | `main` — contenedor con pestañas por permiso | ⬜ Pendiente | |
 | 4 | `attendance` — asistencia y turnos | ⬜ Pendiente | |
 | 5 | `tasks` — tareas del mecánico | ⬜ Pendiente | |
@@ -112,6 +112,23 @@ Base que usan todas las features. Detalle en [05](05-flutter-architecture.md) §
 - **Errores clave:** 401 credenciales · `code = EMAIL_NOT_VERIFIED` (403) → pantalla OTP · invitación: 404 inexistente/revocada, 409 ya aceptada o membresía activa, 410 vencida.
 - **Decisiones ya tomadas en Android:** aceptar la invitación devuelve la sesión, así que A3 no pasa por A4 · el enlace de invitación se pega a mano (H1) · el alta de taller (`POST /auth/sign-up`) queda fuera · solo elige sede quien entra sin perfil laboral (H33).
 - **Sin red:** todo es en línea.
+
+**Hecho en el paso 2.** Núcleo extendido: `Session.needsBranchChoice`, `SessionManager.setBranchChoicePending` / `selectBranch` / `dismissBranchChoice`, `BranchApi` (lo reutiliza `attendance`) y `NotificationPermissionRequester`. Caso de uso añadido a la lista: `RequestNotificationPermissionUseCase`.
+
+Diferencias con Android, a propósito:
+
+- `ApiClient` lanza donde Android devuelve `Result`: los fallos de red del token FCM y de `sign-out` se capturan para que nunca impidan entrar o salir.
+- Al salir, `refreshToken` se lee **después** del `PUT` del token FCM, porque ese `PUT` puede rotarlo.
+- Sede y marca se escriben **antes** de `save`, y tras entrar se dispara la cola (`runDetached`).
+- `GoogleSignInUseCase.execute()` pide el `idToken` y entra: no necesita una Activity. Devuelve el resultado de Google (`GoogleSignInOutcome`); los errores del backend suben como excepción.
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- `code == emailNotVerifiedCode` (`auth/domain/auth_errors.dart`) → A4. Al verificar, volver al login con el correo precargado y un aviso.
+- A3: 404 y 410 → pantalla de invitación vencida o inexistente; `InvalidInvitationException` → igual. Exige además una mayúscula y confirmar la contraseña, como Android. Muestra el rol: `validate` no devuelve la fecha de vencimiento.
+- A4: reenvío bloqueado 60 s; "Vence en 15:00" solo tras un reenvío hecho en esa pantalla.
+- Permiso de notificaciones: explicar primero y llamar a `RequestNotificationPermissionUseCase` ([04](04-mobile-integration.md) §2).
+- Sin comprobar: login contra el backend real (`integration_probe/auth_probe_main.dart`, necesita una cuenta de prueba), Google real (cliente OAuth con el SHA-1) e iOS.
 
 ## Paso 3 — `main`
 

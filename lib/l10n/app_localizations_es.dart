@@ -38,5 +38,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get placeholderSignedOut => 'Inicio de sesión';
 
   @override
+  String get placeholderBranchChoice => 'Elegir sede';
+
+  @override
   String get placeholderSignedIn => 'Sesión iniciada';
 }
