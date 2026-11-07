@@ -994,4 +994,16 @@ Paso 5, con `integration_probe/tasks_probe_main.dart`, los casos de uso reales, 
 | Volver a abrir la app | Cola en 0, `files/pending` vacío y una evidencia por foto, sin repetidas |
 
 
+Paso 6, con `integration_probe/reception_workorders_probe_main.dart` y las mismas `--dart-define` del paso 5. El servidor simula H10, H11 y R4 tal como los documenta [03](03-traceability.md), así que esto no demuestra el contrato real.
+
+| Escenario | Evidencia |
+| --- | --- |
+| Recepción | Placa normalizada con titular; 404 como primer ingreso; altas de persona, empresa y vehículo; 409 de placa repetida con su `message`; los tres caminos de afiliación |
+| Llegada de cita (H10) | La orden aparece 1,5 s después de `/arrive`; `WorkOrderReady` al tercer intento; se completa con `Combustible: 1/2. Cambio de aceite` |
+| Orden | Lista sin `PAID`, con placa y cliente si ya están en caché; 409 de orden abierta; IGV recalculado (118 y 236); PDF en disco; `HIGH` no se envía; rentabilidad negativa; 422 al iniciar dos veces; `CANCELED` sale de la caché |
+| Sin red (Wi-Fi, datos y `adb reverse` cortados; `Active default network: none`) | El refresh y una acción lanzan `NetworkException` y la cola no crece; lista, placa y búsqueda responden de la caché |
+| Foto y propuesta sin red | `UPLOAD_FILE` + `ATTACH_INTAKE_IMAGE` y `UPLOAD_FILE` + `SUBMIT_PROPOSAL` con `depends_on`, `intentos=1` y `Sin conexión`; `archivo=true` en los pendientes; nada llega al servidor |
+| App muerta y red de vuelta | Sin proceso (`pidof` vacío), el worker corre tras el backoff (entre 130 y 190 s) y envía cada subida y luego su adjunto con la URL final |
+| Volver a abrir la app | Cola en 0, `files/pending` vacío, una foto y una propuesta en el backend y ninguna `repetida`; avisar, rechazar y aprobar propuesta funcionan |
+
 Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.
