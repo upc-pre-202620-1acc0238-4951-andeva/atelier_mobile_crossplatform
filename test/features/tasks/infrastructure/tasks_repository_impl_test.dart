@@ -86,6 +86,12 @@ void main() {
       await env.repository.refreshMyTasks();
       expect(env.requested('GET', '/api/v1/tasks/my'), isEmpty);
     });
+
+    test('sin sesión falla y no consulta el backend', () async {
+      await env.session.clear();
+      await expectLater(env.repository.refreshMyTasks(), throwsStateError);
+      expect(env.requested('GET', '/api/v1/tasks/my'), isEmpty);
+    });
   });
 
   group('getDetail & observeTask', () {
