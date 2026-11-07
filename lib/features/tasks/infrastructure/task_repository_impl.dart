@@ -8,7 +8,6 @@ import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.d
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
-import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
@@ -16,6 +15,7 @@ import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/remote/work_bay_api.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_api.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/part_item_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/reception_mappers.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/vehicle_api.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/hold_reason.dart';
@@ -24,7 +24,6 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/pause_reason.
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
-import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_evidence.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_repository.dart';
@@ -37,10 +36,9 @@ import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remot
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/hold_task_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/pause_task_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/task_api.dart';
-import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/task_product_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/update_task_product_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_dto.dart';
-import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_image_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_mapper.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/repository/task_evidence_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/sync/attach_task_evidence_handler.dart';
 import 'package:decimal/decimal.dart';
@@ -98,10 +96,8 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<void> refreshMyTasks() async {
     final currentSession = await session.getSession();
-    if (currentSession == null ||
-        !currentSession.has(Permission.tasksRead)) {
-      return;
-    }
+    if (currentSession == null) throw StateError('Sin sesión');
+    if (!currentSession.has(Permission.tasksRead)) return;
     final timestamp = now().millisecondsSinceEpoch;
     final dtos = await taskApi.getMyTasks();
     final rows = dtos.map((dto) => _toTasksCompanion(dto, timestamp)).toList();
@@ -120,14 +116,14 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<TaskDetail> getDetail(TaskId id) async {
     final dto = await taskApi.getTask(id.value);
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
   Future<TaskDetail> start(TaskId id) async {
     final dto = await taskApi.start(id.value);
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
@@ -137,7 +133,7 @@ class TaskRepositoryImpl implements TaskRepository {
       PauseTaskRequestDto(reason: reason.value),
     );
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
@@ -154,28 +150,28 @@ class TaskRepositoryImpl implements TaskRepository {
       ),
     );
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
   Future<TaskDetail> approveSuspension(TaskId id) async {
     final dto = await taskApi.approveHold(id.value);
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
   Future<TaskDetail> rejectSuspension(TaskId id) async {
     final dto = await taskApi.rejectHold(id.value);
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
   Future<TaskDetail> resume(TaskId id) async {
     final dto = await taskApi.resume(id.value);
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
@@ -189,7 +185,7 @@ class TaskRepositoryImpl implements TaskRepository {
       CompleteTaskRequestDto(actualLaborHours: actualLaborHours, notes: notes),
     );
     await _saveIfMine(dto);
-    return _toDomainDetail(dto);
+    return dto.toDomain();
   }
 
   @override
@@ -272,7 +268,7 @@ class TaskRepositoryImpl implements TaskRepository {
       id.value,
       AddTaskProductRequestDto(productId: productId, quantity: quantity),
     );
-    return _toDomainProduct(dto);
+    return dto.toDomain();
   }
 
   @override
@@ -380,19 +376,9 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<void> _refreshVehicle(String vehicleId, int timestamp) async {
     try {
       final dto = await vehicleApi.getVehicle(vehicleId);
-      final companion = VehiclesCompanion(
-        id: Value(dto.id),
-        plate: Value(dto.plate),
-        vin: Value(dto.vin),
-        brand: Value(dto.brand ?? ''),
-        model: Value(dto.model ?? ''),
-        year: Value(dto.year),
-        engineType: Value(dto.engineType),
-        currentOwnerId: Value(dto.currentOwnerId),
-        currentMileage: Value(dto.currentMileage),
-        syncedAt: Value(timestamp),
+      await vehicleDao.saveFromServer(
+        dto.toEntity(timestamp).toCompanion(false),
       );
-      await vehicleDao.saveFromServer(companion);
       await cacheMetadataDao.upsert(
         CacheMetadataCompanion(
           scope: Value('vehicles:$vehicleId'),
@@ -442,52 +428,6 @@ class TaskRepositoryImpl implements TaskRepository {
     );
   }
 
-  TaskDetail _toDomainDetail(WorkOrderTaskDto dto) {
-    return TaskDetail(
-      id: TaskId(dto.id),
-      workOrderId: dto.workOrderId,
-      serviceId: dto.serviceId,
-      serviceName: dto.serviceName,
-      mechanicId: dto.mechanicId,
-      mechanicName: dto.mechanicName,
-      status: TaskStatus.fromString(dto.status),
-      description: dto.description ?? '',
-      price: _toMoney(dto.price, dto.currency),
-      currency: dto.currency,
-      holdReason: HoldReason.fromString(dto.holdReason),
-      missingItemDescription: dto.missingItemDescription,
-      totalPausedSeconds: dto.totalPausedSeconds ?? 0,
-      startedAt: DateTime.tryParse(dto.startedAt ?? '')?.toUtc(),
-      completedAt: DateTime.tryParse(dto.completedAt ?? '')?.toUtc(),
-      pendingSuspensionReason: dto.pendingSuspensionReason,
-      pendingSuspensionRequestedAt:
-          DateTime.tryParse(dto.pendingSuspensionRequestedAt ?? '')?.toUtc(),
-      products: (dto.products ?? []).map(_toDomainProduct).toList(),
-      evidenceImages:
-          (dto.evidenceImages ?? []).map(_toDomainEvidence).toList(),
-    );
-  }
-
-  TaskProduct _toDomainProduct(TaskProductDto dto) {
-    return TaskProduct(
-      id: dto.id,
-      productId: dto.productId,
-      productName: dto.productName,
-      quantity: dto.quantity ?? Decimal.zero,
-      unitPrice: _toMoney(dto.unitPrice, dto.currency),
-      totalAmount: _toMoney(dto.totalAmount, dto.currency),
-    );
-  }
-
-  TaskEvidence _toDomainEvidence(WorkOrderTaskImageDto dto) {
-    return TaskEvidence(
-      id: dto.id,
-      imageUrl: dto.imageUrl,
-      description: dto.description,
-      uploadedAt: DateTime.tryParse(dto.uploadedAt ?? '')?.toUtc(),
-    );
-  }
-
   PartOption _toDomainPartOption(PartItemDto dto) {
     return PartOption(
       id: dto.id,
@@ -518,15 +458,5 @@ class TaskRepositoryImpl implements TaskRepository {
       totalPausedSeconds: Value(dto.totalPausedSeconds ?? 0),
       syncedAt: Value(timestamp),
     );
-  }
-
-  /// `null` si falta el monto o la moneda, o si `Money` no los admite.
-  Money? _toMoney(Decimal? amount, String? currency) {
-    if (amount == null || currency == null) return null;
-    try {
-      return Money(amount: amount, currency: currency);
-    } on ArgumentError {
-      return null;
-    }
   }
 }

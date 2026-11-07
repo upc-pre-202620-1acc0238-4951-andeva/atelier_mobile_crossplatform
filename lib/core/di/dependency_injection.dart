@@ -33,7 +33,9 @@ import 'package:atelier_mobile_crossplatform/core/notifications/push_messaging_s
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/di/attendance_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/di/reception_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/di/tasks_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/di/workorders_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -194,4 +196,6 @@ void setupDependencies() {
   setupMainDependencies();
   setupAttendanceDependencies();
   setupTasksDependencies();
+  setupReceptionDependencies();
+  setupWorkOrdersDependencies();
 }
