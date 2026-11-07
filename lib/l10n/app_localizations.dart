@@ -142,6 +142,18 @@ abstract class AppLocalizations {
   /// **'Inventario'**
   String get notificationChannelInventory;
 
+  /// Canal de notificaciones de Android
+  ///
+  /// In es, this message translates to:
+  /// **'Diagnóstico'**
+  String get notificationChannelDiagnostics;
+
+  /// Notificación fija mientras dura la lectura en vivo
+  ///
+  /// In es, this message translates to:
+  /// **'Diagnóstico OBD-II en curso'**
+  String get diagnosticsSessionNotificationTitle;
+
   /// Marcador hasta que exista la pantalla de login
   ///
   /// In es, this message translates to:

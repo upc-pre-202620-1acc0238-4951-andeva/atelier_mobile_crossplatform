@@ -32,6 +32,14 @@
   "@notificationChannelInventory": {
     "description": "Canal de notificaciones de Android"
   },
+  "notificationChannelDiagnostics": "Diagnóstico",
+  "@notificationChannelDiagnostics": {
+    "description": "Canal de notificaciones de Android"
+  },
+  "diagnosticsSessionNotificationTitle": "Diagnóstico OBD-II en curso",
+  "@diagnosticsSessionNotificationTitle": {
+    "description": "Notificación fija mientras dura la lectura en vivo"
+  },
   "placeholderSignedOut": "Inicio de sesión",
   "@placeholderSignedOut": {
     "description": "Marcador hasta que exista la pantalla de login"
