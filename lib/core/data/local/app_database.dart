@@ -20,12 +20,15 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/vehicle_fault_table.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/batch_table.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/part_table.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/appointment_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/appointment_table.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/customer_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/customer_table.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_table.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/local/task_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/local/task_table.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/local/work_order_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/local/work_order_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
@@ -66,6 +69,9 @@ part 'app_database.g.dart';
     TaskDao,
     VehicleDao,
     BayDao,
+    CustomerDao,
+    AppointmentDao,
+    WorkOrderDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

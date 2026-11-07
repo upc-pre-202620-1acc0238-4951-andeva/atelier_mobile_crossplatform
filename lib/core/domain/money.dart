@@ -20,4 +20,14 @@ class Money {
   factory Money.of(String amount, String currency) {
     return Money(amount: Decimal.parse(amount), currency: currency);
   }
+
+  /// `null` si falta el monto o la moneda, o si no se admiten. Para datos que llegan del backend.
+  static Money? orNull(Decimal? amount, String? currency) {
+    if (amount == null || currency == null) return null;
+    try {
+      return Money(amount: amount, currency: currency);
+    } on ArgumentError {
+      return null;
+    }
+  }
 }
