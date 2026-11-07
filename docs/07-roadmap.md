@@ -49,8 +49,8 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 3 | `main` — contenedor con pestañas por permiso | ✅ Sin `presentation` · push real e iOS sin comprobar | `feature/main` |
 | 4 | `attendance` — asistencia y turnos | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/attendance` |
 | 5 | `tasks` — tareas del mecánico | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/tasks`, `feature/tasks-closure` |
-| 6 | `reception` + `workorders` — recepción y órdenes | ⬜ Pendiente | |
-| 7 | `inventory` — catálogo, lotes y alertas | ⬜ Pendiente | |
+| 6 | `reception` + `workorders` — recepción y órdenes | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/reception-workorders` |
+| 7 | `inventory` — catálogo, lotes y alertas | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/inventory` |
 | 8 | `diagnostics` — OBD-II, DTC e informe IA | ⬜ Pendiente | |
 | 9 | `bays`, `cashier`, `reports`, `team` | ⬜ Pendiente | |
 
@@ -259,10 +259,36 @@ Comprobado y sin comprobar:
 ## Paso 7 — `inventory`
 
 - **Historias:** US31, US32, US34 · **API:** [api/inventory.md](api/inventory.md) · **Android:** `features/inventory`
-- **Casos de uso:** `RefreshPartsCatalog`, `ObservePartsCatalog`, `SearchPartsCatalog`, `FindPartBySku`, `ObservePart`, `GetPartDetail`, `RefreshPartBatches`, `ObservePartBatches`, `GetStockAlerts`, `ObserveStockAlerts`, `GetInventoryValuation`, `GetPurchaseOrders`, `GetPurchaseOrder`, `ReceivePurchaseOrder`, `ObservePartBrands`.
+- **Casos de uso:** `RefreshPartsCatalog`, `ObservePartsCatalog`, `SearchPartsCatalog`, `FindPartBySku`, `ObservePart`, `GetPartDetail`, `RefreshPartBatches`, `ObservePartBatches`, `GetStockAlerts`, `ObserveStockAlerts`, `GetInventoryValuation`, `GetPurchaseOrders`, `GetPurchaseOrder`, `ReceivePurchaseOrder`. `ObservePartBrands`, que estaba en esta lista, no se construyó (H35).
 - **Cachés:** `parts`, `batches` (solo con `inventory:batches:read`). **Push:** `LOW_STOCK`.
 - **Backend:** el catálogo se pagina en memoria, los lotes llegan del más nuevo al más viejo y con agotados, las alertas se calculan al consultar y `receive` responde 400 a todo (H12–H15).
-- **Lector de código de barras:** sin implementar en Android. Elegir el plugin en este paso.
+- **Lector de código de barras:** sin implementar en Android. Elegido `mobile_scanner` ([04](04-mobile-integration.md) §10).
+
+**Hecho en el paso 7.** Los 14 casos de uso, `InventoryValidation`, `InventoryApi` completa, `PartDao`, `BatchDao`, `InventoryRepositoryImpl` y `setupInventoryDependencies()`, adonde pasó el registro de `InventoryApi`. Sin cambio de esquema, sin cola y sin handlers. El push `LOW_STOCK` ya estaba enrutado. `tasks` sigue buscando en línea con su `SearchPartsUseCase`.
+
+Diferencias con Android, a propósito:
+
+- **Sin marca (H35).** `docs/api/` no la tiene y en Android la lista siempre sale vacía.
+- Al lote se le llama `PartBatch`: Drift exporta una clase `Batch`.
+- Las recargas tras recibir llevan captura propia. En Android `Result` ya aísla el fallo; en Dart, una excepción convertiría en error una recepción que ya creó los lotes.
+- `PurchaseOrderNotReceivableException` en lugar de un `IllegalStateException` con texto.
+- `PartDao.findBySku` usa `limit(1)`: el índice de `sku` no es único y `getSingleOrNull` lanzaría con dos filas.
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- **Permiso por acción:** catálogo, búsqueda y SKU con `partsRead` · lotes y valorización con `batchesRead` · bandeja de alertas con `alertsRead` · lista de compras con `purchaseOrdersRead` · *Recibir* con `purchaseOrdersRead` **y** `batchesReceive`, porque primero lee la orden. Sin `batchesRead`, `GetPartDetailUseCase` devuelve la ficha sin lotes; `GetInventoryValuationUseCase` no lo revisa y el backend responde 403.
+- **Catálogo:** `RefreshPartsCatalogUseCase` al abrir y `ObservePartsCatalogUseCase` para pintar. Un refresh sin red lanza `NetworkException` y la caché sigue visible. `Part.isOutOfStock` resalta el agotado; `Part.isSelectable` bloquea su selección e indica que requiere reabastecimiento (US31 E2). Mostrar `unitOfMeasure` tal cual (H12).
+- **Lotes (US32):** `isActive` separa los agotados y el primero activo es el siguiente en salir. Desde la caché, `initialQty`, proveedor y comprobante van en `null`.
+- **Lector:** [04](04-mobile-integration.md) §10. `FindPartBySkuUseCase`: `null` es "no existe" e `InvalidInventoryInputException('sku')` es formato inválido.
+- **Alertas (US34):** el push `LOW_STOCK` lleva a la bandeja, no a una alerta por push, porque se repite en cada descargo (H14). `GetStockAlertsUseCase` lee en línea y `ObserveStockAlertsUseCase` observa la caché. No ofrecer *resolver* (H13).
+- **Recibir (US34 E2):** deshabilitar sin red con `ConnectivityObserver`; pedir antes el permiso de cámara. Mostrar `InvalidInventoryInputException` (`photo`, `receiptNumber`, `receivedAt`), `PurchaseOrderNotReceivableException` y el `message` de `ApiException`. Si ya estaba recibida devuelve la orden como éxito: es lo esperado al reintentar (H15), y entonces las cachés se actualizan en el siguiente refresh.
+- `GetPurchaseOrdersUseCase` trae las `ISSUED` por defecto; con `status: null`, todas.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en emulador** con Drift y compresión reales contra el servidor simulado, también sin red ([06](06-offline-sync.md) §8), con `integration_probe/inventory_probe_main.dart`.
+- Sin comprobar: backend real (H13 y H15 solo están simulados como los documenta [03](03-traceability.md)), Supabase real, cámara, escanear un código, teléfono físico, el push `LOW_STOCK` e iOS.
+- Riesgos que se heredan de Android: una foto subida cuyo `PUT` falla queda huérfana en Supabase; la búsqueda sin red trata `%` y `_` como comodines; más de 5000 repuestos dejarían la caché truncada sin aviso; un lote sin fecha sale primero desde la caché y último en línea, aunque `arrivalDate` siempre llega según [api/inventory.md](api/inventory.md).
 
 ## Paso 8 — `diagnostics`
 
