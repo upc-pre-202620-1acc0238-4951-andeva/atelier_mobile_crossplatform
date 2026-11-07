@@ -45,9 +45,6 @@ void setupTasksDependencies() {
   getIt.registerLazySingleton<TaskDao>(
     () => getIt<AppDatabase>().taskDao,
   );
-  getIt.registerLazySingleton<VehicleDao>(
-    () => getIt<AppDatabase>().vehicleDao,
-  );
   getIt.registerLazySingleton<BayDao>(
     () => getIt<AppDatabase>().bayDao,
   );
@@ -57,9 +54,6 @@ void setupTasksDependencies() {
   );
   getIt.registerLazySingleton<InventoryApi>(
     () => InventoryApi(client: getIt<ApiClient>()),
-  );
-  getIt.registerLazySingleton<VehicleApi>(
-    () => VehicleApi(client: getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<WorkBayApi>(
     () => WorkBayApi(client: getIt<ApiClient>()),
