@@ -1018,4 +1018,21 @@ Paso 7, con `integration_probe/inventory_probe_main.dart` y las mismas `--dart-d
 | H15 | Ya recibida no sube otra foto; 400 con la orden ya aplicada es éxito; `DRAFT` no se recibe; 400 real muestra su `message` |
 | Sin red (Wi-Fi, datos y `adb reverse` cortados; `Active default network: none`) | La recarga forzada lanza `NetworkException` y conserva las 130 filas; búsqueda, SKU, detalle FIFO y alertas responden de la caché; valorización y recibir lanzan `NetworkException` |
 
+Paso 8, con `integration_probe/diagnostics_probe_main.dart`, `API_BASE_URL` y, por `adb`, los permisos `BLUETOOTH_CONNECT`, `BLUETOOTH_SCAN`, `POST_NOTIFICATIONS` y `ACCESS_FINE_LOCATION`. Worker, cola, Drift, servicio y canal Kotlin son reales; **la ECU es simulada** y se cambia solo el intervalo de muestreo (5 ms). El servidor simula R3, H16 y las lecturas repetidas tal como los documenta [api/iot.md](api/iot.md), así que esto no demuestra el contrato real ni un ELM327 real. Antes de instalar hay que desinstalar la app. Para matar el proceso sirve `adb shell run-as <paquete> kill -9 <pid>`: `am kill` no lo mata con el servicio de `geolocator` enlazado, y `force-stop` cancelaría el trabajo del worker.
+
+| Escenario | Evidencia |
+| --- | --- |
+| Instalar | Lista de escáneres; sin instalación da `null`; 409 con su `message` |
+| Muestrear y cruzar 200 lecturas | 451 filas guardadas y 451 en el backend, en 3 lotes, sin repetidas; pendientes en 0 |
+| H23 sin temperatura | Hay muestra en vivo y no se guarda ninguna lectura |
+| Escanear | Dos fallas `local-…`; `REGISTER_FAULT` las reemplaza por `f1` y `f2`; volver a escanear no llama; sin la fila en caché, R3 devuelve la falla activa y no crea otra |
+| Borrar con un DTC persistente | `P0420` reportado como persistente; `RESOLVE_FAULT` cierra `P0304`; la recarga coincide con el backend |
+| H16 lote sin instalación | `FAILED` con `El vehículo no tiene un escáner instalado` |
+| Informe | 201, último informe, 422 como `InsufficientTelemetryException`, 403 con su `message`; 3 días no llaman |
+| Sin red (Wi-Fi, datos y `adb reverse` cortados; `Active default network: none`) | 254 lecturas y 2 fallas capturadas: 2 `TELEMETRY_BATCH` y 2 `REGISTER_FAULT`, `intentos=1` y `Sin conexión`; nada llega al servidor |
+| App muerta y red de vuelta | Sin proceso (`pidof` vacío), el worker corre en otro proceso a los 143 s y envía las 254 lecturas y las 2 fallas, sin tocar Bluetooth |
+| Volver a abrir la app | Cola en 0, nada pendiente, fallas con su id real y ninguna lectura repetida |
+| `SppObdTransport` real | Bluetooth apagado (`cmd bluetooth_manager disable`): `BluetoothDisabledException` al conectar y al listar. Prendido, sin adaptador: `ObdAdapterUnreachableException` y lista vacía |
+| Servicio real (API 37) | `isForeground=true`, `types=0x10` (`connectedDevice`), notificación del canal `diagnostics`; desaparece al detenerlo; ningún `FATAL` |
+
 Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.

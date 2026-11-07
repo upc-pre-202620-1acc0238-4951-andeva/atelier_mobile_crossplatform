@@ -35,6 +35,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationChannelInventory => 'Inventario';
 
   @override
+  String get notificationChannelDiagnostics => 'Diagnóstico';
+
+  @override
+  String get diagnosticsSessionNotificationTitle =>
+      'Diagnóstico OBD-II en curso';
+
+  @override
   String get placeholderSignedOut => 'Inicio de sesión';
 
   @override

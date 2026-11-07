@@ -51,6 +51,15 @@ void main(List<String> args) async {
       'inventory:batches:receive',
       'inventory:purchase_orders:read',
       'inventory:alerts:read',
+      'iot:devices:read',
+      'iot:installations:manage',
+      'iot:telemetry:ingest',
+      'iot:faults:read',
+      'iot:faults:resolve',
+      'iot:health_reports:generate',
+      'iot:health_reports:read',
+      'iot:alerts:read',
+      'iot:alerts:acknowledge',
     ],
     'refreshToken': refresh,
     'membershipId': 'probe-membership',
@@ -65,6 +74,7 @@ void main(List<String> args) async {
   final tasks = _TasksBackend(log);
   final reception = _ReceptionBackend(log);
   final inventory = _InventoryBackend(log);
+  final iot = _IotBackend(log);
 
   server.listen((request) async {
     // En bytes: la subida a Supabase es un JPEG, no texto.
@@ -79,6 +89,7 @@ void main(List<String> args) async {
 
     // Primero recepción: `by-plate` y `POST /vehicles` también empiezan por `/api/v1/vehicles`.
     final handled =
+        iot.handle(request.method, request.uri, body) ??
         inventory.handle(request.method, request.uri, body) ??
         reception.handle(request.method, request.uri, body) ??
         tasks.handle(request.method, path, body, bytes.length);
@@ -780,6 +791,194 @@ class _ReceptionBackend {
       }
     }
     return _error(404, 'Ruta no simulada: $method $action');
+  }
+}
+
+/// IoT del paso 8. Simula R3 (`POST /faults` devuelve el DTC ya activo), resolver dos veces con 200, H16 (lote
+/// sin instalación activa: 404) y la deduplicación de lecturas por vehículo + `timestamp`, tal como los
+/// documenta docs/api/iot.md. `v-sin-escaner` no tiene instalación; `v-corto` da 422 y `v-sin-cuota` 403.
+class _IotBackend {
+  static const _base = '/api/v1/iot';
+
+  final void Function(String) log;
+  final Map<String, Map<String, Object?>> faults = {};
+  final Map<String, Set<String>> readings = {};
+  final Map<String, Object?> installations = {};
+  var faultSeq = 0;
+  var batches = 0;
+  var duplicates = 0;
+  var faultPosts = 0;
+  var resolves = 0;
+  var generated = 0;
+
+  _IotBackend(this.log);
+
+  (int, String) _error(int status, String code, String message) {
+    return (status, jsonEncode({'code': code, 'message': message, 'details': []}));
+  }
+
+  Map<String, Object?> _installation(String vehicleId, Map sent) {
+    return {
+      'id': 'inst-$vehicleId',
+      'deviceId': sent['deviceId'],
+      'vehicleId': vehicleId,
+      'installedAt': _nowUtc(),
+      'initialOdometerKm': sent['currentOdometerKm'],
+      'isActive': true,
+    };
+  }
+
+  (int, String)? handle(String method, Uri uri, String body) {
+    final path = uri.path;
+    if (path == '/control/iot') {
+      return (
+        200,
+        jsonEncode({
+          'batches': batches,
+          'readings': {
+            for (final entry in readings.entries) entry.key: entry.value.length,
+          },
+          'duplicates': duplicates,
+          'faultPosts': faultPosts,
+          'resolves': resolves,
+          'generated': generated,
+          'activeFaults': [
+            for (final fault in faults.values)
+              if (fault['isResolved'] != true) fault['dtcCode'],
+          ],
+          'resolvedFaults': [
+            for (final fault in faults.values)
+              if (fault['isResolved'] == true) fault['dtcCode'],
+          ],
+        }),
+      );
+    }
+    if (!path.startsWith(_base)) return null;
+    final route = path.substring(_base.length);
+    log('IOT $method $route ${uri.query}');
+
+    if (route == '/devices' && method == 'GET') {
+      return (
+        200,
+        jsonEncode([
+          {
+            'id': 'd1',
+            'deviceIdentifier': 'SIM:OB:D2:00:00:01',
+            'connectionType': 'BLUETOOTH_CLASSIC',
+            'status': uri.queryParameters['status'] ?? 'ACTIVE',
+          },
+        ]),
+      );
+    }
+    if (route == '/installations/install' && method == 'POST') {
+      final sent = jsonDecode(body) as Map;
+      final vehicleId = sent['vehicleId'] as String;
+      if (installations.containsKey(vehicleId)) {
+        return _error(409, 'ERR_ACTIVE_INSTALLATION_CONFLICT', 'El vehículo ya tiene un escáner');
+      }
+      final installation = _installation(vehicleId, sent);
+      installations[vehicleId] = installation;
+      return (201, jsonEncode(installation));
+    }
+    final active = RegExp(r'^/installations/vehicle/([^/]+)/active$').firstMatch(route);
+    if (active != null) {
+      final installation = installations[active[1]];
+      return installation == null
+          ? _error(404, 'NOT_FOUND', 'Sin instalación activa')
+          : (200, jsonEncode(installation));
+    }
+    if (route == '/telemetry/batch' && method == 'POST') {
+      final sent = jsonDecode(body) as Map;
+      final vehicleId = sent['vehicleId'] as String;
+      batches++;
+      if (!installations.containsKey(vehicleId)) {
+        return _error(404, 'NOT_FOUND', 'El vehículo no tiene un escáner instalado');
+      }
+      final seen = readings.putIfAbsent(vehicleId, () => {});
+      final items = sent['readings'] as List;
+      for (final item in items) {
+        if (!seen.add((item as Map)['timestamp'] as String)) duplicates++;
+      }
+      log('BATCH $vehicleId lecturas=${items.length} total=${seen.length}');
+      return (202, jsonEncode({'vehicleId': vehicleId, 'ingestedCount': items.length}));
+    }
+    if (route == '/faults' && method == 'POST') {
+      final sent = jsonDecode(body) as Map;
+      faultPosts++;
+      for (final fault in faults.values) {
+        if (fault['vehicleId'] == sent['vehicleId'] &&
+            fault['dtcCode'] == sent['dtcCode'] &&
+            fault['isResolved'] != true) {
+          return (200, jsonEncode(fault));
+        }
+      }
+      final id = 'f${++faultSeq}';
+      final fault = <String, Object?>{
+        'id': id,
+        'vehicleId': sent['vehicleId'],
+        'dtcCode': sent['dtcCode'],
+        'severity': sent['severity'],
+        'description': sent['description'],
+        'detectedAt': _nowUtc(),
+        'isResolved': false,
+      };
+      faults[id] = fault;
+      return (201, jsonEncode(fault));
+    }
+    final activeFaults = RegExp(r'^/faults/vehicle/([^/]+)/active$').firstMatch(route);
+    if (activeFaults != null) {
+      return (
+        200,
+        jsonEncode([
+          for (final fault in faults.values)
+            if (fault['vehicleId'] == activeFaults[1] && fault['isResolved'] != true) fault,
+        ]),
+      );
+    }
+    final resolve = RegExp(r'^/faults/([^/]+)/resolve$').firstMatch(route);
+    if (resolve != null && method == 'POST') {
+      final fault = faults[resolve[1]];
+      if (fault == null) return _error(404, 'NOT_FOUND', 'Falla no encontrada');
+      resolves++;
+      fault['isResolved'] = true;
+      fault['resolvedAt'] ??= _nowUtc();
+      return (200, jsonEncode(fault));
+    }
+    if (route == '/health-reports/generate' && method == 'POST') {
+      final vehicleId = uri.queryParameters['vehicleId'];
+      if (vehicleId == 'v-corto') {
+        return _error(422, 'ERR_INSUFFICIENT_TELEMETRY', 'Telemetría insuficiente en el período');
+      }
+      if (vehicleId == 'v-sin-cuota') {
+        return _error(403, 'QUOTA_EXCEEDED', 'Cuota de IA agotada');
+      }
+      generated++;
+      return (
+        201,
+        jsonEncode({
+          'reportId': 'r$generated',
+          'vehicleId': vehicleId,
+          'overallHealthScore': 78,
+          'executiveSummary': 'Motor estable',
+          'totalRisksDetected': 1,
+          'generatedAt': _nowUtc(),
+        }),
+      );
+    }
+    if (route == '/health-reports/latest') {
+      return generated == 0
+          ? _error(404, 'NOT_FOUND', 'Sin informes')
+          : (
+              200,
+              jsonEncode({
+                'reportId': 'r$generated',
+                'vehicleId': uri.queryParameters['vehicleId'],
+                'overallHealthScore': 78,
+                'generatedAt': _nowUtc(),
+              }),
+            );
+    }
+    return _error(404, 'NOT_FOUND', 'Ruta IoT sin simular: $method $route');
   }
 }
 
