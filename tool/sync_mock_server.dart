@@ -47,6 +47,10 @@ void main(List<String> args) async {
       'operations:work_orders:read',
       'operations:services:read',
       'iam:members:read',
+      'inventory:batches:read',
+      'inventory:batches:receive',
+      'inventory:purchase_orders:read',
+      'inventory:alerts:read',
     ],
     'refreshToken': refresh,
     'membershipId': 'probe-membership',
@@ -60,6 +64,7 @@ void main(List<String> args) async {
   // En paralelo: los 401 de la UI deben llegar mientras otro motor está renovando.
   final tasks = _TasksBackend(log);
   final reception = _ReceptionBackend(log);
+  final inventory = _InventoryBackend(log);
 
   server.listen((request) async {
     // En bytes: la subida a Supabase es un JPEG, no texto.
@@ -74,6 +79,7 @@ void main(List<String> args) async {
 
     // Primero recepción: `by-plate` y `POST /vehicles` también empiezan por `/api/v1/vehicles`.
     final handled =
+        inventory.handle(request.method, request.uri, body) ??
         reception.handle(request.method, request.uri, body) ??
         tasks.handle(request.method, path, body, bytes.length);
     if (handled != null) {
@@ -774,5 +780,173 @@ class _ReceptionBackend {
       }
     }
     return _error(404, 'Ruta no simulada: $method $action');
+  }
+}
+
+/// Inventario del paso 7. Simula H13 (alertas calculadas al consultar), H15 (`receive` responde 400 a
+/// todo y no es idempotente) y lotes del más nuevo al más viejo, tal como los documenta
+/// docs/api/inventory.md. `GET /items` sin `size` lo sigue atendiendo `_TasksBackend`.
+class _InventoryBackend {
+  final void Function(String) log;
+
+  /// Pagina en memoria, como el backend. `ip1` queda bajo el mínimo: `"9"` frente a `"10"`.
+  final List<Map<String, Object?>> parts = [
+    for (var i = 0; i < 130; i++)
+      {
+        'id': 'ip$i',
+        'tenantId': 'probe-tenant',
+        'name': 'Repuesto ${i.toString().padLeft(3, '0')}',
+        'sku': 'INV-${i.toString().padLeft(3, '0')}',
+        'category': i.isEven ? 'BRAKES' : 'FILTERS',
+        'basePrice': 25.5,
+        'totalStock': i == 1 ? 9 : 10,
+        'minimumStock': i == 1 ? 10 : 9,
+        'unitOfMeasure': 'UNIT',
+        'status': 'ACTIVE',
+      },
+  ];
+
+  final List<Map<String, Object?>> batches = [
+    _batch('b-nuevo', 'ip1', 'L-3', 9, '2026-10-01T10:00:00Z'),
+    _batch('b-agotado', 'ip1', 'L-2', 0, '2026-05-01T10:00:00Z'),
+    _batch('b-viejo', 'ip1', 'L-1', 0, '2026-01-01T10:00:00Z'),
+  ];
+
+  final Map<String, String> orders = {
+    'po1': 'ISSUED',
+    'po2': 'ISSUED',
+    'po3': 'DRAFT',
+    'po4': 'ISSUED',
+  };
+
+  var catalogRequests = 0;
+  var uploads = 0;
+
+  _InventoryBackend(this.log);
+
+  static Map<String, Object?> _batch(
+    String id,
+    String itemId,
+    String number,
+    num remaining,
+    String arrival,
+  ) {
+    return {
+      'id': id,
+      'itemId': itemId,
+      'batchNumber': number,
+      'initialQty': 10,
+      'remainingQty': remaining,
+      'unitCost': 12.5,
+      'arrivalDate': arrival,
+    };
+  }
+
+  Map<String, Object?> _order(String id) {
+    return {
+      'id': id,
+      'tenantId': 'probe-tenant',
+      'supplierId': 's1',
+      'branchId': 'probe-branch',
+      'orderNumber': 'OC-$id',
+      'status': orders[id],
+      'totalCost': 500,
+      'items': [
+        {'id': 'line-$id', 'itemId': 'ip1', 'quantity': 20, 'unitCost': 25, 'totalCost': 500},
+      ],
+    };
+  }
+
+  void _receive(String id, Map<String, Object?> body) {
+    orders[id] = 'RECEIVED';
+    final part = parts.firstWhere((p) => p['id'] == 'ip1');
+    part['totalStock'] = (part['totalStock']! as num) + 20;
+    batches.insert(0, _batch('b-$id', 'ip1', 'L-$id', 20, '2026-11-07T10:00:00Z'));
+    log('RECEIVE $id numero=${body['receiptNumber']} url=${body['receiptImageUrl']}');
+  }
+
+  (int, String)? handle(String method, Uri uri, String body) {
+    final path = uri.path;
+    if (path.startsWith('/storage/v1/object/atelier/') && path.contains('/purchase-orders/')) {
+      uploads++;
+      return null; // Lo registra `_TasksBackend`.
+    }
+    if (path == '/control/inventory') {
+      return (200, jsonEncode({'catalogRequests': catalogRequests, 'uploads': uploads}));
+    }
+    const base = '/api/v1/inventory';
+    if (path == '$base/items') {
+      final query = uri.queryParameters;
+      if (!query.containsKey('size')) return null;
+      final size = int.parse(query['size']!);
+      final page = int.tryParse(query['page'] ?? '') ?? 0;
+      if (query.containsKey('page')) catalogRequests++;
+      final text = query['search']?.toLowerCase();
+      final found = parts.where((p) {
+        if (query['category'] != null && p['category'] != query['category']) return false;
+        return text == null ||
+            '${p['name']}'.toLowerCase().contains(text) ||
+            '${p['sku']}'.toLowerCase().contains(text);
+      }).toList();
+      return (200, jsonEncode(found.skip(page * size).take(size).toList()));
+    }
+    if (path.startsWith('$base/items/by-sku/')) {
+      final sku = path.split('/').last.toUpperCase();
+      final found = parts.where((p) => p['sku'] == sku);
+      return found.isEmpty ? (404, '') : (200, jsonEncode(found.first));
+    }
+    if (path == '$base/items/valuation') return (200, '{"valuation":12345.67}');
+    if (path.startsWith('$base/items/')) {
+      final segments = path.split('/');
+      final id = segments[5];
+      final mine = batches.where((b) => b['itemId'] == id).toList();
+      if (segments.length == 7) return (200, jsonEncode(mine));
+      final part = parts.where((p) => p['id'] == id);
+      if (part.isEmpty) return (404, '{"code":"NOT_FOUND","message":"No existe"}');
+      return (200, jsonEncode({...part.first, 'batches': mine}));
+    }
+    if (path == '$base/alerts') {
+      final low = parts.where((p) => (p['totalStock']! as num) <= (p['minimumStock']! as num));
+      return (
+        200,
+        jsonEncode([
+          for (final p in low)
+            {
+              'itemId': p['id'],
+              'name': p['name'],
+              'sku': p['sku'],
+              'category': p['category'],
+              'currentStock': p['totalStock'],
+              'minimumStock': p['minimumStock'],
+              'deficit': (p['minimumStock']! as num) - (p['totalStock']! as num),
+              'evaluatedAt': DateTime.now().toUtc().toIso8601String(),
+            },
+        ]),
+      );
+    }
+    if (path == '$base/purchase-orders') {
+      final status = uri.queryParameters['status'];
+      return (
+        200,
+        jsonEncode([
+          for (final id in orders.keys)
+            if (status == null || orders[id] == status) _order(id),
+        ]),
+      );
+    }
+    if (path.startsWith('$base/purchase-orders/')) {
+      final segments = path.split('/');
+      final id = segments[5];
+      if (!orders.containsKey(id)) return (404, '{"code":"NOT_FOUND","message":"No existe"}');
+      if (segments.length == 6) return (200, jsonEncode(_order(id)));
+      final request = jsonDecode(body) as Map<String, Object?>;
+      const invalid = '{"code":"BAD_REQUEST","message":"La orden no se puede recibir"}';
+      if (orders[id] != 'ISSUED') return (400, invalid);
+      // po2: el backend la aplicó pero la app recibe 400. po4: 400 de verdad, no se aplica.
+      if (id == 'po4') return (400, invalid);
+      _receive(id, request);
+      return id == 'po2' ? (400, invalid) : (200, jsonEncode(_order(id)));
+    }
+    return null;
   }
 }

@@ -374,3 +374,15 @@ No se versionan credenciales. Para el entorno local:
 4. Guardar los correos y contraseñas en un archivo local ignorado por git (por ejemplo `test-accounts.local.md`), nunca en el repo.
 
 Un taller recién registrado tiene prueba gratuita con las cuotas del plan elegido (si se elige un plan sin IA, los informes IA responden 403).
+
+---
+
+## 10. Lector de código de barras (US31 E1)
+
+Plugin elegido: **`mobile_scanner`**. Es un widget, así que pertenece a `presentation`, y **no está en `pubspec.yaml`**: se añade junto con la pantalla. Lo que lee entra por `FindPartBySkuUseCase`, que valida el formato y consulta `GET /inventory/items/by-sku/{sku}`; por eso no hay contrato de plataforma.
+
+| Comprobado | Sin comprobar |
+| --- | --- |
+| La versión 7.5.0 resuelve con las dependencias actuales y `flutter build apk --debug` compila con AGP 9.4.1, `minSdk 26` y `compileSdk 37` | Escanear un código real, tamaño final del APK e iOS |
+
+Usa el permiso `CAMERA` ya declarado (§6) y la misma descripción de iOS; al añadir la pantalla, revisar que `NSCameraUsageDescription` mencione también el escaneo.

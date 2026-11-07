@@ -1006,4 +1006,16 @@ Paso 6, con `integration_probe/reception_workorders_probe_main.dart` y las misma
 | App muerta y red de vuelta | Sin proceso (`pidof` vacío), el worker corre tras el backoff (entre 130 y 190 s) y envía cada subida y luego su adjunto con la URL final |
 | Volver a abrir la app | Cola en 0, `files/pending` vacío, una foto y una propuesta en el backend y ninguna `repetida`; avisar, rechazar y aprobar propuesta funcionan |
 
+Paso 7, con `integration_probe/inventory_probe_main.dart` y las mismas `--dart-define` del paso 5. El servidor simula H13 y H15 tal como los documenta [03](03-traceability.md), así que esto no demuestra el contrato real. Inventario no usa la cola ni el worker. Antes de instalar hay que desinstalar la app: una sesión guardada no trae los permisos nuevos.
+
+| Escenario | Evidencia |
+| --- | --- |
+| Catálogo | 130 repuestos en dos páginas de 100; una segunda recarga dentro de la hora no llama; filtro por categoría (65); búsqueda (10) |
+| SKU | `inv-001` se normaliza; 404 sin cuerpo da `null`; `a b` no llama |
+| Alertas y valorización | Una alerta del backend y la misma desde la caché con `"9"` frente a `"10"`; 12345.67 PEN |
+| Lotes | Llegan del más nuevo al más viejo y salen `L-1`, `L-2`, `L-3`; agotados marcados; desde la caché sin `initialQty` |
+| Recibir | Foto de 2400×1800 comprimida (12010 bytes) y subida a `purchase-orders/po1/receipt/`; temporal borrado; el lote nuevo entra en la caché y la alerta desaparece |
+| H15 | Ya recibida no sube otra foto; 400 con la orden ya aplicada es éxito; `DRAFT` no se recibe; 400 real muestra su `message` |
+| Sin red (Wi-Fi, datos y `adb reverse` cortados; `Active default network: none`) | La recarga forzada lanza `NetworkException` y conserva las 130 filas; búsqueda, SKU, detalle FIFO y alertas responden de la caché; valorización y recibir lanzan `NetworkException` |
+
 Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.
