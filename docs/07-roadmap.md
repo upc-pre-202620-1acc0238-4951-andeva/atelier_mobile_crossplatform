@@ -202,7 +202,6 @@ Comprobado y sin comprobar:
 
 Diferencias con Android, a propósito:
 
-- `refreshMyTasks` sin sesión no hace nada; Android devuelve un fallo. Sin sesión no existe `MainPage`, y lanzar solo daría un error sin `message` que mostrar.
 - `PendingEvidence.localFilePath` es absoluta y se resuelve al leer: `pending_uploads` guarda la ruta relativa porque en iOS la carpeta de la app cambia al actualizarla.
 - El tiempo en pausa va en `SharedPreferencesAsync`, y por eso lo borra `SessionManager.clear`; en Android lo hace el DataStore de la sesión.
 - El recorte de textos (`notes`, `missingItemDescription`, `query`) está en los casos de uso, no en el repositorio.
@@ -222,7 +221,7 @@ Comprobado y sin comprobar:
 - **Comprobado en emulador** con worker y compresión reales contra el servidor simulado ([06](06-offline-sync.md) §8). La prueba destapó un error que las pruebas unitarias no veían, ya corregido: `localFilePath` era relativa y la miniatura no se habría podido abrir.
 - Sin comprobar: backend real (los casos H5–H9 y H36–H39 solo están simulados como los documenta [03](03-traceability.md)), Supabase real, cámara y `image_picker`, teléfono físico, los push `TASK_*` e iOS.
 
-Para los pasos 6, 7 y 9: `setupTasksDependencies` registra `VehicleDao`, `BayDao`, `VehicleApi`, `WorkBayApi` e `InventoryApi`. `get_it` lanza error si se registran dos veces: al crear esas features, reutilizarlos o moverlos a su `setup<Feature>Dependencies()`.
+Para los pasos 7 y 9: `setupTasksDependencies` registra `BayDao`, `WorkBayApi` e `InventoryApi`; `VehicleDao` y `VehicleApi` ya pasaron a `setupReceptionDependencies()`. `get_it` lanza error si se registran dos veces: al crear esas features, reutilizarlos o moverlos a su `setup<Feature>Dependencies()`.
 
 ## Paso 6 — `reception` + `workorders`
 
@@ -233,6 +232,29 @@ Para los pasos 6, 7 y 9: `setupTasksDependencies` registra `VehicleDao`, `BayDao
 - **Propuestas:** `severity` solo `LOW`, `MEDIUM` o `CRITICAL`; la petición rechaza `HIGH` con 400 ([api/README.md](api/README.md) §8).
 - **Decisiones ya tomadas en Android:** suspensiones en el detalle de la orden (H5) · la llegada de una cita crea la orden después, con kilometraje 0 (H10) · nombres de servicios y mecánicos (H11) · el combustible va al inicio del diagnóstico (H34).
 - **Cachés:** `customers`, `vehicles`, `appointments`, `work_orders`. **PDF:** proforma ([04](04-mobile-integration.md) §8).
+
+**Hecho en el paso 6.** Los 13 casos de uso de `reception` y los 27 de `workorders`, sin `presentation`. `CustomerApi`, `AppointmentApi`, `WorkOrderApi`, `ServiceCatalogApi`, `CustomerDao`, `AppointmentDao`, `WorkOrderDao`, `ReceptionRepositoryImpl`, `WorkOrderRepositoryImpl` y los handlers `ATTACH_INTAKE_IMAGE` y `SUBMIT_PROPOSAL`, registrados en `setupReceptionDependencies()` y `setupWorkOrdersDependencies()`. Sin cambio de esquema. Núcleo extendido: `EmployeeApi.getByBranch`, `membershipId`, `jobTitle` y `employmentStatus` en `EmployeeProfileDto`, y `Money.orNull`. El mapeo de tareas salió de `TaskRepositoryImpl` a `work_order_task_mapper.dart` para que el detalle de la orden lo reutilice.
+
+El comportamiento es el de Android: el refresh sin sesión falla (`StateError`), sin sede lanza `MissingBranchException` y la lista de órdenes no trae placa ni cliente, los muestra solo si ya están en caché. Lo único distinto es de la plataforma y no se nota desde fuera: `pending_uploads` guarda la ruta relativa y la absoluta se resuelve al leer, como en el paso 5, y `observeAppointments` y `observeBranchWorkOrders` usan `SessionManager.switchOn` en lugar de `flatMapLatest`.
+
+`getCustomer` existe solo en `CustomerApi`, para el titular y el enriquecimiento: el caso de uso lo expone el paso 9 (`PrepareVoucher`).
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- **Permiso por acción:** seguir la columna de permisos de [03](03-traceability.md) y [api/operations.md](api/operations.md) con `session.has`. `GetServiceCatalogUseCase` da vacío sin `servicesRead`; `GetBranchMechanicsUseCase` da vacío sin `membersRead`, y entonces la tarea se crea sin mecánico (H11).
+- **Llegada de cita (H10):** con `WorkOrderReady`, completar kilometraje y diagnóstico con `UpdateWorkOrderUseCase`. Con `WorkOrderPending` la llegada ya quedó registrada: no mostrarla como error y volver a buscar con `FindDraftWorkOrderForVehicleUseCase`. Nunca abrir otra orden con `OpenWorkOrderUseCase`: `NewWorkOrder.appointmentId` existe, como en Android, pero mandarlo choca (409) con la orden asíncrona.
+- **Combustible (H34):** como en Android, va en el ViewModel de abrir orden. Enum con las etiquetas `Reserva`, `1/4`, `1/2`, `3/4` y `Lleno`, obligatorio para guardar, y `diagnosticSummary` exactamente `Combustible: <etiqueta>. <motivo sin espacios sobrantes>`, tanto en `OpenWorkOrderUseCase` como en `UpdateWorkOrderUseCase`.
+- **Nombres (H11):** cruzar `serviceId` con `GetServiceCatalogUseCase`, sin que un fallo del catálogo tumbe el detalle. Android reintenta las faenas si el catálogo falla al guardar: ese reintento es de la pantalla.
+- **Suspensiones (H5):** `WorkOrderDetail.tasksAwaitingSuspensionReview`; aprobar y rechazar con los casos de uso de `tasks`, igual que los repuestos.
+- **Fotos y propuestas:** funcionan siempre sin red; pedir antes el permiso de cámara. `SubmitProposalUseCase` recibe `photo` anulable para que sin foto dé `InvalidWorkOrderInputException('photo')` (US14 E2). No ofrecer `HIGH`: `ProposalSeverity.isSubmittable`. Una foto o propuesta entregada desaparece de los pendientes: recargar con `GetWorkOrderDetailUseCase`.
+- **PDF:** `DownloadQuotationPdfUseCase` deja el archivo en la caché; abrirlo y compartirlo es de la UI ([04](04-mobile-integration.md) §8).
+- **Errores:** `InvalidReceptionInputException` e `InvalidWorkOrderInputException` traen `field`; `ApiException` con su `message`, como el 409 de orden abierta o placa repetida y el 422 de transición; `NetworkException` en todo lo que es en línea. Un refresh sin red lanza `NetworkException` y la caché sigue visible: no tratarlo como lista vacía.
+- `plate` y `customerName` llegan solo por `ObserveBranchWorkOrdersUseCase` y `ObserveWorkOrderUseCase`, y son `null` si esas cachés aún no tienen el vehículo o el cliente; las acciones devuelven la cabecera sin ellos. Una orden `PAID` o `CANCELED` sale de `ObserveBranchWorkOrdersUseCase`: cobro y entrega leen en línea.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en emulador** con worker y compresión reales contra el servidor simulado ([06](06-offline-sync.md) §8), con `integration_probe/reception_workorders_probe_main.dart`.
+- Sin comprobar: backend real (tiempos de H10, H11 y los mapeos de `*Name`), Supabase real, cámara y `image_picker`, abrir y compartir el PDF, teléfono físico, el push `WORK_ORDER_COMPLETED` e iOS.
 
 ## Paso 7 — `inventory`
 

@@ -42,6 +42,11 @@ void main(List<String> args) async {
       'operations:bays:read',
       'crm:vehicles:read',
       'inventory:parts:read',
+      'crm:customers:read',
+      'crm:appointments:read',
+      'operations:work_orders:read',
+      'operations:services:read',
+      'iam:members:read',
     ],
     'refreshToken': refresh,
     'membershipId': 'probe-membership',
@@ -54,6 +59,7 @@ void main(List<String> args) async {
 
   // En paralelo: los 401 de la UI deben llegar mientras otro motor está renovando.
   final tasks = _TasksBackend(log);
+  final reception = _ReceptionBackend(log);
 
   server.listen((request) async {
     // En bytes: la subida a Supabase es un JPEG, no texto.
@@ -66,7 +72,10 @@ void main(List<String> args) async {
     var status = 200;
     var answer = '{}';
 
-    final handled = tasks.handle(request.method, path, body, bytes.length);
+    // Primero recepción: `by-plate` y `POST /vehicles` también empiezan por `/api/v1/vehicles`.
+    final handled =
+        reception.handle(request.method, request.uri, body) ??
+        tasks.handle(request.method, path, body, bytes.length);
     if (handled != null) {
       request.response
         ..statusCode = handled.$1
@@ -406,4 +415,364 @@ String _jwt(int generation) {
       .encode(utf8.encode(jsonEncode({'exp': exp, 'gen': generation})))
       .replaceAll('=', '');
   return 'h.$payload.s';
+}
+
+/// Recepción y órdenes del paso 6. Simula H10 (la orden llega después de `/arrive`, con kilometraje
+/// 0) y R4 (idempotencia por `imageUrl`): no sirve para demostrar el contrato real.
+class _ReceptionBackend {
+  static const _branch = 'probe-branch';
+
+  final void Function(String) log;
+  final vehicles = <String, Map<String, Object?>>{
+    'rv1': {'id': 'rv1', 'plate': 'RCP123', 'brand': 'Kia', 'model': 'Rio', 'engineType': 'GASOLINE', 'currentOwnerId': 'rc1', 'currentMileage': 1000},
+    'rv2': {'id': 'rv2', 'plate': 'CIT456', 'brand': 'Nissan', 'model': 'Versa', 'engineType': 'GASOLINE', 'currentOwnerId': 'rc1'},
+  };
+  final customers = <String, Map<String, Object?>>{
+    'rc1': {'id': 'rc1', 'type': 'INDIVIDUAL', 'displayName': 'Ana Pérez', 'taxId': '12345678', 'email': 'ana@correo.pe', 'status': 'ACTIVE'},
+  };
+  final appointments = <String, Map<String, Object?>>{};
+  final orders = <String, Map<String, Object?>>{};
+  final proposals = <String, Map<String, Object?>>{};
+  var ids = 0;
+
+  _ReceptionBackend(this.log) {
+    appointments['ra1'] = {
+      'id': 'ra1',
+      'branchId': _branch,
+      'customerId': 'rc1',
+      'vehicleId': 'rv2',
+      'scheduledAt': _nowUtc(),
+      'estimatedDurationMinutes': 60,
+      'reason': 'Mantenimiento',
+      'status': 'CONFIRMED',
+    };
+    _newOrder('rv1', 'rc1', 45000, 'Combustible: 3/4. Ruido al frenar', id: 'rw1');
+    _newOrder('rv1', 'rc1', 0, null, id: 'rw-pagada', status: 'PAID');
+  }
+
+  Map<String, Object?> _newOrder(
+    String vehicleId,
+    String customerId,
+    int mileage,
+    String? diagnostic, {
+    String? id,
+    String status = 'DRAFT',
+  }) {
+    final order = <String, Object?>{
+      'id': id ?? 'rw${++ids + 1}',
+      'internalNumber': 200 + orders.length,
+      'vehicleId': vehicleId,
+      'customerId': customerId,
+      'branchId': _branch,
+      'currentBayId': null,
+      'mileageIn': mileage,
+      'diagnosticSummary': diagnostic,
+      'status': status,
+      'subtotal': 0,
+      'taxAmount': 0,
+      'totalAmount': 0,
+      'currency': 'PEN',
+      'tasks': <Map<String, Object?>>[],
+      'proposals': <Map<String, Object?>>[],
+      'intakeImages': <Map<String, Object?>>[],
+      'createdAt': _nowUtc(),
+      'updatedAt': _nowUtc(),
+    };
+    orders[order['id'] as String] = order;
+    return order;
+  }
+
+  /// La lista no trae subtotal, IGV, kilometraje, diagnóstico ni detalle.
+  Map<String, Object?> _summary(Map<String, Object?> order) {
+    return {
+      for (final key in ['id', 'internalNumber', 'vehicleId', 'customerId', 'branchId', 'currentBayId', 'status', 'totalAmount', 'currency'])
+        key: order[key],
+    };
+  }
+
+  /// Las acciones devuelven la cabecera, sin tareas, propuestas ni fotos.
+  Map<String, Object?> _resource(Map<String, Object?> order) {
+    return {...order}
+      ..remove('tasks')
+      ..remove('proposals')
+      ..remove('intakeImages');
+  }
+
+  void _recalculate(Map<String, Object?> order) {
+    final tasks = order['tasks'] as List;
+    final subtotal = tasks.fold<num>(0, (sum, t) => sum + ((t as Map)['price'] as num? ?? 0));
+    order['subtotal'] = subtotal;
+    order['taxAmount'] = subtotal * 0.18;
+    order['totalAmount'] = subtotal * 1.18;
+  }
+
+  Map<String, Object?> _task(String orderId, Map<String, dynamic> sent) {
+    return {
+      'id': 'rt${++ids}',
+      'workOrderId': orderId,
+      'serviceId': sent['serviceId'],
+      'serviceName': 'Service', // H11
+      'mechanicId': sent['mechanicId'],
+      'mechanicName': null,
+      'status': 'ASSIGNED',
+      'description': sent['description'],
+      'price': sent['price'] ?? sent['finalPrice'],
+      'currency': 'PEN',
+      'totalPausedSeconds': 0,
+      'products': <Object?>[],
+      'evidenceImages': <Object?>[],
+    };
+  }
+
+  (int, String) _ok(Object? value, [int status = 200]) => (status, jsonEncode(value));
+
+  (int, String) _error(int status, String message) {
+    return (status, jsonEncode({'code': 'PROBE', 'message': message}));
+  }
+
+  (int, String)? handle(String method, Uri uri, String body) {
+    final path = uri.path;
+    final isMine =
+        path.startsWith('/api/v1/customers') ||
+        path.startsWith('/api/v1/appointments') ||
+        path.startsWith('/api/v1/work-orders') ||
+        path.startsWith('/api/v1/vehicles/by-plate/') ||
+        path.startsWith('/api/v1/vehicles/rv') ||
+        path == '/api/v1/vehicles' ||
+        path == '/api/v1/services' ||
+        path == '/api/v1/hr/employees/branch/$_branch' ||
+        (method == 'PUT' && path.startsWith('/api/v1/tasks/rt'));
+    if (!isMine) return null;
+    final sent = body.isEmpty ? const <String, dynamic>{} : jsonDecode(body) as Map<String, dynamic>;
+    log('RECEPTION $method ${uri.toString()} $body');
+
+    if (path.startsWith('/api/v1/vehicles/by-plate/')) {
+      final plate = Uri.decodeComponent(path.split('/').last);
+      final found = vehicles.values.where((v) => v['plate'] == plate).firstOrNull;
+      return found == null ? _error(404, 'Vehículo no encontrado') : _ok(found);
+    }
+    if (path == '/api/v1/vehicles') {
+      if (vehicles.values.any((v) => v['plate'] == sent['plate'])) {
+        return _error(409, 'La placa ya existe');
+      }
+      final id = 'rv${++ids + 10}';
+      return _ok(vehicles[id] = {'id': id, ...sent, 'currentOwnerId': sent['customerId']}, 201);
+    }
+    if (path.startsWith('/api/v1/vehicles/rv')) {
+      final found = vehicles[path.split('/').last];
+      return found == null ? _error(404, 'Vehículo no encontrado') : _ok(found);
+    }
+    if (path == '/api/v1/services') {
+      return _ok([
+        {'id': 'srv1', 'name': 'Cambio de aceite', 'basePrice': 80.5, 'currency': 'PEN', 'estimatedMinutes': 30},
+      ]);
+    }
+    if (path.startsWith('/api/v1/hr/employees/branch/')) {
+      return _ok([
+        {'id': 'e1', 'membershipId': 'probe-membership', 'jobTitle': 'Mecánico', 'employmentStatus': 'ACTIVE'},
+        {'id': 'e2', 'membershipId': 'baja', 'jobTitle': 'Mecánico', 'employmentStatus': 'TERMINATED'},
+      ]);
+    }
+    if (path.startsWith('/api/v1/customers')) return _customers(method, path, uri, sent);
+    if (path.startsWith('/api/v1/appointments')) return _appointments(method, path);
+    if (path.startsWith('/api/v1/tasks/')) return _updateTask(path, sent);
+    return _workOrders(method, path, sent);
+  }
+
+  (int, String) _customers(String method, String path, Uri uri, Map<String, dynamic> sent) {
+    final rest = path.substring('/api/v1/customers'.length);
+    switch ('$method $rest') {
+      case 'GET ':
+        final query = (uri.queryParameters['search'] ?? '').toLowerCase();
+        return _ok(customers.values.where((c) {
+          return '${c['displayName']} ${c['taxId']}'.toLowerCase().contains(query);
+        }).toList());
+      case 'POST /individuals':
+      case 'POST /companies':
+        if (customers.values.any((c) => c['taxId'] == sent['taxId'])) {
+          return _error(409, 'El documento ya existe');
+        }
+        final id = 'rc${++ids + 10}';
+        return _ok(customers[id] = {
+          'id': id,
+          ...sent,
+          'type': rest == '/companies' ? 'COMPANY' : 'INDIVIDUAL',
+          'displayName': sent['companyName'] ?? '${sent['firstName']} ${sent['lastName']}',
+          'status': 'ACTIVE',
+        }, 201);
+      case 'GET /affiliation-lookup':
+        final email = uri.queryParameters['email'];
+        final known = customers.values.where((c) => c['email'] == email).firstOrNull;
+        if (known != null) return _ok({'workshopCustomer': known, 'nextStep': 'ALREADY_CUSTOMER'});
+        if (email == 'app@correo.pe') {
+          return _ok({
+            'platformAccount': {'userId': 'pu1', 'email': email, 'fullName': 'Luz App'},
+            'vehicles': [
+              {'id': 'rv3', 'plate': 'APP789', 'brand': 'Mazda', 'model': '3'},
+            ],
+            'nextStep': 'AFFILIATE',
+          });
+        }
+        return _ok({'nextStep': 'REGISTER_WALK_IN'});
+      case 'POST /affiliations':
+        final id = 'rc${++ids + 10}';
+        vehicles['rv3'] = {'id': 'rv3', 'plate': 'APP789', 'brand': 'Mazda', 'model': '3', 'currentOwnerId': id};
+        return _ok(customers[id] = {
+          'id': id,
+          'type': 'INDIVIDUAL',
+          'displayName': 'Luz App',
+          'email': sent['email'],
+          'taxId': sent['taxId'],
+          'status': 'ACTIVE',
+        }, 201);
+    }
+    final parts = rest.substring(1).split('/');
+    if (!customers.containsKey(parts.first)) return _error(404, 'Cliente no encontrado');
+    if (parts.length == 2 && parts[1] == 'vehicles') {
+      return _ok(vehicles.values.where((v) => v['currentOwnerId'] == parts.first).toList());
+    }
+    return _ok(customers[parts.first]);
+  }
+
+  (int, String) _appointments(String method, String path) {
+    if (method == 'GET') return _ok(appointments.values.toList());
+    final appointment = appointments[path.split('/')[4]];
+    if (appointment == null) return _error(404, 'Cita no encontrada');
+    if (appointment['status'] == 'ARRIVED') return _error(409, 'La cita ya llegó');
+    appointment['status'] = 'ARRIVED';
+    // H10: la respuesta no trae la orden; aparece después, en borrador y con kilometraje 0.
+    Future<void>.delayed(const Duration(milliseconds: 1500), () {
+      final order = _newOrder(appointment['vehicleId'] as String, appointment['customerId'] as String, 0, null);
+      log('ORDEN asíncrona ${order['id']} de ${appointment['id']}');
+    });
+    return _ok(appointment);
+  }
+
+  (int, String) _updateTask(String path, Map<String, dynamic> sent) {
+    final id = path.split('/').last;
+    for (final order in orders.values) {
+      for (final task in (order['tasks'] as List).cast<Map<String, Object?>>()) {
+        if (task['id'] != id) continue;
+        task.addAll(sent);
+        _recalculate(order);
+        return _ok(task);
+      }
+    }
+    return _error(404, 'Tarea no encontrada');
+  }
+
+  (int, String) _workOrders(String method, String path, Map<String, dynamic> sent) {
+    if (path == '/api/v1/work-orders') {
+      if (method == 'GET') return _ok(orders.values.map(_summary).toList());
+      if (sent.containsKey('appointmentId')) return _error(409, 'H10: no se manda appointmentId');
+      final vehicleId = sent['vehicleId'] as String;
+      final open = orders.values.any((o) {
+        return o['vehicleId'] == vehicleId && o['status'] != 'PAID' && o['status'] != 'CANCELED';
+      });
+      if (open) return _error(409, 'El vehículo ya tiene una orden abierta');
+      return _ok(
+        _resource(_newOrder(vehicleId, sent['customerId'] as String, sent['mileageIn'] as int, sent['diagnosticSummary'] as String?)),
+        201,
+      );
+    }
+    final parts = path.substring('/api/v1/work-orders/'.length).split('/');
+    final order = orders[parts.first];
+    if (order == null) return _error(404, 'Orden no encontrada');
+    final action = parts.skip(1).join('/');
+    final images = (order['intakeImages'] as List).cast<Map<String, Object?>>();
+    final found = (order['proposals'] as List).cast<Map<String, Object?>>();
+
+    switch ('$method $action') {
+      case 'GET ':
+        return _ok(order);
+      case 'PUT ':
+        order.addAll(sent);
+        return _ok(_resource(order));
+      case 'POST tasks':
+        final task = _task(parts.first, sent);
+        (order['tasks'] as List).add(task);
+        _recalculate(order);
+        return _ok(task, 201);
+      case 'POST intake-images':
+        final url = sent['imageUrl'];
+        final repeated = images.where((i) => i['imageUrl'] == url).firstOrNull; // R4
+        log(repeated == null ? 'INTAKE nueva $url' : 'INTAKE repetida $url');
+        if (repeated != null) return _ok(repeated, 201);
+        final image = {'id': 'ri${++ids}', 'imageUrl': url, 'description': sent['description'], 'uploadedAt': _nowUtc()};
+        images.add(image);
+        return _ok(image, 201);
+      case 'POST proposals':
+        if (sent['severity'] == 'HIGH') return _error(400, 'Severidad no admitida');
+        final url = sent['imageUrl'];
+        final repeated = found.where((p) => p['imageUrl'] == url).firstOrNull; // R4
+        log(repeated == null ? 'PROPUESTA nueva $url' : 'PROPUESTA repetida $url');
+        if (repeated != null) return _ok(repeated, 201);
+        final proposal = <String, Object?>{
+          'id': 'rp${++ids}',
+          'workOrderId': parts.first,
+          'mechanicId': sent['mechanicId'],
+          'serviceId': sent['suggestedServiceId'],
+          'description': sent['description'],
+          'severity': sent['severity'],
+          'imageUrl': url,
+          'status': 'PENDING_REVIEW',
+          'createdAt': _nowUtc(),
+        };
+        found.add(proposal);
+        return _ok(proposal, 201);
+      case 'GET quotation/pdf':
+        return (200, '%PDF-1.4 proforma de la sonda');
+      case 'POST quotation/send':
+        return _ok({'message': 'Enviada', 'recipient': 'ana@correo.pe'});
+      case 'POST quotation/approve':
+        return _ok(_resource(order));
+      case 'POST quotation/reject':
+      case 'POST cancel':
+        order['status'] = 'CANCELED';
+        return _ok(_resource(order));
+      case 'POST start':
+        if (order['status'] != 'DRAFT') return _error(422, 'Solo se inicia una orden en borrador');
+        order['status'] = 'IN_PROGRESS';
+        return _ok(_resource(order));
+      case 'POST complete':
+        order['status'] = 'COMPLETED';
+        return _ok(_resource(order));
+      case 'GET part-movements':
+        return _ok([
+          {'allocationId': 'al1', 'productId': 'p1', 'chargedQuantity': 2, 'returnedQuantity': 1, 'unitCost': 10.5, 'currency': 'PEN'},
+        ]);
+      case 'GET profitability':
+        return _ok({
+          'workOrderId': parts.first,
+          'laborRevenue': 100,
+          'partsRevenue': 10,
+          'partsCostOfSales': 22.5,
+          'partsGrossProfit': -12.5,
+          'subtotal': 110,
+          'currency': 'PEN',
+          'lines': [
+            {'productId': 'p1', 'quantity': 1, 'revenue': 10, 'costOfSales': 22.5, 'grossProfit': -12.5},
+          ],
+        });
+    }
+    if (parts.length == 4 && parts[1] == 'proposals') {
+      final proposal = found.where((p) => p['id'] == parts[2]).firstOrNull;
+      if (proposal == null) return _error(404, 'Propuesta no encontrada');
+      switch (parts[3]) {
+        case 'notify':
+          return _ok({'message': 'Enviada', 'recipient': 'ana@correo.pe'});
+        case 'approve':
+          proposal['status'] = 'APPROVED';
+          final task = _task(parts.first, {...sent, 'description': proposal['description']});
+          (order['tasks'] as List).add(task);
+          _recalculate(order);
+          return _ok(task, 201);
+        case 'reject':
+          proposal['status'] = 'REJECTED';
+          proposal['customerNotes'] = sent['customerNotes'];
+          return _ok(proposal);
+      }
+    }
+    return _error(404, 'Ruta no simulada: $method $action');
+  }
 }
