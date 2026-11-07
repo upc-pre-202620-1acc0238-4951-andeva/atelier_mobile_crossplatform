@@ -11631,6 +11631,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final WorkOrderDao workOrderDao = WorkOrderDao(this as AppDatabase);
   late final PartDao partDao = PartDao(this as AppDatabase);
   late final BatchDao batchDao = BatchDao(this as AppDatabase);
+  late final TelemetryReadingDao telemetryReadingDao = TelemetryReadingDao(
+    this as AppDatabase,
+  );
+  late final VehicleFaultDao vehicleFaultDao = VehicleFaultDao(
+    this as AppDatabase,
+  );
+  late final PredictiveAlertDao predictiveAlertDao = PredictiveAlertDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

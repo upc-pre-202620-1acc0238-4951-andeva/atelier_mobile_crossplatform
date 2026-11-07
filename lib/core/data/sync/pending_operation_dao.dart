@@ -36,6 +36,12 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  Future<PendingOperationEntity?> findByDedupeKey(String dedupeKey) {
+    return (select(
+      pendingOperations,
+    )..where((t) => t.dedupeKey.equals(dedupeKey))).getSingleOrNull();
+  }
+
   Future<List<PendingOperationEntity>> findForUserByType(
     String userId,
     String type,

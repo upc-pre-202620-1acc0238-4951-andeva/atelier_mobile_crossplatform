@@ -32,6 +32,7 @@ import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart'
 import 'package:atelier_mobile_crossplatform/core/notifications/push_messaging_service.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/di/attendance_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/di/diagnostics_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/di/inventory_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/di/reception_dependencies.dart';
@@ -200,4 +201,5 @@ void setupDependencies() {
   setupReceptionDependencies();
   setupWorkOrdersDependencies();
   setupInventoryDependencies();
+  setupDiagnosticsDependencies();
 }
