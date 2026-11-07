@@ -18,7 +18,9 @@ import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/loc
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/predictive_alert_table.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/telemetry_reading_table.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/vehicle_fault_table.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/batch_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/batch_table.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/part_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/part_table.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/appointment_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/appointment_table.dart';
@@ -72,6 +74,8 @@ part 'app_database.g.dart';
     CustomerDao,
     AppointmentDao,
     WorkOrderDao,
+    PartDao,
+    BatchDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

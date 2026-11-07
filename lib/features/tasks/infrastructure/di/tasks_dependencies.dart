@@ -52,9 +52,6 @@ void setupTasksDependencies() {
   getIt.registerLazySingleton<TaskApi>(
     () => TaskApi(client: getIt<ApiClient>()),
   );
-  getIt.registerLazySingleton<InventoryApi>(
-    () => InventoryApi(client: getIt<ApiClient>()),
-  );
   getIt.registerLazySingleton<WorkBayApi>(
     () => WorkBayApi(client: getIt<ApiClient>()),
   );
