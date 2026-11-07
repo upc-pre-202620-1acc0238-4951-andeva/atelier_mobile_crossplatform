@@ -51,7 +51,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 5 | `tasks` — tareas del mecánico | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/tasks`, `feature/tasks-closure` |
 | 6 | `reception` + `workorders` — recepción y órdenes | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/reception-workorders` |
 | 7 | `inventory` — catálogo, lotes y alertas | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/inventory` |
-| 8 | `diagnostics` — OBD-II, DTC e informe IA | ⬜ Pendiente | |
+| 8 | `diagnostics` — OBD-II, DTC e informe IA | ✅ Sin `presentation` · Android en emulador con ECU simulada · ELM327 real, backend real, teléfono físico e iOS sin comprobar | `feature/diagnostics` |
 | 9 | `bays`, `cashier`, `reports`, `team` | ⬜ Pendiente | |
 
 Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho.
@@ -299,6 +299,37 @@ Comprobado y sin comprobar:
 - **Visible solo si** `session.canUseTelemetry()` / `canUseAiDiagnostics()`.
 - **Empezar por `ObdTransport`:** SPP por canal de plataforma, luego BLE. **Requiere un ELM327 BLE para probar**; sin él, no se puede afirmar que funcione en iOS (H40, H41).
 - **Sesión larga:** `flutter_foreground_task` en Android y `bluetooth-central` en iOS.
+
+**Hecho en el paso 8.** Los 23 casos de uso más `RequestBluetoothPermission`, `IotApi`, `TelemetryReadingDao`, `VehicleFaultDao`, `PredictiveAlertDao`, `DiagnosticsRepositoryImpl`, `HealthReportRepositoryImpl`, los handlers `TELEMETRY_BATCH`, `REGISTER_FAULT` y `RESOLVE_FAULT`, `Elm327ObdLink`, `LiveDiagnosticSession`, `SppObdTransport` con `ObdSppBridge.kt`, `BleObdTransport`, `BluetoothObdAdapterProvider`, `ObdSessionServiceController` y `setupDiagnosticsDependencies()`. Sin cambio de esquema. El núcleo ganó `ApiClient.patch` y `PendingOperationDao.findByDedupeKey`: si el proceso muere entre encolar un lote y marcar sus lecturas, recupera la operación y esas lecturas no se quedan sin lote.
+
+Diferencias con Android, a propósito:
+
+- **`ObdTransport` es el de [04](04-mobile-integration.md) §4** (un `Stream`), no "comando → respuesta". El armado hasta `>` y los timeouts están en `Elm327ObdLink`, con una sola suscripción por conexión.
+- **`ConnectObdUseCase` recibe un `ObdAdapter`**, no una dirección: su `kind` elige el transporte.
+- **`GetPairedObdAdapters`:** en Android, emparejados más lo que se vea por BLE (de mejor esfuerzo: solo si ya hay permiso, nunca lo pide y un fallo no tumba la lista); en iOS, solo BLE. Android nativo no escanea.
+- **`RequestBluetoothPermissionUseCase`** es nuevo, para que la UI no conozca los permisos de cada plataforma.
+- **La sesión muere con el motor de la UI.** El servicio protege el proceso, no la `FlutterActivity`: al quitar la app de recientes o, en Android 8–11, al pulsar atrás en la raíz, se corta la sesión. En Android nativo sobrevive. Lo guardado sigue en Drift y se arma en lotes en el siguiente `StartLiveTelemetry`. Moverla a un `TaskHandler` obligaría a registrar el canal SPP en otro motor y a poner un puente de estado con la UI.
+- **Fallas locales huérfanas:** recargar borra las `local-…` cuya operación ya no está en la cola, porque "Pendientes de sincronizar" (que Android no tiene) puede descartarla. Sin esto quedarían contadas como pendientes y bloquearían volver a registrar ese DTC.
+- **Borrar una falla local** usa `discardUnlessSyncing` en vez de leer el estado y borrar: el worker es otra conexión ([06](06-offline-sync.md) §3).
+- **BLE escribe en trozos fijos de 20 bytes**, sin negociar MTU: los comandos ELM327 son cortos.
+- `LocationProvider` pide el permiso si no está decidido; en Android no. Si falla, las lecturas van sin coordenadas y la sesión sigue.
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- **Permiso por acción:** lista de escáneres e instalación activa con `devicesRead` · instalar y retirar con `installationsManage` · conectar, muestrear y escanear con `telemetryIngest` · ver fallas con `faultsRead` · borrar fallas con `faultsResolve` · informe con `healthReportsGenerate` y `healthReportsRead` · alertas con `predictiveAlertsRead` y `predictiveAlertsAcknowledge`.
+- **Al abrir el diagnóstico:** `RequestBluetoothPermissionUseCase`, luego `GetPairedObdAdaptersUseCase`. Mostrar `BluetoothPermissionDeniedException`, `BluetoothDisabledException`, `ObdAdapterUnreachableException` y `ObdNoResponseException` (US16 E2) con textos propios: no traen `message`.
+- **Estados:** `ObserveLiveTelemetryUseCase` repite el estado actual al suscribirse. En `reconnecting` avisar y en `lost` ofrecer reconectar. `warnings` trae los umbrales rebasados (US18 E1).
+- **`PopScope` mientras dure el muestreo** en Android 8–11, por lo de atrás en la raíz. Pedir antes `POST_NOTIFICATIONS`, o el servicio no se verá.
+- **Ubicación:** `StartLiveTelemetryUseCase` puede hacer salir el diálogo si aún no está decidido. Conviene explicarlo antes de iniciar.
+- **Al cerrar sesión, llamar a `DisconnectObdUseCase`:** cerrar sesión no desconecta. `telemetry_readings` no tiene dueño, así que las lecturas sin lote saldrían con la sesión del siguiente usuario.
+- **Informe:** puede tardar más que el `attemptTimeout` de 60 s; la inferencia sigue y gasta cuota, pero la app ve `NetworkException`. Antes de reintentar, consultar `GetLatestHealthReportUseCase`. `InsufficientTelemetryException` es el 422 (US20 E2) y trae `message`.
+- Una falla `local-` y la remota del mismo DTC pueden verse dobles hasta que se envía el registro. `VehicleFault.isPending` marca las locales.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en emulador** (API 37) con worker, cola, Drift, servicio y canal Kotlin reales y una ECU simulada como `ObdTransport`, contra el servidor simulado, también sin red y con la app muerta ([06](06-offline-sync.md) §8), con `integration_probe/diagnostics_probe_main.dart`.
+- Sin comprobar: **ELM327 real por SPP y por BLE**, así que tampoco `BleObdTransport` contra un dispositivo (solo sus funciones puras), teléfono físico, backend real (H16, H17 y R3 solo están simulados), PDF contra el backend real e iOS (H40, H41).
+- Riesgos que se heredan de Android: `BUS INIT: ...OK` en ISO 9141/KWP podría rechazar el `0100` en autos viejos, porque `isNoResponse` busca `BUSINIT`; revisar con un auto real. Las lecturas sin lote de una sesión cortada solo salen en el siguiente `StartLiveTelemetry`, algo más frecuente aquí por la sesión atada al motor. El escaneo BLE devuelve todo dispositivo con nombre, sin filtrar por servicio porque muchos clones no lo anuncian.
 
 ## Paso 9 — `bays`, `cashier`, `reports`, `team`
 

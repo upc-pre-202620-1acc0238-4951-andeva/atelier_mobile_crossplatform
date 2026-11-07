@@ -220,9 +220,20 @@ abstract class ObdTransport {
 | Implementación | Plataforma | Cómo |
 | --- | --- | --- |
 | `SppObdTransport` | Android | `MethodChannel` + `EventChannel` hacia Kotlin en `android/app/src/main/kotlin/`, que reutiliza `BluetoothSppTransport.kt` de la app nativa. No se usa `flutter_blue_classic` porque es GPL-3 |
-| `BleObdTransport` | Android e iOS | `universal_ble`. El servicio y las características cambian según el fabricante (suelen ser `FFE0`/`FFE1` o `FFF0`/`FFF1`/`FFF2`): hay que descubrirlas al conectar y escribir en trozos del tamaño del MTU |
+| `BleObdTransport` | Android e iOS | `universal_ble`. El servicio y las características cambian según el fabricante (suelen ser `FFE0`/`FFE1` o `FFF0`/`FFF1`/`FFF2`): hay que descubrirlas al conectar. Escribe en trozos de 20 bytes, sin negociar MTU: los comandos son cortos |
 
-El resto se porta tal cual de la app nativa: `Elm327ObdLink`, `DtcCatalog` y `LiveDiagnosticSession` no dependen del transporte. **No se ha probado con un adaptador BLE**: es el primer riesgo del paso 8. Ver H40 y H41 en [03](03-traceability.md#huecos-abiertos).
+El resto se porta tal cual de la app nativa: `Elm327ObdLink`, `DtcCatalog` y `LiveDiagnosticSession` no dependen del transporte. **No se ha probado con un adaptador real, ni BLE ni SPP**: es el primer riesgo del paso 8. Ver H40 y H41 en [03](03-traceability.md#huecos-abiertos).
+
+**Puente SPP (solo Android).** `ObdSppBridge.kt`, registrado en `MainActivity`: `com.andeva.atelier.mobile/obd_spp` (`bondedDevices`, `connect`, `send`, `disconnect`) y `com.andeva.atelier.mobile/obd_spp/incoming` (bytes como texto ASCII). Sus errores son `PERMISSION_DENIED`, `BLUETOOTH_DISABLED`, `UNREACHABLE` e `INVALID_ADDRESS`, y `SppObdTransport` los traduce a excepciones de dominio. Vive en el motor de la UI: el worker no toca Bluetooth.
+
+**Descubrir adaptadores.**
+
+| Plataforma | `GetPairedObdAdapters` |
+| --- | --- |
+| Android | Emparejados por el puente, más lo que se vea por BLE durante 4 s. El escaneo es de mejor esfuerzo: solo si `UniversalBle.hasPermissions` ya da `true`, nunca pide nada y su fallo no tumba la lista. `startScan` pediría ubicación en Android 11 o menor |
+| iOS | Solo escaneo BLE: no hay lista de emparejados (H41). Sin permiso, avisa. Sin comprobar |
+
+**Servicio en Android.** `ObdSessionServiceController` arranca `flutter_foreground_task` **sin `callback`**: la sesión sigue en el motor de la UI, donde están los plugins, y el servicio solo mantiene el proceso. Protege el proceso, no la `FlutterActivity`: si esta se destruye (quitar la app de recientes; atrás en la raíz en Android 8–11) se corta la sesión. Sin `BLUETOOTH_CONNECT` no arranca: desde API 34 el sistema lo exige para el tipo `connectedDevice`.
 
 ### Comandos y endpoints
 
