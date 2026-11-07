@@ -25,6 +25,11 @@ class VehicleDao extends DatabaseAccessor<AppDatabase> with _$VehicleDaoMixin {
     return (select(vehicles)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  Stream<VehicleEntity?> watchById(String id) {
+    return (select(vehicles)..where((t) => t.id.equals(id)))
+        .watchSingleOrNull();
+  }
+
   Future<VehicleEntity?> findByPlate(String plate) {
     return (select(vehicles)..where((t) => t.plate.equals(plate)))
         .getSingleOrNull();
