@@ -1,7 +1,7 @@
 name: atelier_mobile_crossplatform
 description: "App de staff de Atelier para Android e iOS."
 publish_to: 'none'
-version: 0.6.1+1
+version: 0.7.0+1
 
 environment:
   sdk: ^3.13.5
