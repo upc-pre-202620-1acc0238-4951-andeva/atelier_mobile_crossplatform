@@ -1,4 +1,4 @@
-/// `AttendanceResource` de docs/api/hr.md; solo lo que se guarda en caché.
+/// `AttendanceResource` de docs/api/hr.md.
 class AttendanceDto {
   final String id;
   final String? branchId;
@@ -16,6 +16,10 @@ class AttendanceDto {
   final int? regularMinutes;
   final int? overtimeMinutes;
 
+  /// Solo los lee `team` (quién revisó el descargo y cuándo).
+  final String? justificationReviewedBy;
+  final String? justificationReviewedAt;
+
   const AttendanceDto({
     required this.id,
     required this.branchId,
@@ -32,6 +36,8 @@ class AttendanceDto {
     required this.workedMinutes,
     required this.regularMinutes,
     required this.overtimeMinutes,
+    this.justificationReviewedBy,
+    this.justificationReviewedAt,
   });
 
   factory AttendanceDto.fromJson(Map<String, dynamic> json) {
@@ -52,6 +58,8 @@ class AttendanceDto {
       workedMinutes: (json['workedMinutes'] as num?)?.toInt(),
       regularMinutes: (json['regularMinutes'] as num?)?.toInt(),
       overtimeMinutes: (json['overtimeMinutes'] as num?)?.toInt(),
+      justificationReviewedBy: json['justificationReviewedBy'] as String?,
+      justificationReviewedAt: json['justificationReviewedAt'] as String?,
     );
   }
 }
