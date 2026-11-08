@@ -1035,4 +1035,19 @@ Paso 8, con `integration_probe/diagnostics_probe_main.dart`, `API_BASE_URL` y, p
 | `SppObdTransport` real | Bluetooth apagado (`cmd bluetooth_manager disable`): `BluetoothDisabledException` al conectar y al listar. Prendido, sin adaptador: `ObdAdapterUnreachableException` y lista vacía |
 | Servicio real (API 37) | `isForeground=true`, `types=0x10` (`connectedDevice`), notificación del canal `diagnostics`; desaparece al detenerlo; ningún `FATAL` |
 
+Paso 9, con `integration_probe/support_probe_main.dart` y las mismas `--dart-define` del paso 5. El servidor simula H24–H32 y H44 tal como los documenta [03](03-traceability.md), así que esto no demuestra el contrato real. Bahías, caja, reportes y equipo no usan la cola ni el worker. Para H28 el servidor aplica la acción y **corta la conexión sin responder**: el cliente ve un error de red real. Antes de instalar hay que desinstalar la app.
+
+| Escenario | Evidencia |
+| --- | --- |
+| Tablero | Sale de la caché y se completa con el detalle: orden 900, mecánico `probe-membership`, 32 min de mano de obra; el sondeo emite al empezar |
+| Reasignar bahía (H25) | En mantenimiento falla sin llamar; a una libre mueve la orden (`sb1` → `sb2`); a una ya ocupada, 409 con su `message` |
+| Borrador (H26, H27) | Boleta con DNI; líneas a 118 y 11.8, total 141.6; un repuesto `Product {uuid}` bloquea emitir con `lines` hasta escribir la descripción |
+| H28 emitir | Conexión cortada tras crear: `Issued` con un solo `POST`; emitir otra vez da `AlreadyIssued` sin `POST` |
+| H28 cobrar | Conexión cortada tras cobrar: `PaymentOutcomeUnknownException`, un solo cobro en el servidor y en el historial; cobrar más que el saldo falla sin llamar |
+| Entrega (H29) | Pase de salida y pago formal con saldo dan 422; saldado: `PAID`, pase en `cache/pdfs/pase-salida-sw1.pdf`, entregar libera la bahía |
+| Series | `F001` creada; repetida, 409 con su `message` |
+| Reportes (H30, H31) | Flujo de caja del mes (141.6, gastos y por cobrar en 0) y su PDF; PDF de flota; otro taller, 404 con su `message` |
+| Equipo (H32, H44) | Día de la sede con un ausente sin ingreso y el puesto como nombre; bandeja de 7 días con un descargo y el día que falla en `failedDates`; aprobar devuelve `EXCUSED` |
+| Sin red (Wi-Fi, datos y `adb reverse` cortados; `Active default network: none`) | Recargar bahías lanza `NetworkException` y el tablero sigue con 3 bahías; las cabeceras de comprobantes salen de la caché; cobrar falla en la lectura previa con `NetworkException`, no como resultado desconocido; el reporte lanza `NetworkException` |
+
 Falta repetirlo en un teléfono físico: el emulador no reproduce el ahorro de batería de cada fabricante.
