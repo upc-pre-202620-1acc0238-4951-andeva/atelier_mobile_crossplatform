@@ -20,6 +20,13 @@ class BayDao extends DatabaseAccessor<AppDatabase> with _$BayDaoMixin {
     });
   }
 
+  Stream<List<BayEntity>> watchBranch(String branchId) {
+    return (select(bays)
+          ..where((t) => t.branchId.equals(branchId))
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+        .watch();
+  }
+
   Future<BayEntity?> findById(String id) {
     return (select(bays)..where((t) => t.id.equals(id))).getSingleOrNull();
   }

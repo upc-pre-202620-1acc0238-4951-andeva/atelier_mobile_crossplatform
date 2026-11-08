@@ -415,6 +415,33 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
   }
 
   @override
+  Future<WorkOrder> markAsPaid(WorkOrderId id) async {
+    return _savePaidHeader(await workOrderApi.markAsPaid(id.value));
+  }
+
+  @override
+  Future<WorkOrder> deliver(WorkOrderId id) async {
+    return _savePaidHeader(await workOrderApi.deliver(id.value));
+  }
+
+  /// El backend ya cobró o entregó: un fallo de la caché no puede parecer un fallo de la acción.
+  Future<WorkOrder> _savePaidHeader(WorkOrderDto dto) async {
+    try {
+      return await _saveHeader(dto);
+    } catch (_) {
+      return dto.toEntity(now().millisecondsSinceEpoch).toDomain();
+    }
+  }
+
+  @override
+  Future<File> downloadExitPass(WorkOrderId id) {
+    return pdfDownloader.download(
+      'pase-salida-${id.value}',
+      () => workOrderApi.getExitPassPdf(id.value),
+    );
+  }
+
+  @override
   Future<List<PartMovement>> getPartMovements(WorkOrderId id) async {
     final dtos = await workOrderApi.getPartMovements(id.value);
     return dtos.map((dto) => dto.toDomain()).toList();

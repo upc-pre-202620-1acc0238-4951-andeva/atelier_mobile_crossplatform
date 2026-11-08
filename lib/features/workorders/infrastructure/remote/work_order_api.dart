@@ -4,7 +4,7 @@ import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_reference_dtos.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_request_dtos.dart';
 
-/// Órdenes de trabajo de docs/api/operations.md (sin bahía, entrega ni pago: paso 9).
+/// Órdenes de trabajo de docs/api/operations.md. La bahía está en `WorkBayApi`.
 class WorkOrderApi {
   static const _base = '/api/v1/work-orders';
 
@@ -139,6 +139,17 @@ class WorkOrderApi {
 
   Future<WorkOrderDto> cancel(String id, ReasonRequestDto body) {
     return _action(id, 'cancel', body: body.toJson());
+  }
+
+  /// `invoicing:payments:create`; 422 si el comprobante aún tiene saldo.
+  Future<WorkOrderDto> markAsPaid(String id) => _action(id, 'mark-as-paid');
+
+  /// `operations:vehicle_handover:execute`; libera la bahía. Sin firma (H29).
+  Future<WorkOrderDto> deliver(String id) => _action(id, 'deliver');
+
+  /// `invoicing:exit_passes:issue`; 422 si la orden no está `PAID`.
+  Future<ApiFile> getExitPassPdf(String id) {
+    return client.getBytes('$_base/$id/exit-pass/pdf');
   }
 
   Future<List<PartMovementDto>> getPartMovements(String id) async {

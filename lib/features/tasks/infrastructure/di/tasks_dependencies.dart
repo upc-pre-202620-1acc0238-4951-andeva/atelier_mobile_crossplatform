@@ -42,18 +42,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void setupTasksDependencies() {
-  getIt.registerLazySingleton<TaskDao>(
-    () => getIt<AppDatabase>().taskDao,
-  );
-  getIt.registerLazySingleton<BayDao>(
-    () => getIt<AppDatabase>().bayDao,
-  );
+  getIt.registerLazySingleton<TaskDao>(() => getIt<AppDatabase>().taskDao);
 
   getIt.registerLazySingleton<TaskApi>(
     () => TaskApi(client: getIt<ApiClient>()),
-  );
-  getIt.registerLazySingleton<WorkBayApi>(
-    () => WorkBayApi(client: getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<PausedElapsedStore>(

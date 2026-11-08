@@ -32,11 +32,15 @@ import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart'
 import 'package:atelier_mobile_crossplatform/core/notifications/push_messaging_service.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/di/attendance_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/di/auth_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/di/bays_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/di/cashier_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/di/diagnostics_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/main/infrastructure/di/main_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/di/inventory_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/di/reception_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/reports/infrastructure/di/reports_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/di/tasks_dependencies.dart';
+import 'package:atelier_mobile_crossplatform/features/team/infrastructure/di/team_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/di/workorders_dependencies.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -202,4 +206,8 @@ void setupDependencies() {
   setupWorkOrdersDependencies();
   setupInventoryDependencies();
   setupDiagnosticsDependencies();
+  setupBaysDependencies();
+  setupCashierDependencies();
+  setupReportsDependencies();
+  setupTeamDependencies();
 }

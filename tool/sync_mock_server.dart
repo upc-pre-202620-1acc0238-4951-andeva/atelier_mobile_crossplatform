@@ -60,6 +60,16 @@ void main(List<String> args) async {
       'iot:health_reports:read',
       'iot:alerts:read',
       'iot:alerts:acknowledge',
+      'operations:bays:reassign',
+      'invoicing:invoices:read',
+      'invoicing:invoices:issue_sunat',
+      'invoicing:payments:create',
+      'invoicing:exit_passes:issue',
+      'invoicing:fiscal_config:manage',
+      'invoicing:cashflow:export_pdf',
+      'operations:vehicle_handover:execute',
+      'hr:attendance:audit_all',
+      'hr:justifications:approve',
     ],
     'refreshToken': refresh,
     'membershipId': 'probe-membership',
@@ -75,6 +85,7 @@ void main(List<String> args) async {
   final reception = _ReceptionBackend(log);
   final inventory = _InventoryBackend(log);
   final iot = _IotBackend(log);
+  final support = _SupportBackend(log);
 
   server.listen((request) async {
     // En bytes: la subida a Supabase es un JPEG, no texto.
@@ -89,10 +100,17 @@ void main(List<String> args) async {
 
     // Primero recepción: `by-plate` y `POST /vehicles` también empiezan por `/api/v1/vehicles`.
     final handled =
+        support.handle(request.method, request.uri, body) ??
         iot.handle(request.method, request.uri, body) ??
         inventory.handle(request.method, request.uri, body) ??
         reception.handle(request.method, request.uri, body) ??
         tasks.handle(request.method, path, body, bytes.length);
+    if (handled != null && handled.$1 == _SupportBackend.drop) {
+      // La acción ya se aplicó: se corta sin responder (H28).
+      final socket = await request.response.detachSocket(writeHeaders: false);
+      socket.destroy();
+      return;
+    }
     if (handled != null) {
       request.response
         ..statusCode = handled.$1
@@ -1147,5 +1165,311 @@ class _InventoryBackend {
       return id == 'po2' ? (400, invalid) : (200, jsonEncode(_order(id)));
     }
     return null;
+  }
+}
+
+/// Paso 9: bahías, caja, equipo y reportes. Simula H24–H32 tal como los documenta
+/// docs/03-traceability.md: no demuestra el contrato real. Un estado `-1` corta la conexión
+/// después de aplicar la acción, como un timeout que sí llegó al backend (H28).
+class _SupportBackend {
+  static const _branch = 'probe-branch';
+  static const drop = -1;
+
+  final void Function(String) log;
+  final bays = <String, Map<String, Object?>>{
+    'sb1': {'id': 'sb1', 'branchId': _branch, 'name': 'Bahía A', 'bayType': 'LIFT', 'status': 'OCCUPIED', 'currentWorkOrderId': 'sw1'},
+    'sb2': {'id': 'sb2', 'branchId': _branch, 'name': 'Bahía B', 'bayType': 'WASH_BAY', 'status': 'AVAILABLE', 'currentWorkOrderId': null},
+    'sb3': {'id': 'sb3', 'branchId': _branch, 'name': 'Bahía C', 'bayType': 'LIFT', 'status': 'MAINTENANCE', 'currentWorkOrderId': null},
+  };
+  final order = <String, Object?>{
+    'id': 'sw1',
+    'internalNumber': 900,
+    'vehicleId': 'rv1',
+    'customerId': 'rc1',
+    'branchId': _branch,
+    'currentBayId': 'sb1',
+    'status': 'COMPLETED',
+    'subtotal': 120,
+    'taxAmount': 21.6,
+    'totalAmount': 141.6,
+    'currency': 'PEN',
+    'tasks': [
+      {
+        'id': 'st1',
+        'workOrderId': 'sw1',
+        'serviceId': 'srv1',
+        'serviceName': 'Standard Service',
+        'mechanicId': 'probe-membership',
+        'status': 'IN_PROGRESS',
+        'description': 'Cambio de aceite',
+        'price': 100,
+        'currency': 'PEN',
+        'totalPausedSeconds': 0,
+        'startedAt': DateTime.now().toUtc().subtract(const Duration(minutes: 30)).toIso8601String(),
+        'products': [
+          {'id': 'stp1', 'taskId': 'st1', 'productId': 'sp1', 'productName': 'Product 3fa85f64-5717-4562-b3fc-2c963f66afa6', 'quantity': 2, 'unitPrice': 10, 'currency': 'PEN'},
+        ],
+        'evidenceImages': [],
+      },
+    ],
+    'proposals': [],
+    'intakeImages': [],
+  };
+  final vouchers = <Map<String, Object?>>[];
+  final payments = <Map<String, Object?>>[];
+  final series = <Map<String, Object?>>[
+    {'id': 'ss1', 'branchId': _branch, 'voucherType': '03', 'serie': 'B001', 'currentCorrelative': 0, 'active': true},
+  ];
+  var dropNextIssue = false;
+  var dropNextPayment = false;
+  var issuePosts = 0;
+  var paymentPosts = 0;
+  var ids = 0;
+
+  _SupportBackend(this.log);
+
+  (int, String) _ok(Object? value, [int status = 200]) => (status, jsonEncode(value));
+
+  (int, String) _error(int status, String message) {
+    return (status, jsonEncode({'code': 'PROBE', 'message': message}));
+  }
+
+  Map<String, Object?> _header() {
+    return {...order}
+      ..remove('tasks')
+      ..remove('proposals')
+      ..remove('intakeImages');
+  }
+
+  static String _today() {
+    return DateTime.now().toUtc().subtract(const Duration(hours: 5)).toIso8601String().substring(0, 10);
+  }
+
+  static String _shift(String date, int days) {
+    return DateTime.parse('${date}T00:00:00Z').add(Duration(days: days)).toIso8601String().substring(0, 10);
+  }
+
+  void _releaseBay() {
+    for (final bay in bays.values) {
+      if (bay['currentWorkOrderId'] == 'sw1') {
+        bay['currentWorkOrderId'] = null;
+        bay['status'] = 'AVAILABLE';
+      }
+    }
+  }
+
+  (int, String)? handle(String method, Uri uri, String body) {
+    final path = uri.path;
+    if (path == '/control/support') {
+      final what = uri.queryParameters['drop'];
+      if (what == 'issue') dropNextIssue = true;
+      if (what == 'payment') dropNextPayment = true;
+      if (uri.queryParameters['complete'] == 'true') order['status'] = 'COMPLETED';
+      return _ok({
+        'issuePosts': issuePosts,
+        'vouchers': vouchers.length,
+        'paymentPosts': paymentPosts,
+        'payments': payments.length,
+        'orderStatus': order['status'],
+        'bayOf': {for (final b in bays.values) b['id']: b['currentWorkOrderId']},
+      });
+    }
+    final mine =
+        path == '/api/v1/work-bays' ||
+        path.startsWith('/api/v1/work-orders/sw1') ||
+        path.startsWith('/api/v1/tasks/st') ||
+        path.startsWith('/api/v1/invoicing/') ||
+        path.startsWith('/api/v1/iot/health-reports/fleet') ||
+        path.startsWith('/api/v1/hr/attendances/branch/') ||
+        path.startsWith('/api/v1/hr/attendances/sa');
+    if (!mine) return null;
+    final sent = body.isEmpty ? const <String, dynamic>{} : jsonDecode(body) as Map<String, dynamic>;
+    log('SUPPORT $method ${uri.toString()} $body');
+
+    if (path == '/api/v1/work-bays') return _ok(bays.values.toList());
+    if (path == '/api/v1/work-orders/sw1' && method == 'GET') return _ok(order);
+    if (path == '/api/v1/work-orders/sw1/bay') {
+      final target = bays[sent['bayId']];
+      if (target == null) return _error(404, 'Bahía no encontrada');
+      if (target['status'] != 'AVAILABLE') return _error(409, 'La bahía no está disponible');
+      _releaseBay();
+      target['currentWorkOrderId'] = 'sw1';
+      target['status'] = 'OCCUPIED';
+      order['currentBayId'] = target['id'];
+      return _ok(_header());
+    }
+    if (path == '/api/v1/tasks/st1/mechanic') {
+      final task = (order['tasks'] as List).first as Map<String, Object?>;
+      task['mechanicId'] = sent['mechanicId'];
+      return _ok(task);
+    }
+    if (path == '/api/v1/work-orders/sw1/mark-as-paid') {
+      final pending = vouchers.any((v) => (v['pendingBalance'] as num) > 0.001);
+      if (vouchers.isEmpty || pending) return _error(422, 'El comprobante tiene saldo pendiente');
+      order['status'] = 'PAID';
+      return _ok(_header());
+    }
+    if (path == '/api/v1/work-orders/sw1/exit-pass/pdf') {
+      if (order['status'] != 'PAID') return _error(422, 'La orden no está pagada');
+      return (200, '%PDF-1.4 pase de salida');
+    }
+    if (path == '/api/v1/work-orders/sw1/deliver') {
+      _releaseBay();
+      order['currentBayId'] = null;
+      return _ok(_header());
+    }
+    if (path.startsWith('/api/v1/invoicing/')) return _invoicing(method, path, uri, sent);
+    if (path == '/api/v1/iot/health-reports/fleet/pdf') {
+      if (uri.queryParameters['customerId'] != 'rc1') return _error(404, 'Cliente no encontrado');
+      return (200, '%PDF-1.4 flota');
+    }
+    if (path == '/api/v1/hr/attendances/branch/$_branch/daily') {
+      final date = uri.queryParameters['date'];
+      final today = _today();
+      // H32: un día falla para comprobar `failedDates`.
+      if (date == _shift(today, -2)) return _error(500, 'Fallo del día');
+      if (date != today) return _ok([]);
+      return _ok([
+        {'id': 'sa1', 'branchId': _branch, 'membershipId': 'probe-membership', 'shiftId': 'probe-shift', 'clockIn': '${today}T14:20:00Z', 'status': 'LATE', 'justificationReason': 'Tráfico', 'justificationStatus': 'PENDING'},
+        {'id': 'sa2', 'branchId': _branch, 'membershipId': 'otro', 'shiftId': 'probe-shift', 'status': 'ABSENT'},
+      ]);
+    }
+    if (path == '/api/v1/hr/attendances/sa1/justification/approve') {
+      return _ok({'id': 'sa1', 'branchId': _branch, 'membershipId': 'probe-membership', 'status': 'EXCUSED', 'justificationStatus': 'APPROVED'});
+    }
+    return _error(404, 'No simulado');
+  }
+
+  (int, String) _invoicing(String method, String path, Uri uri, Map<String, dynamic> sent) {
+    const base = '/api/v1/invoicing';
+    if (path == '$base/vouchers' && method == 'POST') {
+      issuePosts++;
+      final total = (sent['lines'] as List).fold<num>(0, (sum, line) {
+        final l = line as Map;
+        return sum + (l['quantity'] as num) * (l['unitPriceWithIgv'] as num);
+      });
+      final voucher = <String, Object?>{
+        'id': 'sv${++ids}',
+        'branchId': sent['branchId'],
+        'customerId': sent['customerId'],
+        'workOrderId': sent['workOrderId'],
+        'voucherType': sent['voucherType'],
+        'serie': sent['serie'],
+        'number': vouchers.length + 1,
+        'subtotal': (total / 1.18 * 100).round() / 100,
+        'igvAmount': ((total - total / 1.18) * 100).round() / 100,
+        'totalAmount': total,
+        'paidAmount': 0,
+        'pendingBalance': total,
+        'currency': sent['currency'],
+        'status': 'ISSUED',
+        'paymentStatus': 'PENDING',
+        'customerInfo': sent['customerInfo'],
+        'lines': sent['lines'],
+        'payments': [],
+      };
+      vouchers.add(voucher);
+      if (dropNextIssue) {
+        dropNextIssue = false;
+        log('ISSUE creado y conexión cortada (H28)');
+        return (drop, '');
+      }
+      return _ok(voucher, 201);
+    }
+    if (path.startsWith('$base/vouchers/work-order/')) {
+      return _ok(vouchers.where((v) => v['workOrderId'] == path.split('/').last).toList());
+    }
+    if (path.startsWith('$base/vouchers/')) {
+      final found = vouchers.where((v) => v['id'] == path.split('/').last).firstOrNull;
+      return found == null ? _error(404, 'Comprobante no encontrado') : _ok(found);
+    }
+    if (path == '$base/payments' && method == 'POST') {
+      paymentPosts++;
+      final voucher = vouchers.where((v) => v['id'] == sent['voucherId']).firstOrNull;
+      if (voucher == null) return _error(404, 'Comprobante no encontrado');
+      final amount = sent['amount'] as num;
+      if (amount > (voucher['pendingBalance'] as num) + 0.001) return _error(409, 'El pago excede el saldo');
+      final payment = {
+        'id': 'spay${++ids}',
+        'voucherId': voucher['id'],
+        'amount': amount,
+        'currency': sent['currency'],
+        'paymentMethod': sent['paymentMethod'],
+        'transactionReference': sent['transactionReference'],
+        'status': 'COMPLETED',
+        'paidAt': DateTime.now().toUtc().toIso8601String(),
+      };
+      payments.add(payment);
+      final paid = (voucher['paidAmount'] as num) + amount;
+      voucher['paidAmount'] = paid;
+      voucher['pendingBalance'] = (((voucher['totalAmount'] as num) - paid) * 100).round() / 100;
+      voucher['paymentStatus'] = (voucher['pendingBalance'] as num) <= 0.001 ? 'PAID' : 'PARTIAL';
+      if (dropNextPayment) {
+        dropNextPayment = false;
+        log('PAYMENT registrado y conexión cortada (H28)');
+        return (drop, '');
+      }
+      return _ok(payment, 201);
+    }
+    if (path.startsWith('$base/payments/voucher/')) {
+      return _ok(payments.where((p) => p['voucherId'] == path.split('/').last).toList());
+    }
+    if (path == '$base/payments/branch/$_branch/daily') {
+      final total = payments.fold<num>(0, (sum, p) => sum + (p['amount'] as num));
+      return _ok({
+        'branchId': _branch,
+        'date': uri.queryParameters['date'],
+        'totalCollected': total,
+        'currency': 'PEN',
+        'paymentCount': payments.length,
+        'breakdownByMethod': {for (final p in payments) p['paymentMethod']: p['amount']},
+        'payments': payments,
+      });
+    }
+    if (path == '$base/series-configurations/branch/$_branch') return _ok(series);
+    if (path == '$base/series-configurations' && method == 'POST') {
+      if (series.any((s) => s['serie'] == sent['serie'])) return _error(409, 'La serie ya está registrada');
+      final created = {
+        'id': 'ss${++ids}',
+        'branchId': _branch,
+        'voucherType': sent['voucherType'],
+        'serie': sent['serie'],
+        'currentCorrelative': sent['initialCorrelative'] ?? 0,
+        'active': true,
+      };
+      series.add(created);
+      return _ok(created, 201);
+    }
+    if (path.startsWith('$base/series-configurations/') && path.endsWith('/status')) {
+      final id = path.split('/')[5];
+      for (final s in series) {
+        if (s['id'] == id) s['active'] = sent['active'];
+      }
+      return (200, '');
+    }
+    if (path == '$base/financial-reports/cash-flow') {
+      final total = payments.fold<num>(0, (sum, p) => sum + (p['amount'] as num));
+      return _ok({
+        'totalIncome': total,
+        'totalExpenses': 0, // H31
+        'accountsReceivable': 0, // H31
+        'netCashFlow': total,
+        'currency': 'PEN',
+        'movements': [
+          for (final p in payments)
+            {
+              'transactionId': p['id'],
+              'movementDate': p['paidAt'],
+              'type': 'INFLOW',
+              'category': 'SALES',
+              'concept': 'Cobro',
+              'amount': p['amount'],
+              'runningBalance': p['amount'],
+            },
+        ],
+      });
+    }
+    if (path == '$base/financial-reports/cash-flow/pdf') return (200, '%PDF-1.4 flujo de caja');
+    return _error(404, 'No simulado');
   }
 }
