@@ -1,7 +1,7 @@
 name: atelier_mobile_crossplatform
 description: "App de staff de Atelier para Android e iOS."
 publish_to: 'none'
-version: 0.9.0+1
+version: 0.10.0+1
 
 environment:
   sdk: ^3.13.5
@@ -47,6 +47,7 @@ dev_dependencies:
   mocktail: ^1.0.5
   flutter_launcher_icons: ^0.14.4
   shared_preferences_platform_interface: ^2.4.2
+  fake_async: ^1.3.3
 
 flutter:
   uses-material-design: true

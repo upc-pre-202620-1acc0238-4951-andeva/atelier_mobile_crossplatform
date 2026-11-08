@@ -97,6 +97,16 @@ abstract class WorkOrderRepository {
   /// Libera bahía y reservas; la orden `CANCELED` sale de la caché de la sede.
   Future<WorkOrder> cancel(WorkOrderId id, String reason);
 
+  /// Pago formal de la orden (US39 E2); el backend rechaza si queda saldo. La orden `PAID` sale de
+  /// la caché de la sede.
+  Future<WorkOrder> markAsPaid(WorkOrderId id);
+
+  /// Entrega el vehículo y libera la bahía (US39 E2). Sin firma del cliente (H29).
+  Future<WorkOrder> deliver(WorkOrderId id);
+
+  /// PDF del pase de salida en la caché (US39 E2/E3); una orden sin pagar da el `message` del 422.
+  Future<File> downloadExitPass(WorkOrderId id);
+
   Future<List<PartMovement>> getPartMovements(WorkOrderId id);
 
   Future<Profitability> getProfitability(WorkOrderId id);

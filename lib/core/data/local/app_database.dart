@@ -13,6 +13,7 @@ import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_table.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/local/voucher_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_table.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/local/voucher_table.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/predictive_alert_dao.dart';
@@ -82,6 +83,7 @@ part 'app_database.g.dart';
     TelemetryReadingDao,
     VehicleFaultDao,
     PredictiveAlertDao,
+    VoucherDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

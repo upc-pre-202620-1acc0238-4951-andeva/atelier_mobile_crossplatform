@@ -13,6 +13,9 @@ abstract class ReceptionRepository {
 
   Stream<Customer?> observeCustomer(String id);
 
+  /// En línea; lo deja en la caché `customers`. La usa caja para sugerir el comprobante (H27).
+  Future<Customer> getCustomer(String id);
+
   /// Por documento o nombre. Sin red y con texto, busca en la caché `customers`.
   Future<List<Customer>> searchCustomers(String query);
 

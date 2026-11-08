@@ -11640,6 +11640,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PredictiveAlertDao predictiveAlertDao = PredictiveAlertDao(
     this as AppDatabase,
   );
+  late final VoucherDao voucherDao = VoucherDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

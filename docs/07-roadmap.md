@@ -52,7 +52,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 6 | `reception` + `workorders` — recepción y órdenes | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/reception-workorders` |
 | 7 | `inventory` — catálogo, lotes y alertas | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/inventory` |
 | 8 | `diagnostics` — OBD-II, DTC e informe IA | ✅ Sin `presentation` · Android en emulador con ECU simulada · ELM327 real, backend real, teléfono físico e iOS sin comprobar | `feature/diagnostics` |
-| 9 | `bays`, `cashier`, `reports`, `team` | ⬜ Pendiente | |
+| 9 | `bays`, `cashier`, `reports`, `team` | ✅ Sin `presentation` · Android en emulador · backend real, SUNAT, teléfono físico e iOS sin comprobar | `feature/support` |
 
 Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho.
 
@@ -337,6 +337,38 @@ Comprobado y sin comprobar:
 - **`cashier`** (US37–US39, US42): `PrepareVoucher`, `IssueVoucher`, `GetWorkOrderVouchers`, `ObserveWorkOrderVouchers`, `RegisterPayment`, `GetVoucherPayments`, `GetDailyCashSummary`, `MarkWorkOrderPaid`, `DownloadExitPass`, `DeliverVehicle`, `GetBranchSeries`, `ConfigureSeries`, `SetSeriesActive`. Todo en línea. `voucherType` viaja como código SUNAT (`"01"`, `"03"`, `"07"`). **Dinero y documentos fiscales: portar H26–H29 sin simplificar**, en especial H28 (no duplicar comprobantes ni cobros tras un timeout).
 - **`reports`** (US41, US43 E2): `GetCashFlowSummary`, `DownloadCashFlowPdf`, `DownloadFleetHealthPdf`. Todo en línea (H30, H31).
 - **`team`** (US10): `GetBranchDailyAttendance`, `GetPendingJustifications`, `GetCollaboratorAttendance`, `ApproveJustification`, `RejectJustification`. Todo en línea (H32).
+
+**Hecho en el paso 9.** Los 26 casos de uso, sin `presentation` y sin cambio de esquema (`Bays` y `Vouchers` ya existían; solo se añadió `VoucherDao`).
+
+- **`bays`:** `BayRepositoryImpl` (singleton), `WorkBayApi` con reasignar bahía y mecánico, `BayDao.watchBranch` y `bay_mappers.dart`, que ahora usa también `tasks`. El registro de `BayDao` y `WorkBayApi` pasó de `setupTasksDependencies` a `setupBaysDependencies()`.
+- **`cashier`:** `CashierApi`, `VoucherDao`, `CashierRepositoryImpl` con la guarda H28 y `KeyedLock`, `CashierValidation` y `VoucherDrafts` (líneas e IGV de H26, sugerencia de H27).
+- **`reports`:** `ReportsApi` y `ReportsRepositoryImpl`, con `ReportPeriod`.
+- **`team`:** `TeamApi` y `TeamRepositoryImpl`, que reutiliza `AttendanceApi.history` y `EmployeeApi.getByBranch`.
+- **Fuera de las features nuevas:** `WorkOrderRepository` ganó `markAsPaid`, `deliver` y `downloadExitPass`; `ReceptionRepository` ganó `getCustomer`; `AttendanceDto` ganó `justificationReviewedBy` y `justificationReviewedAt`. `fake_async` pasó a `dev_dependencies` para probar el sondeo de 30 s.
+
+Diferencias con Android, a propósito:
+
+- **Pago formal, entrega y pase de salida viven en `WorkOrderRepository`**, no en un `HandoverService` de `cashier`: reutilizan el guardado de cabecera que borra la orden `PAID` de la caché. Sus casos de uso siguen en `cashier/application`. Si falla la caché tras pagar o entregar, se devuelve la orden igual, como Android.
+- **Los filtros de permiso están en los repositorios** (`canReadBoard`, el diario y la bandeja de `team`), como en el resto de la app Flutter; en Android estaban en los casos de uso. El comportamiento es el mismo.
+- **`PollBayBoardUseCase` es un `Stream<void>`:** cada fallo llega como evento de error y el ciclo sigue. Android emitía `Result`.
+- **"Respuesta ilegible" en Dart** es la `FormatException` de `jsonDecode` o el `TypeError` de un `fromJson`, no un `NetworkException`: la guarda de H28 las trata como un resultado incierto, igual que el timeout y el 2xx sin cuerpo.
+- **El candado de emitir y cobrar es una cola de `Future` por clave**, no un `Mutex`; la entrada se borra al terminar la última operación.
+- `ReportPeriod.month(año, mes)` y `ReportPeriod.currentMonth(BusinessTime)` en lugar de `YearMonth`. Las fechas son días de Lima `yyyy-MM-dd`.
+
+Para quien haga la presentación (no está escrito, porque solo es de UI):
+
+- **Permiso por acción:** tablero y sondeo con `baysRead` · reasignar con `baysReassign` · borrador y emitir con `invoicesIssueSunat` · cobrar con `paymentsCreate` · pase de salida con `exitPassesIssue` · entregar con `vehicleHandoverExecute` · series con `fiscalConfigManage` · flujo de caja con `cashflowExportPdf` · PDF de flota con `Session.canReadAiReports()` · diario y bandeja con `attendanceAuditAll` · aprobar y rechazar con `justificationsApprove` (los casos de uso no lo filtran).
+- **Tablero (US40):** `PollBayBoardUseCase` solo mientras la pantalla esté visible (H24) y `ObserveBayBoardUseCase` para pintar. El tiempo transcurrido avanza con cada refresco; la UI puede contarlo localmente. Deshabilitar las bahías con `WorkBay.canReceive == false`; `bayType` solo se muestra (H25). Los mecánicos salen de `GetBranchMechanicsUseCase`.
+- **Cobro (H26–H28):** `PrepareVoucherUseCase` → el cajero corrige tipo, documento, razón social, dirección y las líneas con `needsDescription` → `IssueVoucherUseCase`. `IssuedPendingDetails` → recargar con `GetWorkOrderVouchersUseCase`. `MissingFiscalSeriesException` → llevar a series. El saldo es el `pendingBalance` del comprobante, no el total de la orden. **`PaymentOutcomeUnknownException` no se reintenta:** mostrar antes `GetVoucherPaymentsUseCase`. Deshabilitar todo sin red con `ConnectivityObserver`.
+- **Entrega (H29):** `MarkWorkOrderPaidUseCase` → `DownloadExitPassUseCase` → `DeliverVehicleUseCase`, sin firma. Abrir y compartir el PDF es de la UI ([04](04-mobile-integration.md) §8).
+- **Reportes (H30, H31):** el flujo de caja es del taller entero; `totalExpenses`, `accountsReceivable` y la etiqueta de moneda no son cifras reales. Un reporte mal formado falla sin `message`: mostrar un error genérico.
+- **Equipo (H32, H44):** `failedDates` no vacío es "faltan días" con reintento. `jobTitle` es el único nombre y puede ser `null`. El push `OVERTIME_RECORDED` abre `GetCollaboratorAttendanceUseCase`.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en emulador** (API 37) con Drift real contra el servidor simulado, también sin red ([06](06-offline-sync.md) §8), con `integration_probe/support_probe_main.dart`. La guarda H28 se probó con conexiones cortadas después de crear el comprobante y después de cobrar.
+- Sin comprobar: backend real (H24–H32 y H44 solo están simulados como los documenta [03](03-traceability.md)), SUNAT y el PSE, abrir y compartir los PDF, teléfono físico, el push `OVERTIME_RECORDED` e iOS.
+- Riesgos que se heredan de Android: la guarda de H28 cubre este proceso y la relectura previa, no a otro dispositivo cobrando a la vez; tras un 401 `AuthenticatedClient` reenvía una vez el `POST` (seguro, porque el 401 llega antes de aplicar nada).
 
 ---
 

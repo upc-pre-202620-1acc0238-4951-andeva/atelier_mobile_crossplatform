@@ -12,6 +12,7 @@ import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart'
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/local/bay_mappers.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/remote/work_bay_api.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_api.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/part_item_dto.dart';
@@ -346,22 +347,12 @@ class TaskRepositoryImpl implements TaskRepository {
     try {
       final dtos = await bayApi.getBays(branchId);
       final companions = dtos
-          .map(
-            (dto) => BaysCompanion(
-              id: Value(dto.id),
-              branchId: Value(dto.branchId ?? branchId),
-              name: Value(dto.name ?? ''),
-              bayType: Value(dto.bayType ?? ''),
-              status: Value(dto.status ?? ''),
-              currentWorkOrderId: Value(dto.currentWorkOrderId),
-              syncedAt: Value(timestamp),
-            ),
-          )
+          .map((dto) => dto.toCompanion(branchId, timestamp))
           .toList();
       await bayDao.replaceBranch(branchId, companions);
       await cacheMetadataDao.upsert(
         CacheMetadataCompanion(
-          scope: Value('bays:$branchId'),
+          scope: Value(bayCacheScope(branchId)),
           lastSyncedAt: Value(timestamp),
           recordCount: Value(companions.length),
         ),
