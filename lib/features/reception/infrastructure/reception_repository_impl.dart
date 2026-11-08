@@ -106,6 +106,11 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
   }
 
   @override
+  Future<Customer> getCustomer(String id) async {
+    return _saveCustomer(await customerApi.getCustomer(id));
+  }
+
+  @override
   Future<Customer> registerIndividual(NewIndividualCustomer customer) async {
     final dto = await customerApi.createIndividual(
       CreateIndividualCustomerRequestDto(
