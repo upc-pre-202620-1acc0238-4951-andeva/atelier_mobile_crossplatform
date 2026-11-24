@@ -28,6 +28,52 @@ class ServiceDto {
   }
 }
 
+/// `CreateServiceResource` y `UpdateServiceResource` (mismos campos).
+class ServiceRequestDto {
+  final String name;
+  final Decimal basePrice;
+  final String currency;
+  final int estimatedMinutes;
+
+  const ServiceRequestDto({
+    required this.name,
+    required this.basePrice,
+    required this.currency,
+    required this.estimatedMinutes,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'basePrice': basePrice.toDouble(),
+    'currency': currency,
+    'estimatedMinutes': estimatedMinutes,
+  };
+}
+
+/// `MembershipResource` de docs/api/iam.md: solo lo que sirve para dar nombre a un colaborador.
+class MembershipDto {
+  final String id;
+  final String? employeeName;
+  final String? email;
+  final String? status;
+
+  const MembershipDto({
+    required this.id,
+    this.employeeName,
+    this.email,
+    this.status,
+  });
+
+  factory MembershipDto.fromJson(Map<String, dynamic> json) {
+    return MembershipDto(
+      id: json['id'] as String,
+      employeeName: json['employeeName'] as String?,
+      email: json['email'] as String?,
+      status: json['status'] as String?,
+    );
+  }
+}
+
 /// `PartMovementResource`.
 class PartMovementDto {
   final String allocationId;

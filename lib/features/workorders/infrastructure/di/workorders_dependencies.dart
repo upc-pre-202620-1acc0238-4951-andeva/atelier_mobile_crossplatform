@@ -15,6 +15,8 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/app
 import 'package:atelier_mobile_crossplatform/features/workorders/application/attach_intake_photo_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/cancel_work_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/complete_work_order_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/create_service_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/delete_service_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/download_quotation_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/find_draft_work_order_for_vehicle_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_branch_mechanics_use_case.dart';
@@ -29,15 +31,19 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/obs
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_work_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/open_work_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_branch_work_orders_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_service_catalog_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/reject_proposal_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/reject_quotation_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/remove_work_order_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/send_quotation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/start_work_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/submit_proposal_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/update_service_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/update_work_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/update_work_order_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/local/work_order_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/membership_api.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/service_catalog_api.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_api.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/sync/attach_intake_image_handler.dart';
@@ -55,6 +61,9 @@ void setupWorkOrdersDependencies() {
   );
   getIt.registerLazySingleton<ServiceCatalogApi>(
     () => ServiceCatalogApi(client: getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<MembershipApi>(
+    () => MembershipApi(client: getIt<ApiClient>()),
   );
 
   final handlers = getIt<OperationHandlerRegistry>();
@@ -80,6 +89,7 @@ void setupWorkOrdersDependencies() {
       pdfDownloader: getIt<PdfDownloader>(),
       session: getIt<SessionManager>(),
       supportDirectory: getApplicationSupportDirectory,
+      membershipApi: getIt<MembershipApi>(),
     ),
   );
 
@@ -125,8 +135,25 @@ void setupWorkOrdersDependencies() {
   getIt.registerLazySingleton<UpdateWorkOrderTaskUseCase>(
     () => UpdateWorkOrderTaskUseCase(repository: getIt<WorkOrderRepository>()),
   );
+  getIt.registerLazySingleton<RemoveWorkOrderTaskUseCase>(
+    () => RemoveWorkOrderTaskUseCase(repository: getIt<WorkOrderRepository>()),
+  );
   getIt.registerLazySingleton<GetServiceCatalogUseCase>(
     () => GetServiceCatalogUseCase(repository: getIt<WorkOrderRepository>()),
+  );
+  getIt.registerLazySingleton<RefreshServiceCatalogUseCase>(
+    () => RefreshServiceCatalogUseCase(
+      repository: getIt<WorkOrderRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<CreateServiceUseCase>(
+    () => CreateServiceUseCase(repository: getIt<WorkOrderRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateServiceUseCase>(
+    () => UpdateServiceUseCase(repository: getIt<WorkOrderRepository>()),
+  );
+  getIt.registerLazySingleton<DeleteServiceUseCase>(
+    () => DeleteServiceUseCase(repository: getIt<WorkOrderRepository>()),
   );
   getIt.registerLazySingleton<GetBranchMechanicsUseCase>(
     () => GetBranchMechanicsUseCase(repository: getIt<WorkOrderRepository>()),
