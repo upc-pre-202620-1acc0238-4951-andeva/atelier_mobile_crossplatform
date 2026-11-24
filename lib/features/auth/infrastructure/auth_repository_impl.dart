@@ -168,6 +168,9 @@ class AuthRepositoryImpl implements AuthRepository {
       }
     }
 
+    // Perfil sin sede asignada: también se ofrece elegir sede (como Android).
+    if (profile != null && profile.branchId == null) withoutWorkProfile = true;
+
     await session.updateAssignment(profile?.branchId, profile?.assignedShiftId);
     await session.setBranchChoicePending(withoutWorkProfile);
     await session.save(user);
