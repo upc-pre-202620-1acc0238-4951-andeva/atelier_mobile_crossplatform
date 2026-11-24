@@ -4,18 +4,27 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/affiliate_customer_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/cancel_appointment_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/confirm_appointment_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/create_appointment_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/enrich_reception_references_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/find_vehicle_by_plate_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/get_customer_vehicles_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/lookup_affiliation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/mark_appointment_arrived_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/observe_appointments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/observe_customer_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/observe_customers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/observe_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/observe_workshop_vehicles_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/refresh_appointments_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/refresh_customers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/register_company_customer_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/register_individual_customer_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/register_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/reschedule_appointment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/search_customers_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/update_customer_contact_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/reception_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/appointment_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/customer_dao.dart';
@@ -99,6 +108,39 @@ void setupReceptionDependencies() {
   );
   getIt.registerLazySingleton<ObserveAppointmentsUseCase>(
     () => ObserveAppointmentsUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<CreateAppointmentUseCase>(
+    () => CreateAppointmentUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<ConfirmAppointmentUseCase>(
+    () => ConfirmAppointmentUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<RescheduleAppointmentUseCase>(
+    () =>
+        RescheduleAppointmentUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<CancelAppointmentUseCase>(
+    () => CancelAppointmentUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateCustomerContactUseCase>(
+    () =>
+        UpdateCustomerContactUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<ObserveCustomersUseCase>(
+    () => ObserveCustomersUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<ObserveWorkshopVehiclesUseCase>(
+    () => ObserveWorkshopVehiclesUseCase(
+      repository: getIt<ReceptionRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<RefreshCustomersUseCase>(
+    () => RefreshCustomersUseCase(repository: getIt<ReceptionRepository>()),
+  );
+  getIt.registerLazySingleton<EnrichReceptionReferencesUseCase>(
+    () => EnrichReceptionReferencesUseCase(
+      repository: getIt<ReceptionRepository>(),
+    ),
   );
   getIt.registerLazySingleton<MarkAppointmentArrivedUseCase>(
     () => MarkAppointmentArrivedUseCase(

@@ -12,6 +12,9 @@ class ReceptionValidation {
   static const brandModelMax = 50;
   static const vinMax = 17;
   static const yearMin = 1950;
+  static const appointmentReasonMax = 1000;
+  static const appointmentCancelReasonMax = 500;
+  static const appointmentDurationMin = 15;
 
   static final _email = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
@@ -64,6 +67,21 @@ class ReceptionValidation {
 
   static bool isOptionalYear(int? value) {
     return value == null || value >= yearMin;
+  }
+
+  static bool isOptionalAppointmentReason(String? value) {
+    return value == null ||
+        value.trim().isEmpty ||
+        value.trim().length <= appointmentReasonMax;
+  }
+
+  static bool isAppointmentCancelReason(String value) {
+    final text = value.trim();
+    return text.isNotEmpty && text.length <= appointmentCancelReasonMax;
+  }
+
+  static bool isOptionalDurationMinutes(int? value) {
+    return value == null || value >= appointmentDurationMin;
   }
 
   static bool _isRequired(String value, int max) {

@@ -3,6 +3,12 @@ class ReceptionCachePolicy {
   static const vehiclesTtlMillis = 7 * 24 * 60 * 60 * 1000;
   static const customersTtlMillis = 7 * 24 * 60 * 60 * 1000;
 
+  /// Vigencia de la cartera completa de clientes.
+  static const portfolioTtlMillis = 15 * 60 * 1000;
+  static const pageSize = 50;
+  static const maxPages = 20;
+  static const scopeCustomersPortfolio = 'customers:portfolio';
+
   static String vehicleScope(String vehicleId) => 'vehicles:$vehicleId';
 
   static String customerScope(String customerId) => 'customers:$customerId';

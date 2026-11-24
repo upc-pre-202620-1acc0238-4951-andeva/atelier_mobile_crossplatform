@@ -3,6 +3,7 @@ import 'package:atelier_mobile_crossplatform/features/reception/domain/affiliati
 import 'package:atelier_mobile_crossplatform/features/reception/domain/appointment.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/customer.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/vehicle.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/local/vehicle_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/affiliation_lookup_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/appointment_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/customer_dto.dart';
@@ -72,6 +73,12 @@ extension VehicleEntityMapper on VehicleEntity {
       currentOwnerId: currentOwnerId,
       currentMileage: currentMileage,
     );
+  }
+}
+
+extension VehicleWithOwnerRowMapper on VehicleWithOwnerRow {
+  VehicleWithOwner toDomain() {
+    return VehicleWithOwner(vehicle: vehicle.toDomain(), owner: owner?.toDomain());
   }
 }
 

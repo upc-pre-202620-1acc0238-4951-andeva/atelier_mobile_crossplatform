@@ -4,6 +4,7 @@ import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/r
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/create_company_customer_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/create_individual_customer_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/customer_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/update_customer_contact_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/vehicle_dto.dart';
 
 /// Clientes y afiliación de docs/api/crm.md.
@@ -12,10 +13,20 @@ class CustomerApi {
 
   const CustomerApi({required this.client});
 
-  Future<List<CustomerDto>> search(String? search) async {
+  /// [page] (desde 0) y [size] recorren toda la cartera.
+  Future<List<CustomerDto>> search(
+    String? search, {
+    int? page,
+    int? size,
+  }) async {
+    final query = <String, String>{
+      'search': ?search,
+      if (page != null) 'page': '$page',
+      if (size != null) 'size': '$size',
+    };
     final List list = await client.get(
       '/api/v1/customers',
-      query: search == null ? null : {'search': search},
+      query: query.isEmpty ? null : query,
     );
     return list
         .map((e) => CustomerDto.fromJson(e as Map<String, dynamic>))
@@ -49,6 +60,17 @@ class CustomerApi {
   ) async {
     final Map<String, dynamic> json = await client.post(
       '/api/v1/customers/companies',
+      body: body.toJson(),
+    );
+    return CustomerDto.fromJson(json);
+  }
+
+  Future<CustomerDto> updateContact(
+    String id,
+    UpdateCustomerContactRequestDto body,
+  ) async {
+    final Map<String, dynamic> json = await client.put(
+      '/api/v1/customers/$id/contact',
       body: body.toJson(),
     );
     return CustomerDto.fromJson(json);
