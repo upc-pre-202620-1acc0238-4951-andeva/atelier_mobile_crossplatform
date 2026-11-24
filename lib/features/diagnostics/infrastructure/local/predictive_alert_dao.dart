@@ -14,6 +14,10 @@ class PredictiveAlertDao extends DatabaseAccessor<AppDatabase>
     return into(predictiveAlerts).insertOnConflictUpdate(alert);
   }
 
+  Future<void> upsertAll(List<PredictiveAlertEntity> alerts) {
+    return batch((b) => b.insertAllOnConflictUpdate(predictiveAlerts, alerts));
+  }
+
   Future<void> replaceForVehicle(
     String vehicleId,
     List<PredictiveAlertEntity> alerts,

@@ -4,6 +4,7 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/health_
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/predictive_alert.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/vehicle_fault.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/converted_appointment_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/iot_dtos.dart';
 
 /// Instantes del backend en ISO-8601 UTC (docs/api/README.md §6); Drift los guarda como epoch ms.
@@ -103,6 +104,19 @@ extension PredictiveAlertEntityMapper on PredictiveAlertEntity {
   }
 }
 
+extension ConvertedAppointmentDtoMapper on ConvertedAppointmentDto {
+  ConvertedAppointment toDomain() {
+    return ConvertedAppointment(
+      appointmentId: appointmentId,
+      vehicleId: vehicleId ?? '',
+      customerId: customerId ?? '',
+      scheduledAt: _instant(scheduledAt),
+      status: status,
+      notes: notes,
+    );
+  }
+}
+
 extension ObdDeviceDtoMapper on ObdDeviceDto {
   ObdDevice toDomain() {
     return ObdDevice(
@@ -159,7 +173,9 @@ extension HealthReportDetailDtoMapper on HealthReportDetailDto {
               overallCondition: ai.overallCondition,
               executiveSummary: ai.executiveSummary,
               subsystemEvaluations: [
-                for (final e in ai.subsystemEvaluations ?? const <SubsystemEvaluationDto>[])
+                for (final e
+                    in ai.subsystemEvaluations ??
+                        const <SubsystemEvaluationDto>[])
                   SubsystemEvaluation(
                     subsystemName: e.subsystemName,
                     status: e.status,
@@ -168,7 +184,8 @@ extension HealthReportDetailDtoMapper on HealthReportDetailDto {
                   ),
               ],
               predictiveRisks: [
-                for (final r in ai.predictiveRisks ?? const <PredictiveRiskDto>[])
+                for (final r
+                    in ai.predictiveRisks ?? const <PredictiveRiskDto>[])
                   PredictiveRisk(
                     category: r.category,
                     probability: r.probability,
@@ -177,7 +194,9 @@ extension HealthReportDetailDtoMapper on HealthReportDetailDto {
                   ),
               ],
               recommendedActions: [
-                for (final a in ai.recommendedActions ?? const <RecommendedServiceActionDto>[])
+                for (final a
+                    in ai.recommendedActions ??
+                        const <RecommendedServiceActionDto>[])
                   RecommendedServiceAction(
                     serviceCode: a.serviceCode,
                     serviceName: a.serviceName,
@@ -187,7 +206,9 @@ extension HealthReportDetailDtoMapper on HealthReportDetailDto {
                   ),
               ],
               dtcCorrelations: [
-                for (final c in ai.dtcCorrelations ?? const <DtcTelemetryCorrelationDto>[])
+                for (final c
+                    in ai.dtcCorrelations ??
+                        const <DtcTelemetryCorrelationDto>[])
                   DtcCorrelation(
                     dtcCode: c.dtcCode,
                     correlatedSensorReading: c.correlatedSensorReading,

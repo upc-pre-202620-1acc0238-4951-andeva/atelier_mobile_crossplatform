@@ -6,6 +6,9 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd.dar
 class VehicleFault {
   static const localPrefix = 'local-';
 
+  /// Falla leída sin permiso para registrarla (H22): solo existe en pantalla, no en Drift ni en la cola.
+  static const scanPrefix = 'scan-';
+
   final String id;
   final String vehicleId;
   final Dtc? dtc;

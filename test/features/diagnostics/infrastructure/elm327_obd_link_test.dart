@@ -70,18 +70,21 @@ void main() {
     expect(transport.disconnects, greaterThan(0));
   });
 
-  test('el adaptador que no contesta es inalcanzable y el VIN es opcional', () async {
-    transport.failOn = 'ATZ';
-    await expectLater(
-      link.connect(adapter),
-      throwsA(isA<ObdAdapterUnreachableException>()),
-    );
+  test(
+    'el adaptador que no contesta es inalcanzable y el VIN es opcional',
+    () async {
+      transport.failOn = 'ATZ';
+      await expectLater(
+        link.connect(adapter),
+        throwsA(isA<ObdAdapterUnreachableException>()),
+      );
 
-    transport.failOn = '0902';
-    final info = await link.connect(adapter);
-    expect(info.vin, isNull);
-    expect(link.isConnected, isTrue);
-  });
+      transport.failOn = '0902';
+      final info = await link.connect(adapter);
+      expect(info.vin, isNull);
+      expect(link.isConnected, isTrue);
+    },
+  );
 
   test('los errores de Bluetooth al abrir suben tal cual', () async {
     transport.connectError = const BluetoothDisabledException();
@@ -103,17 +106,14 @@ void main() {
     transport.responses['04'] = '44\r\r>';
     await link.clearDtcs();
     transport.responses['04'] = 'UNABLE TO CONNECT\r\r>';
-    await expectLater(
-      link.clearDtcs(),
-      throwsA(isA<ObdNoResponseException>()),
-    );
+    await expectLater(link.clearDtcs(), throwsA(isA<ObdNoResponseException>()));
   });
 
   test('cuadro congelado del código que encendió el testigo', () async {
     await link.connect(adapter);
     expect(await link.readFreezeFrame(), isNull);
 
-    transport.responses['0202'] = '4202000300\r>';
+    transport.responses['020200'] = '4202000300\r>';
     transport.responses['020500'] = '4205007B\r>';
     transport.responses['020C00'] = '420C001AF8\r>';
     final frame = (await link.readFreezeFrame())!;
@@ -138,28 +138,31 @@ void main() {
     expect(sample.fuelPercentage, isNull);
   });
 
-  test('una caída del canal es conexión perdida y se puede reconectar', () async {
-    await expectLater(
-      link.readSample(),
-      throwsA(isA<ObdNotConnectedException>()),
-    );
-    await expectLater(
-      link.reconnect(),
-      throwsA(isA<ObdNotConnectedException>()),
-    );
+  test(
+    'una caída del canal es conexión perdida y se puede reconectar',
+    () async {
+      await expectLater(
+        link.readSample(),
+        throwsA(isA<ObdNotConnectedException>()),
+      );
+      await expectLater(
+        link.reconnect(),
+        throwsA(isA<ObdNotConnectedException>()),
+      );
 
-    await link.connect(adapter);
-    transport.failOn = '0105';
-    await expectLater(
-      link.readSample(),
-      throwsA(isA<ObdConnectionLostException>()),
-    );
-    expect(link.isConnected, isFalse);
+      await link.connect(adapter);
+      transport.failOn = '0105';
+      await expectLater(
+        link.readSample(),
+        throwsA(isA<ObdConnectionLostException>()),
+      );
+      expect(link.isConnected, isFalse);
 
-    transport.failOn = null;
-    await link.reconnect();
-    expect(link.isConnected, isTrue);
-  });
+      transport.failOn = null;
+      await link.reconnect();
+      expect(link.isConnected, isTrue);
+    },
+  );
 
   group('respuestas por un stream', () {
     test('una respuesta partida en varios trozos se une', () async {
@@ -185,13 +188,16 @@ void main() {
       expect((await temp).engineTempCelsius, 83.0);
     });
 
-    test('un trozo tardío de un comando vencido no contamina el siguiente', () async {
-      await link.connect(adapter);
-      transport.emit('410D99\r>'); // Sin comando en curso: se ignora.
-      transport.responses['03'] = 'NO DATA\r\r>';
+    test(
+      'un trozo tardío de un comando vencido no contamina el siguiente',
+      () async {
+        await link.connect(adapter);
+        transport.emit('410D99\r>'); // Sin comando en curso: se ignora.
+        transport.responses['03'] = 'NO DATA\r\r>';
 
-      expect(await link.readDtcs(), isEmpty);
-    });
+        expect(await link.readDtcs(), isEmpty);
+      },
+    );
 
     test('un comando sin respuesta vence y da conexión perdida', () async {
       await link.connect(adapter);

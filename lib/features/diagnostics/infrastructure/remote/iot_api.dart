@@ -1,9 +1,10 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/converted_appointment_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/iot_dtos.dart';
 
-/// IoT de docs/api/iot.md que usa la app (US16–US21, US43 E1). Registrar dispositivos, `generate-async` (sin
-/// endpoint para consultar el trabajo, H21), telemetría histórica, alertas del taller y convertir alertas en
-/// citas no tienen historia móvil. El PDF de flota (US43 E2) es del paso 9.
+/// IoT de docs/api/iot.md que usa la app (US16–US21, US43 E1). `generate-async` queda sin usar: no hay
+/// endpoint para consultar el trabajo (H21). La telemetría remota (`latest`, `history`) es solo de la
+/// telemetría en vivo (US18) y no se porta. El PDF de flota (US43 E2) es del paso 9.
 class IotApi {
   static const _base = '/api/v1/iot';
 
@@ -19,6 +20,32 @@ class IotApi {
     return list
         .map((e) => ObdDeviceDto.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// 409 si el identificador ya existe o se superó la cuota.
+  Future<ObdDeviceDto> registerDevice({
+    required String deviceIdentifier,
+    required String connectionType,
+    String? hardwareModel,
+    String? firmwareVersion,
+  }) async {
+    return ObdDeviceDto.fromJson(
+      await client.post(
+        '$_base/devices',
+        body: {
+          'deviceIdentifier': deviceIdentifier,
+          'connectionType': connectionType,
+          'hardwareModel': ?hardwareModel,
+          'firmwareVersion': ?firmwareVersion,
+        },
+      ),
+    );
+  }
+
+  Future<ObdDeviceDto> updateDeviceStatus(String id, String status) async {
+    return ObdDeviceDto.fromJson(
+      await client.patch('$_base/devices/$id/status', body: {'status': status}),
+    );
   }
 
   /// 404 = el vehículo no tiene escáner instalado.
@@ -40,7 +67,7 @@ class IotApi {
         body: {
           'deviceId': deviceId,
           'vehicleId': vehicleId,
-          'currentOdometerKm': ?currentOdometerKm,
+          'currentOdometerKm': currentOdometerKm ?? 0,
         },
       ),
     );
@@ -54,7 +81,7 @@ class IotApi {
     return DeviceInstallationDto.fromJson(
       await client.post(
         '$_base/installations/$id/uninstall',
-        body: {'finalOdometerKm': ?finalOdometerKm},
+        body: {'finalOdometerKm': finalOdometerKm ?? 0},
       ),
     );
   }
@@ -124,6 +151,13 @@ class IotApi {
     return client.getBytes('$_base/health-reports/$reportId/pdf');
   }
 
+  Future<List<PredictiveAlertDto>> getTenantAlerts() async {
+    final List list = await client.get('$_base/alerts/tenant');
+    return list
+        .map((e) => PredictiveAlertDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<PredictiveAlertDto>> getVehicleAlerts(String vehicleId) async {
     final List list = await client.get('$_base/alerts/vehicle/$vehicleId');
     return list
@@ -136,6 +170,28 @@ class IotApi {
       await client.patch(
         '$_base/alerts/$id/acknowledge',
         body: const <String, Object?>{},
+      ),
+    );
+  }
+
+  /// El cuerpo es opcional: sede, fecha y hora, duración y motivo acordados con el cliente. Sin
+  /// `scheduledAt` el backend elige la fecha.
+  Future<ConvertedAppointmentDto> convertAlertToAppointment(
+    String id, {
+    String? branchId,
+    String? scheduledAt,
+    int? estimatedDurationMinutes,
+    String? reason,
+  }) async {
+    return ConvertedAppointmentDto.fromJson(
+      await client.post(
+        '$_base/alerts/$id/convert-to-appointment',
+        body: {
+          'branchId': ?branchId,
+          'scheduledAt': ?scheduledAt,
+          'estimatedDurationMinutes': ?estimatedDurationMinutes,
+          'reason': ?reason,
+        },
       ),
     );
   }

@@ -92,6 +92,7 @@ class DiagnosticsTestEnv {
     List<Permission> permissions = const [
       Permission.faultsRead,
       Permission.predictiveAlertsRead,
+      Permission.telemetryIngest,
     ],
   }) {
     return session.save(

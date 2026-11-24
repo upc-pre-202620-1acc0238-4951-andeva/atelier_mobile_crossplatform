@@ -29,6 +29,10 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/ob
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_vehicle_faults_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/refresh_predictive_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/refresh_vehicle_faults_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/register_obd_device_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/update_obd_device_status_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_tenant_predictive_alerts_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/convert_alert_to_appointment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/request_bluetooth_permission_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/scan_faults_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/start_live_telemetry_use_case.dart';
@@ -155,6 +159,24 @@ void setupDiagnosticsDependencies() {
       gateway: getIt<BluetoothPermissionGateway>(),
     ),
   );
+  getIt.registerLazySingleton<RegisterObdDeviceUseCase>(
+    () => RegisterObdDeviceUseCase(repository: getIt<DiagnosticsRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateObdDeviceStatusUseCase>(
+    () => UpdateObdDeviceStatusUseCase(
+      repository: getIt<DiagnosticsRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<GetTenantPredictiveAlertsUseCase>(
+    () => GetTenantPredictiveAlertsUseCase(
+      repository: getIt<DiagnosticsRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<ConvertAlertToAppointmentUseCase>(
+    () => ConvertAlertToAppointmentUseCase(
+      repository: getIt<DiagnosticsRepository>(),
+    ),
+  );
   getIt.registerLazySingleton<GetObdDevicesUseCase>(
     () => GetObdDevicesUseCase(repository: getIt<DiagnosticsRepository>()),
   );
@@ -200,14 +222,12 @@ void setupDiagnosticsDependencies() {
     ),
   );
   getIt.registerLazySingleton<RefreshVehicleFaultsUseCase>(
-    () => RefreshVehicleFaultsUseCase(
-      repository: getIt<DiagnosticsRepository>(),
-    ),
+    () =>
+        RefreshVehicleFaultsUseCase(repository: getIt<DiagnosticsRepository>()),
   );
   getIt.registerLazySingleton<ObserveVehicleFaultsUseCase>(
-    () => ObserveVehicleFaultsUseCase(
-      repository: getIt<DiagnosticsRepository>(),
-    ),
+    () =>
+        ObserveVehicleFaultsUseCase(repository: getIt<DiagnosticsRepository>()),
   );
   getIt.registerLazySingleton<ObserveDiagnosticsSyncStateUseCase>(
     () => ObserveDiagnosticsSyncStateUseCase(

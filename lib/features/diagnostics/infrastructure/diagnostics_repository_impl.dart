@@ -61,6 +61,35 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
   }
 
   @override
+  Future<ObdDevice> registerDevice({
+    required String deviceIdentifier,
+    required String connectionType,
+    String? hardwareModel,
+    String? firmwareVersion,
+  }) async {
+    final dto = await api.registerDevice(
+      deviceIdentifier: deviceIdentifier.trim(),
+      connectionType: connectionType.trim(),
+      hardwareModel: _blankToNull(hardwareModel),
+      firmwareVersion: _blankToNull(firmwareVersion),
+    );
+    return dto.toDomain();
+  }
+
+  @override
+  Future<ObdDevice> updateDeviceStatus(
+    String deviceId,
+    DeviceStatus status,
+  ) async {
+    return (await api.updateDeviceStatus(deviceId, status.value)).toDomain();
+  }
+
+  static String? _blankToNull(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  @override
   Future<DeviceInstallation?> getActiveInstallation(String vehicleId) async {
     try {
       return (await api.getActiveInstallation(vehicleId)).toDomain();
@@ -218,12 +247,32 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
     List<Dtc> dtcs,
     String sessionId,
   ) async {
+    final canIngest =
+        (await session.getSession())?.has(Permission.telemetryIngest) ?? false;
     final active = await faultDao.findActive(vehicleId);
     return [
       for (final dtc in dtcs.toSet())
         _activeWith(active, dtc)?.toDomain() ??
-            await _queueFault(vehicleId, dtc, sessionId),
+            (canIngest
+                ? await _queueFault(vehicleId, dtc, sessionId)
+                : _scanOnly(vehicleId, dtc)),
     ];
+  }
+
+  /// H22: un Mecánico Jefe con `iot:faults:resolve` y sin `iot:telemetry:ingest` lee el código pero no
+  /// lo registra: encolar `POST /iot/faults` daría 403. La falla solo existe en pantalla (`scan-`).
+  VehicleFault _scanOnly(String vehicleId, Dtc dtc) {
+    final entry = DtcCatalog.describe(dtc);
+    return VehicleFault(
+      id: '${VehicleFault.scanPrefix}${dtc.code}',
+      vehicleId: vehicleId,
+      dtc: dtc,
+      dtcCode: dtc.code,
+      severity: entry.severity,
+      description: entry.description,
+      detectedAt: now().toUtc(),
+      isResolved: false,
+    );
   }
 
   VehicleFaultEntity? _activeWith(List<VehicleFaultEntity> active, Dtc dtc) {
@@ -300,11 +349,7 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
     }
     return ClearFaultsResult(
       cleared: cleared,
-      persistent: await registerDetectedFaults(
-        vehicleId,
-        remaining,
-        sessionId,
-      ),
+      persistent: await registerDetectedFaults(vehicleId, remaining, sessionId),
     );
   }
 
@@ -315,8 +360,7 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
     final discarded = await pendingOperationDao.discardUnlessSyncing([
       operationId,
     ]);
-    if (discarded ||
-        await pendingOperationDao.findById(operationId) == null) {
+    if (discarded || await pendingOperationDao.findById(operationId) == null) {
       await faultDao.deleteById(fault.id);
     } else {
       await _queueResolve(fault, dependsOn: operationId);
@@ -358,6 +402,39 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
     return alertDao
         .watchForVehicle(vehicleId)
         .map((rows) => rows.map((row) => row.toDomain()).toList());
+  }
+
+  @override
+  Future<List<PredictiveAlert>> getTenantPredictiveAlerts() async {
+    final millis = _nowMillis;
+    final dtos = await api.getTenantAlerts();
+    final withVehicle = [
+      for (final dto in dtos)
+        if ((dto.vehicleId ?? '').trim().isNotEmpty) dto,
+    ];
+    if (withVehicle.isNotEmpty) {
+      await alertDao.upsertAll([
+        for (final dto in withVehicle) dto.toEntity(dto.vehicleId!, millis),
+      ]);
+    }
+    return [for (final dto in dtos) dto.toDomain(dto.vehicleId ?? '')];
+  }
+
+  @override
+  Future<ConvertedAppointment> convertAlertToAppointment(
+    String alertId, {
+    DateTime? scheduledAt,
+    int? estimatedDurationMinutes,
+    String? reason,
+  }) async {
+    final dto = await api.convertAlertToAppointment(
+      alertId,
+      branchId: (await session.getSession())?.branchId,
+      scheduledAt: scheduledAt?.toUtc().toIso8601String(),
+      estimatedDurationMinutes: estimatedDurationMinutes,
+      reason: _blankToNull(reason),
+    );
+    return dto.toDomain();
   }
 
   @override

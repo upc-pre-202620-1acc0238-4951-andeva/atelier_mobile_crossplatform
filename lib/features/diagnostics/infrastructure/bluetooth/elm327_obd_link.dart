@@ -28,6 +28,7 @@ class Elm327ObdLink implements ObdLink {
   StreamSubscription<String>? _subscription;
   ObdAdapter? _lastAdapter;
   bool _open = false;
+  bool? _isCanProtocol;
   final _response = StringBuffer();
   Completer<String>? _pending;
 
@@ -44,6 +45,7 @@ class Elm327ObdLink implements ObdLink {
   Future<ObdConnectionInfo> connect(ObdAdapter adapter) async {
     await close();
     _lastAdapter = adapter;
+    _isCanProtocol = null;
     final transport = transportFor(adapter.kind);
     _transport = transport;
     // Se escucha antes de abrir, para no perder nada de lo que llegue al conectar.
@@ -65,7 +67,9 @@ class Elm327ObdLink implements ObdLink {
           ObdResponseParser.data(probe, '4100') == null) {
         throw const ObdNoResponseException();
       }
-      final protocol = ObdResponseParser.protocol(await _command('ATDPN'));
+      final protocolRaw = await _command('ATDPN');
+      final protocol = ObdResponseParser.protocol(protocolRaw);
+      _isCanProtocol = ObdResponseParser.isCanProtocol(protocolRaw);
       return ObdConnectionInfo(protocol: protocol, vin: await _readVin());
     } on ObdConnectionLostException {
       await close();
@@ -101,14 +105,14 @@ class Elm327ObdLink implements ObdLink {
       if (ObdResponseParser.isNoResponse(raw)) {
         throw const ObdNoResponseException();
       }
-      return ObdResponseParser.dtcs(raw);
+      return ObdResponseParser.dtcs(raw, isCanProtocol: _isCanProtocol);
     });
   }
 
   @override
   Future<FreezeFrame?> readFreezeFrame() {
     return _query(() async {
-      final dtc = ObdResponseParser.freezeFrameDtc(await _command('0202'));
+      final dtc = ObdResponseParser.freezeFrameDtc(await _command('020200'));
       if (dtc == null) return null;
       final rpm = ObdResponseParser.freezeFrameData(
         await _command('020C00'),
