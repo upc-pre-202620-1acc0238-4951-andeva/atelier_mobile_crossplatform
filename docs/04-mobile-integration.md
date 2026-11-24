@@ -359,8 +359,8 @@ El proyecto iOS usa Swift Package Manager y no tiene `Podfile`. Con SPM, `permis
 - Pedir una ubicación **fresca** con `Geolocator.getCurrentPosition` y precisión alta; no usar la última conocida.
 - **Solo Android:** usar `AndroidSettings(forceLocationManager: true)`. Con `LocationSettings`, el plugin llama a `checkLocationSettings`: si *Precisión de la ubicación* de Google está apagada, muestra su diálogo de consentimiento en cada marcación y, si se rechaza, falla con `LocationServiceDisabledException` (comprobado en emulador). La app nativa no lo pide. La contrapartida es que `LocationManager` puede tardar más en dar un fix bajo techo; falta medirlo en un teléfono físico.
 - Si la precisión (`position.accuracy`) es peor que 50 m, pedir al usuario que salga a cielo abierto antes de marcar.
-- La sede y el turno salen de `GET /hr/employees/membership/{membershipId}` (`branchId`, `assignedShiftId`); la geocerca, de `GET /branches/{id}` (`latitude`, `longitude`, `geofenceRadiusMeters`). La app puede mostrar la distancia antes de enviar, pero **la validación real la hace el backend** (422 si está fuera).
-- Detectar ubicación simulada con `position.isMocked` y advertir; el backend no lo verifica. En iOS este dato es menos fiable: solo sirve de aviso.
+- La sede y el turno salen de `GET /hr/employees/membership/{membershipId}` (`branchId`, `assignedShiftId`); la geocerca, de `GET /branches/{id}` (`latitude`, `longitude`, `geofenceRadiusMeters`). La app calcula la distancia (Haversine) y **bloquea la marcación** fuera de la geocerca o sin la sede en caché, también sin conexión (igual que Android); el backend repite la validación como autoridad final (422).
+- Detectar ubicación simulada con `position.isMocked` y **bloquear** la marcación (no se marca ni se encola una ubicación no verificable); el backend no lo verifica. En iOS este dato es menos fiable. La vista previa de la geocerca en "Asistencia" solo se muestra si el permiso de ubicación ya estaba concedido; al marcar se pide el permiso si aún no se decidió.
 
 ---
 
@@ -397,3 +397,16 @@ Plugin elegido: **`mobile_scanner`**. Es un widget, así que pertenece a `presen
 | La versión 7.5.0 resuelve con las dependencias actuales y `flutter build apk --debug` compila con AGP 9.4.1, `minSdk 26` y `compileSdk 37` | Escanear un código real, tamaño final del APK e iOS |
 
 Usa el permiso `CAMERA` ya declarado (§6) y la misma descripción de iOS; al añadir la pantalla, revisar que `NSCameraUsageDescription` mencione también el escaneo.
+
+---
+
+## 11. Enlace de invitación (deep link, US01)
+
+El enlace del correo (`https://atelier.andeva.tech/auth/accept-invitation?token=…`) lo lee el sistema (App Links en Android, Universal Links en iOS). Hoy **solo la mitad de Flutter está cableada**:
+
+| Hecho | Pendiente |
+| --- | --- |
+| `AuthDeepLinkInbox` (`core/notifications`) valida `https` y el host, recorta el token y guarda el enlace. Sin sesión, `AuthNavGraph` lo consume y abre el registro con el token ya validado; con sesión, `AppRoot` lo descarta y avisa ("Cierra sesión para usar este enlace.") | Recibir el enlace del sistema y publicarlo con `getIt<AuthDeepLinkInbox>().postFromUri(uri)`, tanto al arrancar como con la app abierta. Requiere un plugin de la capa de plataforma (p. ej. `app_links`), **no añadido** a `pubspec.yaml` |
+| El registro también acepta pegar el enlace o el código a mano (`AuthValidation.tokenFrom`) | `intent-filter` con `android:autoVerify="true"` en `AndroidManifest.xml`, `assetlinks.json` en el host, y para iOS `Associated Domains` + `apple-app-site-association` (iOS sin comprobar) |
+
+Mientras tanto el flujo funciona pegando el enlace en la pantalla "Pega tu enlace". El enlace de restablecer contraseña (US05) no se porta.

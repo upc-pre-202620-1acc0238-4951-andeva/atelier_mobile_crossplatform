@@ -302,7 +302,9 @@ Segundo plano (workmanager):   con red, cuando el sistema lo permita.
 1. Si no hay sesión → terminar (las operaciones quedan PENDING).
 2. tryAcquire(sync, 2 min). Si no se consigue, otro motor está sincronizando → terminar.
 3. Renovar el token si venció (ensureFresh). Devolver a PENDING lo que quedó en SYNCING (solo quien tiene el bloqueo puede hacerlo).
-4. Tomar operaciones PENDING del usuario actual con next_attempt_at <= ahora, ordenadas por created_at.
+4. Tomar operaciones PENDING del usuario actual con next_attempt_at <= ahora, primero las que no tienen depends_on y luego por created_at
+   (un padre y su hijo capturados en el mismo milisegundo no quedan al revés). Se repite hasta 6 vueltas (`maxChainPasses`) mientras
+   alguna se aplique, para que el hijo de un padre recién aplicado salga en la misma corrida.
    Saltar las que tienen depends_on sin completar. Si el padre está FAILED → FAILED en cascada, con su mensaje.
 5. Por cada una: comprobar que el usuario no cambió (si cambió, terminar) → renovar el bloqueo →
    releer la fila (la UI pudo descartarla) → marcar SYNCING → llamar al endpoint → según la respuesta:
