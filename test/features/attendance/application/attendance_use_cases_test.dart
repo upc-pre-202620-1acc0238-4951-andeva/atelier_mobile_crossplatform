@@ -97,33 +97,55 @@ void main() {
 
     expect(result.outcome, isA<Queued>());
     expect(result.geofence!.isInside, isTrue);
-    expect(result.isMockLocation, isFalse);
+    expect(result.geofence!.isMock, isFalse);
   });
 
-  test('fuera de la geocerca o simulada avisa, pero decide el backend', () async {
+  test('fuera de la geocerca no marca ni encola', () async {
     when(() => provider.currentLocation()).thenAnswer(
       (_) async => const DeviceLocation(
         latitude: -12.0600,
+        longitude: -77.0428,
+        accuracyMeters: 10,
+        isMock: false,
+      ),
+    );
+
+    await expectLater(
+      clockIn.execute('b1', 's1'),
+      throwsA(
+        isA<LocationOutsideGeofenceException>()
+            .having((e) => e.radiusMeters, 'radio', 100)
+            .having((e) => e.distanceMeters > 100, 'distancia', isTrue),
+      ),
+    );
+    verifyNever(() => repository.clockIn(any(), any(), any()));
+  });
+
+  test('con ubicación simulada no marca', () async {
+    when(() => provider.currentLocation()).thenAnswer(
+      (_) async => const DeviceLocation(
+        latitude: -12.0464,
         longitude: -77.0428,
         accuracyMeters: 10,
         isMock: true,
       ),
     );
 
-    final result = await clockIn.execute('b1', 's1');
-
-    verify(() => repository.clockIn('b1', 's1', any())).called(1);
-    expect(result.geofence!.isInside, isFalse);
-    expect(result.isMockLocation, isTrue);
+    await expectLater(
+      clockIn.execute('b1', 's1'),
+      throwsA(isA<MockLocationException>()),
+    );
+    verifyNever(() => repository.clockIn(any(), any(), any()));
   });
 
-  test('sin la sede en caché marca igual, sin aviso de geocerca', () async {
+  test('sin la sede en caché no se puede validar la geocerca y no marca', () async {
     when(() => repository.findBranch('b1')).thenAnswer((_) async => null);
 
-    final result = await clockIn.execute('b1', 's1');
-
-    verify(() => repository.clockIn('b1', 's1', any())).called(1);
-    expect(result.geofence, isNull);
+    await expectLater(
+      clockIn.execute('b1', 's1'),
+      throwsA(isA<BranchGeofenceUnavailableException>()),
+    );
+    verifyNever(() => repository.clockIn(any(), any(), any()));
   });
 
   test('un descargo inválido no llega al repositorio', () async {
