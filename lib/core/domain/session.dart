@@ -39,6 +39,11 @@ class Session {
   bool canUseTelemetry() =>
       has(Permission.telemetryIngest) && (plan?.iotTelemetryEnabled ?? true);
 
+  /// Lectura de telemetría remota o fallas OBD-II: permiso de lectura y módulo en el plan.
+  bool canReadTelemetry() =>
+      (has(Permission.telemetryRead) || has(Permission.faultsRead)) &&
+      (plan?.iotTelemetryEnabled ?? true);
+
   bool canUseAiDiagnostics() =>
       has(Permission.healthReportsGenerate) &&
       (plan?.aiDiagnosticsEnabled ?? true);
@@ -48,4 +53,12 @@ class Session {
 
   /// `false` solo si el plan dice que la suscripción no está vigente.
   bool hasSubscriptionAccess() => plan?.accessGranted != false;
+
+  /// `iam:branches:read` lo tienen todos los roles para ver geocerca y nombre de su sede. Cambiar
+  /// de sede activa solo corresponde a quien administra sedes (`iam:branches:manage`) o a una
+  /// cuenta sin perfil laboral fijo en una sede (`shiftId == null` y sin marcación propia, H33).
+  bool canSwitchBranch() =>
+      has(Permission.branchesRead) &&
+      (has(Permission.branchesManage) ||
+          (shiftId == null && !has(Permission.attendanceClockIn)));
 }

@@ -8,6 +8,13 @@ abstract class OperationHandler {
   Future<OperationResult> send(PendingOperationEntity operation);
 }
 
+/// Opcional: un handler que también limpia filas optimistas locales cuando el usuario descarta la
+/// operación en cola. Aparte de [OperationHandler] porque los handlers lo `implements` (en Dart
+/// un método con cuerpo no se hereda al implementar). Un fallo aquí nunca impide descartarla.
+abstract interface class DiscardAwareOperationHandler {
+  Future<void> onDiscard(PendingOperationEntity operation);
+}
+
 sealed class OperationResult {
   const OperationResult();
 

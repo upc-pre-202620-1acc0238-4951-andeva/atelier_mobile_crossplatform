@@ -328,4 +328,55 @@ void main() {
       expect(session.token, 'other-user-token');
     });
   });
+
+  group('reintento de GET por corte de socket', () {
+    test('un GET se reintenta una vez y responde la segunda', () async {
+      var calls = 0;
+      final client = api((request) async {
+        calls++;
+        if (calls == 1) throw const SocketException('conexión cerrada');
+        return http.Response('{"ok":true}', 200);
+      });
+
+      expect((await client.get('/api/v1/x'))['ok'], isTrue);
+      expect(calls, 2);
+    });
+
+    test('un GET que vuelve a cortarse falla tras un solo reintento', () async {
+      var calls = 0;
+      final client = api((request) async {
+        calls++;
+        throw const SocketException('conexión cerrada');
+      });
+
+      await expectLater(client.get('/api/v1/x'), throwsA(isA<NetworkException>()));
+      expect(calls, 2);
+    });
+
+    test('un POST nunca se reintenta', () async {
+      var calls = 0;
+      final client = api((request) async {
+        calls++;
+        throw const SocketException('conexión cerrada');
+      });
+
+      await expectLater(
+        client.post('/api/v1/x', body: {}),
+        throwsA(isA<NetworkException>()),
+      );
+      expect(calls, 1);
+    });
+
+    test('un timeout de GET no se reintenta', () async {
+      var calls = 0;
+      final client = api((request) async {
+        calls++;
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        return http.Response('{}', 200);
+      }, timeout: const Duration(milliseconds: 20));
+
+      await expectLater(client.get('/api/v1/x'), throwsA(isA<NetworkException>()));
+      expect(calls, 1);
+    });
+  });
 }
