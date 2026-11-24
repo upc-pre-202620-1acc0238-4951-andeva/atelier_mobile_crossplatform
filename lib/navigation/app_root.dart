@@ -1,76 +1,131 @@
-import 'dart:developer';
-
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
-import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_inbox.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/push_router.dart';
+import 'package:atelier_mobile_crossplatform/features/main/presentation/main_shell_controller.dart';
+import 'package:atelier_mobile_crossplatform/features/main/presentation/navigation/main_tab.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
+import 'package:atelier_mobile_crossplatform/navigation/app_nav_host_view_model.dart';
+import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
 
-/// Abre los push (05 §5.5) sin un `BuildContext` a mano.
-final rootNavigatorKey = GlobalKey<NavigatorState>();
+export 'package:atelier_mobile_crossplatform/navigation/root_navigator.dart';
 
-/// Login o app según la sesión. Relee solo cuando `SessionManager` avisa: un `Future` creado en
-/// `build` volvería al spinner con cualquier reconstrucción. Si el worker borra la sesión, el
-/// aviso de `LocalChangeNotifier` lo trae de vuelta al login.
+/// Equivale a `AppNavHost`: grafo sin sesión (login, registro, verificar correo), elegir sede o `MainShell`,
+/// según la sesión. Un cambio de sesión (login, logout o sesión vencida) limpia la pila. Abre los push y
+/// avisa de los enlaces de invitación recibidos con la sesión ya iniciada.
+///
+/// Los detalles se apilan en el Navigator raíz, encima de esta pantalla, y cubren la barra flotante.
 class AppRoot extends StatefulWidget {
   final SessionManager session;
+  final PushInbox? pushInbox;
+  final AuthDeepLinkInbox? authDeepLinks;
 
-  const AppRoot({super.key, required this.session});
+  const AppRoot({super.key, required this.session, this.pushInbox, this.authDeepLinks});
 
   @override
   State<AppRoot> createState() => _AppRootState();
 }
 
 class _AppRootState extends State<AppRoot> {
-  Session? _current;
-  bool _loaded = false;
-  int _lastRead = 0;
+  late final AppNavHostViewModel _viewModel = AppNavHostViewModel(
+    sessionManager: widget.session,
+    pushInbox: widget.pushInbox,
+    authDeepLinks: widget.authDeepLinks,
+  );
+
+  /// Qué pantalla raíz se está mostrando; al cambiar, se descarta todo lo apilado encima.
+  Object? _shownRoot;
 
   @override
   void initState() {
     super.initState();
-    widget.session.addListener(_read);
-    _read();
+    _viewModel.addListener(_onChanged);
   }
 
   @override
   void dispose() {
-    widget.session.removeListener(_read);
+    _viewModel.removeListener(_onChanged);
+    _viewModel.dispose();
     super.dispose();
   }
 
-  Future<void> _read() async {
-    final read = ++_lastRead;
-    Session? session;
-    try {
-      session = await widget.session.getSession();
-    } on Exception catch (e) {
-      // Almacenamiento seguro ilegible: mejor el login que un spinner para siempre.
-      log('No se pudo leer la sesión: $e', name: 'AppRoot');
+  static Object? _rootOf(SessionState state) => switch (state) {
+    SessionLoading() => null,
+    SessionSignedOut() => #signedOut,
+    SessionSignedIn(needsBranchChoice: true) => #branchChoice,
+    SessionSignedIn() => #signedIn,
+  };
+
+  void _onChanged() {
+    final root = _rootOf(_viewModel.sessionState);
+    if (root != null) {
+      // Login, logout o sesión vencida: se cambia de grafo limpiando la pila.
+      if (_shownRoot != null && _shownRoot != root) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      _shownRoot = root;
     }
-    // Dos avisos seguidos: solo vale la lectura más reciente.
-    if (!mounted || read != _lastRead) return;
-    setState(() {
-      _current = session;
-      _loaded = true;
-    });
+    if (_viewModel.hasReadyPush) {
+      final destination = _viewModel.consumePush();
+      // Después del cuadro: con un arranque desde el push, el shell aún no está montado.
+      if (destination != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _openPush(destination);
+        });
+      }
+    }
+    if (_viewModel.hasReadyDeepLink) {
+      final link = _viewModel.consumeAuthDeepLink();
+      if (link != null) {
+        // Con sesión no se acepta una invitación: se avisa.
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).authDeeplinkSignedInWarning)),
+        );
+      }
+    }
+  }
+
+  /// Abre la pantalla de un push. Los destinos de historias excluidas (alertas de stock US34, revisión de
+  /// suspensión US29) no navegan a ninguna parte.
+  void _openPush(PushDestination destination) {
+    final shell = MainShellController.current;
+    void open(AppRoute route, {MainTab? tab, Object? args}) {
+      if (shell != null) {
+        shell.openRoute(route, tab: tab, args: args);
+      } else {
+        Navigator.of(context).push(AppNavigator.routeOf(route, args));
+      }
+    }
+
+    switch (destination) {
+      case TaskDetailDestination(:final workOrderId, :final taskId) ||
+          TaskProductsDestination(:final workOrderId, :final taskId):
+        open(AppRoute.taskDetail, args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId));
+      case WorkOrderDetailDestination(:final workOrderId):
+        open(AppRoute.workOrderDetail, args: workOrderId);
+      case CollaboratorAttendanceDestination():
+        open(AppRoute.adminAttendance, tab: MainTab.team);
+      case MyAttendanceDestination() || ClockInDestination():
+        open(AppRoute.attendanceHome, tab: MainTab.shift);
+      case TaskSuspensionReviewDestination() || LowStockAlertsDestination():
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-    final session = _current;
-    // shortcut: marcadores sin estilo, hasta que se construya la capa de presentación (07, regla 7).
-    return Scaffold(
-      body: Center(
-        child: !_loaded
-            ? const CircularProgressIndicator()
-            : Text(switch (session) {
-                null => strings.placeholderSignedOut,
-                Session(needsBranchChoice: true) =>
-                  strings.placeholderBranchChoice,
-                _ => strings.placeholderSignedIn,
-              }),
-      ),
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        final background = Theme.of(context).scaffoldBackgroundColor;
+        return switch (_viewModel.sessionState) {
+          SessionLoading() => ColoredBox(color: background),
+          SessionSignedOut() => AppNavigator.build(context, AppRoute.authGraph),
+          SessionSignedIn(needsBranchChoice: true) => AppNavigator.build(context, AppRoute.branchSelection),
+          SessionSignedIn() => AppNavigator.build(context, AppRoute.mainShell, _viewModel.session),
+        };
+      },
     );
   }
 }
