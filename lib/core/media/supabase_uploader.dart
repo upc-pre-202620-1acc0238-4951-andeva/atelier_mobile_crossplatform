@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show max;
 import 'dart:ui' as ui;
@@ -83,8 +84,20 @@ class SupabaseUploader {
       throw ApiException(
         httpStatus: response.statusCode,
         code: 'HTTP_${response.statusCode}',
-        message: uploadFailedMessage,
+        message: errorMessage(response.body) ?? uploadFailedMessage,
       );
+    }
+  }
+
+  /// `message` del cuerpo de error de Storage (`{"statusCode","error","message"}`). Sin cuerpo
+  /// legible queda `null` y se usa [uploadFailedMessage].
+  static String? errorMessage(String body) {
+    try {
+      final json = jsonDecode(body);
+      final message = json is Map ? json['message'] : null;
+      return message is String && message.trim().isNotEmpty ? message : null;
+    } on FormatException {
+      return null;
     }
   }
 

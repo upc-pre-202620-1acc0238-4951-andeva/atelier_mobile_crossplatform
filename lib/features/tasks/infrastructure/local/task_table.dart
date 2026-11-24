@@ -18,6 +18,7 @@ class Tasks extends Table {
   TextColumn get holdReason => text().nullable()();  // BREAK | END_OF_SHIFT | DEFECTIVE_PART | …
   TextColumn get missingItemDescription => text().nullable()();
   TextColumn get pendingSuspensionReason => text().nullable()();
+  IntColumn get pendingSuspensionRequestedAt => integer().nullable()();
   IntColumn get startedAt => integer().nullable()();
   IntColumn get totalPausedSeconds => integer()();
   IntColumn get syncedAt => integer()();

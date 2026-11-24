@@ -2,8 +2,6 @@ import 'package:atelier_mobile_crossplatform/core/domain/push_destination.dart';
 
 export 'package:atelier_mobile_crossplatform/core/domain/push_destination.dart';
 
-enum PushChannel { tasks, attendance, inventory }
-
 class PushRouter {
   /// `data.type` + ids → destino. Un tipo desconocido o sin sus ids devuelve `null` sin fallar: el
   /// backend puede agregar tipos nuevos.

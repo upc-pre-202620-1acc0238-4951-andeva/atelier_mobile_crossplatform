@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/pending_work_order_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/proposal.dart';
@@ -7,6 +8,7 @@ import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_ord
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_audit.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_id.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_references.dart';
+import 'package:decimal/decimal.dart';
 
 /// Órdenes de trabajo (US12–US15, US22, US24, US25, US36, US33 E2, US35 E2). La UI observa la caché
 /// `work_orders`; el detalle se lee en línea. Fotos de recepción y propuestas van siempre a la cola
@@ -41,7 +43,32 @@ abstract class WorkOrderRepository {
     WorkOrderTaskChanges changes,
   );
 
+  Future<WorkOrderDetail> removeTask(WorkOrderId id, TaskId taskId);
+
   Future<List<ServiceOption>> getServiceCatalog();
+
+  /// Recarga el catálogo desde el servidor sin usar la copia en memoria, ordenado por nombre.
+  Future<List<ServiceOption>> refreshServiceCatalog();
+
+  /// Registra un servicio estándar (`operations:services:manage`). En línea.
+  Future<ServiceOption> createService({
+    required String name,
+    required Decimal basePrice,
+    required int estimatedMinutes,
+    String currency = Money.pen,
+  });
+
+  /// Actualiza un servicio estándar (`operations:services:manage`). En línea.
+  Future<ServiceOption> updateService(
+    String serviceId, {
+    required String name,
+    required Decimal basePrice,
+    required int estimatedMinutes,
+    String currency = Money.pen,
+  });
+
+  /// Elimina un servicio del catálogo (`operations:services:manage`). En línea.
+  Future<void> deleteService(String serviceId);
 
   Future<List<MechanicOption>> getBranchMechanics();
 

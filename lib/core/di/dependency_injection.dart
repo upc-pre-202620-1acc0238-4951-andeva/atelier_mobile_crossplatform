@@ -27,6 +27,7 @@ import 'package:atelier_mobile_crossplatform/core/data/sync/sync_triggers.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/upload_file_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/media/photo_capture.dart';
 import 'package:atelier_mobile_crossplatform/core/media/supabase_uploader.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_inbox.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/device_token_registrar.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_messaging_service.dart';
@@ -185,6 +186,7 @@ void setupDependencies() {
     ),
   );
   getIt.registerLazySingleton<PushInbox>(() => PushInbox());
+  getIt.registerLazySingleton<AuthDeepLinkInbox>(() => AuthDeepLinkInbox());
   getIt.registerLazySingleton<DeviceTokenRegistrar>(
     () => DeviceTokenRegistrar(api: getIt<DeviceTokenApi>()),
   );

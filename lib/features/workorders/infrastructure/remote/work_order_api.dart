@@ -62,6 +62,10 @@ class WorkOrderApi {
     return WorkOrderTaskDto.fromJson(json);
   }
 
+  Future<void> deleteTask(String taskId) async {
+    await client.delete('/api/v1/tasks/$taskId');
+  }
+
   Future<WorkOrderImageDto> attachIntakeImage(
     String id,
     AttachImageRequestDto body,

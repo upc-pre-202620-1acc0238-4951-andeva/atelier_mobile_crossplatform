@@ -23,17 +23,10 @@ final class AlreadyQueued extends SubmitOutcome {
   const AlreadyQueued();
 }
 
-/// Marcación de ingreso con sus avisos: nada de esto la impide, decide el backend (04 §7).
+/// Marcación de ingreso con el resultado de la geocerca (ya validada: dentro, no simulada).
 class ClockInResult {
   final SubmitOutcome outcome;
-
-  /// `null` si la sede no está en caché.
   final GeofenceCheck? geofence;
-  final bool isMockLocation;
 
-  const ClockInResult({
-    required this.outcome,
-    required this.geofence,
-    required this.isMockLocation,
-  });
+  const ClockInResult({required this.outcome, required this.geofence});
 }

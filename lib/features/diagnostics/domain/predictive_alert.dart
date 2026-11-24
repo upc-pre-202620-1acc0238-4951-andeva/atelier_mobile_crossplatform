@@ -60,3 +60,22 @@ class PredictiveAlert {
     this.createdAt,
   });
 }
+
+/// Cita preventiva creada a partir de una alerta predictiva (`AppointmentResponse` de docs/api/iot.md).
+class ConvertedAppointment {
+  final String appointmentId;
+  final String vehicleId;
+  final String customerId;
+  final DateTime? scheduledAt;
+  final String? status;
+  final String? notes;
+
+  const ConvertedAppointment({
+    required this.appointmentId,
+    required this.vehicleId,
+    required this.customerId,
+    this.scheduledAt,
+    this.status,
+    this.notes,
+  });
+}

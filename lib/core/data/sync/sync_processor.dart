@@ -26,6 +26,9 @@ enum SyncOutcome {
 class SyncProcessor {
   static const maxAttempts = 8;
   static const lease = Duration(minutes: 2);
+
+  /// Tope de vueltas por corrida, como `MAX_CHAIN_PASSES` de Android.
+  static const maxChainPasses = 6;
   static const _heartbeat = Duration(seconds: 30);
 
   final PendingOperationDao dao;
@@ -115,15 +118,34 @@ class SyncProcessor {
 
     await dao.resetSyncing(userId);
     final start = now();
-    final batch = await dao.nextBatch(userId, start.millisecondsSinceEpoch);
+    // Varias vueltas: lo que esperaba a un padre recién aplicado (la `ATTACH_*` de una foto) entra
+    // en la siguiente sin esperar al próximo disparador. Se corta cuando una vuelta no aplica nada.
+    for (var pass = 0; pass < maxChainPasses; pass++) {
+      final batch = await dao.nextBatch(userId, now().millisecondsSinceEpoch);
+      final result = await _drain(userId, batch, start, budget);
+      if (result.stop != null) return result.stop!;
+      if (!result.applied) break;
+    }
+    return SyncOutcome.completed;
+  }
+
+  Future<({SyncOutcome? stop, bool applied})> _drain(
+    String userId,
+    List<PendingOperationEntity> batch,
+    DateTime start,
+    Duration? budget,
+  ) async {
+    var applied = false;
     for (final operation in batch) {
       if (budget != null && now().difference(start) > budget) {
-        return SyncOutcome.interrupted;
+        return (stop: SyncOutcome.interrupted, applied: applied);
       }
       // Nunca con el token de otro usuario: pudieron cerrar sesión a mitad de la vuelta.
-      if (await session.getUserId() != userId) return SyncOutcome.interrupted;
+      if (await session.getUserId() != userId) {
+        return (stop: SyncOutcome.interrupted, applied: applied);
+      }
       if (!await lock.tryAcquire(CrossIsolateLock.sync, lease)) {
-        return SyncOutcome.interrupted;
+        return (stop: SyncOutcome.interrupted, applied: applied);
       }
 
       // El lote es una foto: la UI pudo descartarla o una falla en cascada, marcarla.
@@ -158,6 +180,7 @@ class SyncProcessor {
       switch (result) {
         case Applied():
           await dao.deleteById(operation.id);
+          applied = true;
         case Unauthorized():
           await dao.markRetry(
             operation.id,
@@ -165,7 +188,7 @@ class SyncProcessor {
             nextAttemptAt: operation.nextAttemptAt,
             httpStatus: 401,
           );
-          return SyncOutcome.unauthorized;
+          return (stop: SyncOutcome.unauthorized, applied: applied);
         case Retry():
           await _retry(operation, result);
         case Failed():
@@ -178,7 +201,7 @@ class SyncProcessor {
           );
       }
     }
-    return SyncOutcome.completed;
+    return (stop: null, applied: applied);
   }
 
   Future<void> _retry(PendingOperationEntity operation, Retry result) async {

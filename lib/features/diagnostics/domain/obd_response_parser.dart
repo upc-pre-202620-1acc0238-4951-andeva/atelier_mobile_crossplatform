@@ -101,14 +101,18 @@ abstract final class ObdResponseParser {
     return null;
   }
 
-  /// Modo 03 (y la re-lectura de US20): códigos almacenados, sin repetir.
-  static List<Dtc> dtcs(String raw) {
+  /// Modo 03 (y la re-lectura de US20): códigos almacenados, sin repetir. [isCanProtocol] viene de
+  /// `ATDPN` ([isCanProtocol]): en CAN siempre precede el byte con la cantidad de códigos; en los
+  /// protocolos anteriores (ISO 9141-2, KWP, J1850) los pares van directo tras `43`. Sin protocolo
+  /// conocido (`null`) se infiere de la trama.
+  static List<Dtc> dtcs(String raw, {bool? isCanProtocol}) {
     final found = <Dtc>{};
     for (final message in _messages(raw)) {
       if (!message.hex.startsWith('43')) continue;
       final payload = _bytes(message.hex).sublist(1);
-      // CAN antepone la cantidad de códigos (y en varias tramas rellena con ceros); los demás no.
-      final pairs = message.isMultiFrame || payload.length.isOdd
+      final hasCountByte =
+          isCanProtocol ?? (message.isMultiFrame || payload.length.isOdd);
+      final pairs = hasCountByte
           ? payload.skip(1).take((payload.firstOrNull ?? 0) * 2).toList()
           : payload;
       for (var i = 0; i + 2 <= pairs.length; i += 2) {
@@ -184,6 +188,19 @@ abstract final class ObdResponseParser {
     final line = lines(raw).firstOrNull;
     if (line == null) return null;
     return _protocols[line.startsWith('A') ? line.substring(1) : line];
+  }
+
+  /// `ATDPN`: `true` si el protocolo activo es CAN (`6` a `C`), `false` si es anterior (`1` a `5`) y
+  /// `null` si no se informó o es desconocido.
+  static bool? isCanProtocol(String raw) {
+    final line = lines(raw).firstOrNull;
+    if (line == null) return null;
+    final code = line.startsWith('A') ? line.substring(1) : line;
+    return switch (code) {
+      '6' || '7' || '8' || '9' || 'A' || 'B' || 'C' => true,
+      '1' || '2' || '3' || '4' || '5' => false,
+      _ => null,
+    };
   }
 
   /// Cuadro congelado (modo 02, cuadro 00): los datos van después del número de cuadro.

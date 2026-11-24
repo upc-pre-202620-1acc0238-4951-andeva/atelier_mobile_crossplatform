@@ -91,8 +91,7 @@ Future<void> main() async {
                 debugPrint(
                   'PROBE ingreso=${result.outcome.runtimeType} '
                   'distancia=${result.geofence?.distanceMeters.round()} '
-                  'dentro=${result.geofence?.isInside} '
-                  'simulada=${result.isMockLocation}',
+                  'dentro=${result.geofence?.isInside}',
                 );
               }),
               _button('Marcar salida', () async {

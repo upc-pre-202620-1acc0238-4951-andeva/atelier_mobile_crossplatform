@@ -12,6 +12,17 @@ import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_reference_dtos.dart';
 import 'package:decimal/decimal.dart';
 
+final _appointmentUuidSuffix = RegExp(
+  r'\s*:\s*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\s*$',
+);
+
+/// Quita el `: <uuid>` técnico que el backend concatena al crear una orden desde una cita (H10).
+String? cleanDiagnosticSummary(String? summary) {
+  if (summary == null) return null;
+  final cleaned = summary.replaceAll(_appointmentUuidSuffix, '').trim();
+  return cleaned.isEmpty ? null : cleaned;
+}
+
 /// Drift guarda los montos como texto decimal (06 §5); sin moneda se asume PEN.
 extension WorkOrderDtoMapper on WorkOrderDto {
   WorkOrderEntity toEntity(int syncedAt) {
@@ -24,7 +35,7 @@ extension WorkOrderDtoMapper on WorkOrderDto {
       currentBayId: currentBayId,
       bayName: bayName,
       status: status ?? '',
-      diagnosticSummary: diagnosticSummary,
+      diagnosticSummary: cleanDiagnosticSummary(diagnosticSummary),
       mileageIn: mileageIn,
       subtotal: subtotal?.toString(),
       taxAmount: taxAmount?.toString(),
@@ -58,7 +69,7 @@ extension WorkOrderEntityMapper on WorkOrderEntity {
       currentBayId: currentBayId,
       bayName: bayName,
       status: WorkOrderStatus.fromString(status),
-      diagnosticSummary: diagnosticSummary,
+      diagnosticSummary: cleanDiagnosticSummary(diagnosticSummary),
       mileageIn: mileageIn,
       subtotal: _money(subtotal, currency),
       taxAmount: _money(taxAmount, currency),
@@ -117,13 +128,14 @@ extension ServiceDtoMapper on ServiceDto {
 
 extension EmployeeProfileDtoMechanicMapper on EmployeeProfileDto {
   /// Sin `membershipId` el colaborador no se puede asignar: se descarta.
-  MechanicOption? toMechanicOption() {
+  MechanicOption? toMechanicOption({String? name}) {
     final id = membershipId;
     if (id == null) return null;
     return MechanicOption(
       membershipId: id,
       jobTitle: jobTitle,
       employmentStatus: employmentStatus,
+      name: name,
     );
   }
 }

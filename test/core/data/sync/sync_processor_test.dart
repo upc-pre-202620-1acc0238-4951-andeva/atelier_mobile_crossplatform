@@ -195,6 +195,31 @@ void main() {
     expect(await database.select(database.pendingOperations).get(), isEmpty);
   });
 
+  test('un hijo capturado en el mismo instante que su padre sale después', () async {
+    final handler = respond(() async {});
+    await enqueue('a-child', dependsOn: 'z-parent', createdAt: 5);
+    await enqueue('z-parent', createdAt: 5);
+    await processor.run();
+    expect(handler.sent, ['z-parent', 'a-child']);
+  });
+
+  test('nextBatch pone primero las independientes', () async {
+    await enqueue('child', dependsOn: 'parent', createdAt: 1);
+    await enqueue('parent', createdAt: 2);
+    final batch = await dao.nextBatch('u1', nowMillis);
+    expect(batch.map((o) => o.id), ['parent', 'child']);
+  });
+
+  test('una cadena de tres sale completa en una sola corrida', () async {
+    final handler = respond(() async {});
+    await enqueue('parent', createdAt: 1);
+    await enqueue('child', dependsOn: 'parent', createdAt: 2);
+    await enqueue('grandchild', dependsOn: 'child', createdAt: 3);
+    await processor.run();
+    expect(handler.sent, ['parent', 'child', 'grandchild']);
+    expect(await database.select(database.pendingOperations).get(), isEmpty);
+  });
+
   test('no envía la dependiente si el padre sigue pendiente', () async {
     final handler = handle(
       (op) async => op.id == 'parent'

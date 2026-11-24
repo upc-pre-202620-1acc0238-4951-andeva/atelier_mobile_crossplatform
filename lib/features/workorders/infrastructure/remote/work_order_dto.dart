@@ -47,6 +47,31 @@ class WorkOrderDto {
     this.updatedAt,
   });
 
+  /// La misma orden con otro kilometraje o diagnóstico (la respuesta de `PUT` no siempre los trae).
+  WorkOrderDto withHeader({int? mileageIn, String? diagnosticSummary}) {
+    return WorkOrderDto(
+      id: id,
+      internalNumber: internalNumber,
+      vehicleId: vehicleId,
+      customerId: customerId,
+      branchId: branchId,
+      currentBayId: currentBayId,
+      bayName: bayName,
+      mileageIn: mileageIn ?? this.mileageIn,
+      diagnosticSummary: diagnosticSummary ?? this.diagnosticSummary,
+      status: status,
+      subtotal: subtotal,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+      currency: currency,
+      tasks: tasks,
+      proposals: proposals,
+      intakeImages: intakeImages,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   factory WorkOrderDto.fromJson(Map<String, dynamic> json) {
     return WorkOrderDto(
       id: json['id'] as String,

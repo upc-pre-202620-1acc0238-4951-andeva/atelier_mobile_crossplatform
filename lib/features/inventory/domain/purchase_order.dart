@@ -46,6 +46,27 @@ class PurchaseOrder {
   });
 
   bool get canBeReceived => status == PurchaseOrderStatus.issued;
+
+  bool get isDraft => status == PurchaseOrderStatus.draft;
+
+  /// Solo una orden en borrador o emitida se puede anular.
+  bool get canBeCanceled {
+    return status == PurchaseOrderStatus.draft ||
+        status == PurchaseOrderStatus.issued;
+  }
+}
+
+/// Línea al crear o agregar ítems a una orden de compra (`CreatePurchaseOrderItemResource`).
+class PurchaseOrderLineInput {
+  final String itemId;
+  final Decimal quantity;
+  final Decimal unitCost;
+
+  const PurchaseOrderLineInput({
+    required this.itemId,
+    required this.quantity,
+    required this.unitCost,
+  });
 }
 
 /// Línea de la orden: al recibir, cada una crea un lote con su cantidad y costo.

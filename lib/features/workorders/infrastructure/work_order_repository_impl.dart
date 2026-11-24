@@ -9,7 +9,10 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dar
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/missing_branch_exception.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/media/photo_capture.dart';
 import 'package:atelier_mobile_crossplatform/core/media/storage_paths.dart';
@@ -23,13 +26,16 @@ import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_ord
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/local/work_order_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/local/work_order_mappers.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/membership_api.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/service_catalog_api.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_api.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_reference_dtos.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_payloads.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_request_dtos.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/sync/attach_intake_image_handler.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/sync/submit_proposal_handler.dart';
+import 'package:decimal/decimal.dart';
 import 'package:drift/drift.dart';
 
 /// Offline-first para la cabecera (06 §4): la UI observa `work_orders` y cada respuesta del backend
@@ -60,6 +66,9 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
   final Future<Directory> Function() supportDirectory;
   final DateTime Function() now;
 
+  /// Da nombre a los colaboradores. Sin él se identifican por cargo.
+  final MembershipApi? membershipApi;
+
   /// El catálogo cambia poco: se lee una vez por taller mientras viva el proceso.
   (String, List<ServiceOption>)? _services;
 
@@ -76,6 +85,7 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
     required this.session,
     required this.supportDirectory,
     this.now = DateTime.now,
+    this.membershipApi,
   });
 
   @override
@@ -151,14 +161,17 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
     int? mileageIn,
     String? diagnosticSummary,
   }) async {
-    return _saveHeader(
-      await workOrderApi.update(
-        id.value,
-        UpdateWorkOrderRequestDto(
-          mileageIn: mileageIn,
-          diagnosticSummary: _blankToNull(diagnosticSummary),
-        ),
+    final cleanSummary = _blankToNull(diagnosticSummary);
+    final dto = await workOrderApi.update(
+      id.value,
+      UpdateWorkOrderRequestDto(
+        mileageIn: mileageIn,
+        diagnosticSummary: cleanSummary,
       ),
+    );
+    // Lo que se acaba de enviar manda sobre lo que la respuesta traiga (o no traiga).
+    return _saveHeader(
+      dto.withHeader(mileageIn: mileageIn, diagnosticSummary: cleanSummary),
     );
   }
 
@@ -195,19 +208,82 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
   }
 
   @override
+  Future<WorkOrderDetail> removeTask(WorkOrderId id, TaskId taskId) async {
+    await workOrderApi.deleteTask(taskId.value);
+    return getDetail(id);
+  }
+
+  @override
   Future<List<ServiceOption>> getServiceCatalog() async {
     final current = await session.getSession();
     if (current == null) throw StateError('Sin sesión');
     if (!current.has(Permission.servicesRead)) return [];
     final cached = _services;
     if (cached != null && cached.$1 == current.tenantId) return cached.$2;
+    return refreshServiceCatalog();
+  }
+
+  @override
+  Future<List<ServiceOption>> refreshServiceCatalog() async {
+    final current = await session.getSession();
+    if (current == null) throw StateError('Sin sesión');
+    if (!current.has(Permission.servicesRead) &&
+        !current.has(Permission.servicesManage)) {
+      return [];
+    }
     final dtos = await serviceCatalogApi.getServices();
-    final services = dtos.map((dto) => dto.toDomain()).toList();
+    final services = dtos.map((dto) => dto.toDomain()).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     _services = (current.tenantId, services);
     return services;
   }
 
-  /// Sin `iam:members:read` no se puede listar (H11): lista vacía y la tarea se crea sin mecánico.
+  @override
+  Future<ServiceOption> createService({
+    required String name,
+    required Decimal basePrice,
+    required int estimatedMinutes,
+    String currency = Money.pen,
+  }) async {
+    final dto = await serviceCatalogApi.createService(
+      ServiceRequestDto(
+        name: name.trim(),
+        basePrice: basePrice,
+        currency: currency,
+        estimatedMinutes: estimatedMinutes,
+      ),
+    );
+    _services = null;
+    return dto.toDomain();
+  }
+
+  @override
+  Future<ServiceOption> updateService(
+    String serviceId, {
+    required String name,
+    required Decimal basePrice,
+    required int estimatedMinutes,
+    String currency = Money.pen,
+  }) async {
+    final dto = await serviceCatalogApi.updateService(
+      serviceId,
+      ServiceRequestDto(
+        name: name.trim(),
+        basePrice: basePrice,
+        currency: currency,
+        estimatedMinutes: estimatedMinutes,
+      ),
+    );
+    _services = null;
+    return dto.toDomain();
+  }
+
+  @override
+  Future<void> deleteService(String serviceId) async {
+    await serviceCatalogApi.deleteService(serviceId);
+    _services = null;
+  }
+  /// El nombre sale de las membresías; si no se pueden leer, el colaborador se identifica por cargo.
   @override
   Future<List<MechanicOption>> getBranchMechanics() async {
     final current = await session.getSession();
@@ -216,12 +292,34 @@ class WorkOrderRepositoryImpl implements WorkOrderRepository {
     if (branchId == null) throw const MissingBranchException();
     if (!current.has(Permission.membersRead)) return [];
     final dtos = await employeeApi.getByBranch(branchId);
+
+    final names = <String, String>{};
+    final ownId = current.membershipId;
+    if (ownId != null && current.fullName.trim().isNotEmpty) {
+      names[ownId] = current.fullName;
+    }
+    final membershipApi = this.membershipApi;
+    if (membershipApi != null) {
+      try {
+        for (final membership in await membershipApi.getMemberships()) {
+          final name = membership.employeeName;
+          if (name != null && name.trim().isNotEmpty) {
+            names[membership.id] = name;
+          }
+        }
+      } on ApiException {
+        // Se identifica por cargo.
+      } on NetworkException {
+        // Igual.
+      }
+    }
+
     return dtos
         .where(
           (dto) =>
               dto.employmentStatus == null || dto.employmentStatus == _active,
         )
-        .map((dto) => dto.toMechanicOption())
+        .map((dto) => dto.toMechanicOption(name: names[dto.membershipId]))
         .nonNulls
         .toList();
   }

@@ -8,6 +8,7 @@ class AppointmentDto {
   final int? estimatedDurationMinutes;
   final String? reason;
   final String? status;
+  final String? cancellationReason;
 
   const AppointmentDto({
     required this.id,
@@ -18,6 +19,7 @@ class AppointmentDto {
     this.estimatedDurationMinutes,
     this.reason,
     this.status,
+    this.cancellationReason,
   });
 
   factory AppointmentDto.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class AppointmentDto {
           ?.toInt(),
       reason: json['reason'] as String?,
       status: json['status'] as String?,
+      cancellationReason: json['cancellationReason'] as String?,
     );
   }
 }

@@ -1,9 +1,13 @@
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/batch_allocation.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/supplier.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_dtos.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/part_item_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/stock_allocation_dtos.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/supplier_dto.dart';
 import 'package:decimal/decimal.dart';
 
 /// Drift guarda montos y cantidades como texto decimal (06 §5); lo que falta queda en "".
@@ -127,6 +131,56 @@ extension PurchaseOrderDtoMapper on PurchaseOrderDto {
           .toList(),
     );
   }
+}
+
+extension SupplierDtoMapper on SupplierDto {
+  Supplier toDomain() {
+    return Supplier(
+      id: id,
+      businessName: businessName ?? '',
+      taxId: taxId ?? '',
+      contactName: _nonBlank(contactName),
+      phone: _nonBlank(phone),
+      email: _nonBlank(email),
+      address: _nonBlank(address),
+      active: active ?? true,
+    );
+  }
+}
+
+extension StockAllocationDtoMapper on StockAllocationDto {
+  StockAllocation toDomain() {
+    return StockAllocation(
+      allocationId: allocationId,
+      allocatedQuantity: allocatedQuantity ?? Decimal.zero,
+      totalCogs: _money(totalCogs),
+      deductions: (deductions ?? [])
+          .map(
+            (item) => BatchDeduction(
+              batchId: item.batchId,
+              quantityDeducted: item.quantityDeducted ?? Decimal.zero,
+              unitCost: _money(item.unitCost),
+              subtotal: _money(item.subtotal),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+extension RestoreBatchResponseDtoMapper on RestoreBatchResponseDto {
+  BatchRestoreResult toDomain() {
+    return BatchRestoreResult(
+      status: status,
+      message: message,
+      batchId: batchId,
+      restoredQuantity: restoredQuantity ?? Decimal.zero,
+    );
+  }
+}
+
+String? _nonBlank(String? value) {
+  return value == null || value.trim().isEmpty ? null : value;
 }
 
 DateTime? _instant(String? raw) => DateTime.tryParse(raw ?? '')?.toUtc();

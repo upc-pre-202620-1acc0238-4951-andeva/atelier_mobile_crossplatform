@@ -105,6 +105,7 @@ dependencies:
   flutter_local_notifications: ^22.3.3 # ➕ canales y push en primer plano
   permission_handler: ^13.0.2     # ➕ cámara, notificaciones y Bluetooth
   geolocator: ^14.0.1             # ➕ geocerca
+  package_info_plus: ^10.2.2      # ➕ versión de la app en Perfil (`BuildConfig.VERSION_NAME` de Android)
   image_picker: ^1.2.4            # ➕ fotos de evidencia
   flutter_image_compress: ^2.5.1  # ➕ JPEG de 1600 px
   cached_network_image: ^4.0.6    # ➕ fotos con caché, como Coil
@@ -113,6 +114,8 @@ dependencies:
   flutter_foreground_task: ^11.0.3 # ➕ sesión OBD-II larga en Android
   open_filex: ^5.0.0              # ➕ abrir PDFs
   share_plus: ^13.3.1             # ➕ compartir PDFs
+  sqlite3: ^3.9.0                 # ➕ soporte SQLite en pruebas/FFI de Drift
+  mobile_scanner: ^7.5.0          # ➕ escáner de código de barras/QR de SKU
 
 dev_dependencies:
   flutter_test:
@@ -122,6 +125,8 @@ dev_dependencies:
   drift_dev: ^2.35.2              # ➕ genera el código de Drift
   mocktail: ^1.0.5                # ➕ mocks en tests
   flutter_launcher_icons: ^0.14.4
+  shared_preferences_platform_interface: ^2.4.2
+  fake_async: ^1.3.3
 
 flutter:
   uses-material-design: true
@@ -131,6 +136,16 @@ flutter:
     - assets/images/
 
   fonts:
+    - family: Satoshi
+      fonts:
+        - asset: assets/fonts/satoshi_regular.otf
+          weight: 400
+        - asset: assets/fonts/satoshi_medium.otf
+          weight: 500
+        - asset: assets/fonts/satoshi_bold.otf
+          weight: 700
+        - asset: assets/fonts/satoshi_black.otf
+          weight: 900
     - family: PlusJakartaSans
       fonts:
         - asset: assets/fonts/plus_jakarta_sans_regular.ttf

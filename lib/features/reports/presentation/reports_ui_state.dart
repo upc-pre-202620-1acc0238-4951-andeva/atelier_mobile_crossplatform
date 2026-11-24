@@ -1,0 +1,108 @@
+import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
+import 'package:atelier_mobile_crossplatform/features/reports/domain/cash_flow.dart';
+
+/// Periodo elegido en el selector. Los días son de Lima (`yyyy-MM-dd`).
+sealed class PeriodChoice {
+  const PeriodChoice();
+
+  static const thisMonth = ThisMonthChoice();
+  static const previousMonth = PreviousMonthChoice();
+  static const thisYear = ThisYearChoice();
+}
+
+class ThisMonthChoice extends PeriodChoice {
+  const ThisMonthChoice();
+}
+
+class PreviousMonthChoice extends PeriodChoice {
+  const PreviousMonthChoice();
+}
+
+class ThisYearChoice extends PeriodChoice {
+  const ThisYearChoice();
+}
+
+class CustomChoice extends PeriodChoice {
+  final String from;
+  final String to;
+
+  const CustomChoice(this.from, this.to);
+
+  @override
+  bool operator ==(Object other) => other is CustomChoice && other.from == from && other.to == to;
+
+  @override
+  int get hashCode => Object.hash(from, to);
+}
+
+/// El rango de días de [choice] visto desde [today] (día de Lima, `yyyy-MM-dd`).
+ReportPeriod periodFor(PeriodChoice choice, String today) {
+  final day = DateTime.parse('${today}T00:00:00Z');
+  return switch (choice) {
+    ThisMonthChoice() => ReportPeriod.month(day.year, day.month),
+    PreviousMonthChoice() => () {
+      // `DateTime.utc(año, 0)` es diciembre del año anterior.
+      final previous = DateTime.utc(day.year, day.month - 1);
+      return ReportPeriod.month(previous.year, previous.month);
+    }(),
+    ThisYearChoice() => ReportPeriod.year(day.year),
+    CustomChoice(:final from, :final to) =>
+      from.compareTo(to) <= 0 ? ReportPeriod(from, to) : ReportPeriod(to, from),
+  };
+}
+
+/// Reportes del taller: flujo de caja del periodo (todas las sedes, H30). Nunca se muestran `totalExpenses`
+/// ni `accountsReceivable`: llegan siempre en 0 (H31). Todo es en línea y sin caché.
+///
+/// Las descargas en PDF (flujo de caja US41 y salud de flota US43) están fuera de alcance: no hay estado para ellas.
+class ReportsUiState {
+  /// Hoy en Lima, `yyyy-MM-dd`.
+  final String today;
+  final PeriodChoice choice;
+  final ReportPeriod period;
+  final CashFlowSummary? summary;
+  final bool isLoading;
+  final bool isOnline;
+  final UiText? error;
+  final bool canReadCashFlow;
+  final bool showCustomRangePicker;
+
+  const ReportsUiState({
+    required this.today,
+    required this.choice,
+    required this.period,
+    this.summary,
+    this.isLoading = false,
+    this.isOnline = true,
+    this.error,
+    this.canReadCashFlow = false,
+    this.showCustomRangePicker = false,
+  });
+
+  bool get hasAnyAccess => canReadCashFlow;
+
+  ReportsUiState copyWith({
+    PeriodChoice? choice,
+    ReportPeriod? period,
+    CashFlowSummary? summary,
+    bool clearSummary = false,
+    bool? isLoading,
+    bool? isOnline,
+    UiText? error,
+    bool clearError = false,
+    bool? canReadCashFlow,
+    bool? showCustomRangePicker,
+  }) {
+    return ReportsUiState(
+      today: today,
+      choice: choice ?? this.choice,
+      period: period ?? this.period,
+      summary: clearSummary ? null : (summary ?? this.summary),
+      isLoading: isLoading ?? this.isLoading,
+      isOnline: isOnline ?? this.isOnline,
+      error: clearError ? null : (error ?? this.error),
+      canReadCashFlow: canReadCashFlow ?? this.canReadCashFlow,
+      showCustomRangePicker: showCustomRangePicker ?? this.showCustomRangePicker,
+    );
+  }
+}

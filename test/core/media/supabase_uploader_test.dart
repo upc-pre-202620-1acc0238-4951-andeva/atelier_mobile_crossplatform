@@ -25,6 +25,45 @@ SupabaseUploader uploaderWith(
 }
 
 void main() {
+  group('errorMessage', () {
+    test('toma el message del cuerpo de Storage', () {
+      expect(
+        SupabaseUploader.errorMessage(
+          '{"statusCode":"413","error":"Payload too large","message":"El archivo es muy grande"}',
+        ),
+        'El archivo es muy grande',
+      );
+    });
+
+    test('sin cuerpo legible o sin message, null', () {
+      expect(SupabaseUploader.errorMessage(''), isNull);
+      expect(SupabaseUploader.errorMessage('<html>'), isNull);
+      expect(SupabaseUploader.errorMessage('{"message":"  "}'), isNull);
+      expect(SupabaseUploader.errorMessage('{"message":3}'), isNull);
+      expect(SupabaseUploader.errorMessage('[1]'), isNull);
+    });
+
+    test('la subida rechazada muestra el message de Storage o el genérico', () async {
+      final file = File('${Directory.systemTemp.path}/sup_err_test.jpg')
+        ..writeAsBytesSync([1, 2, 3]);
+      addTearDown(file.deleteSync);
+
+      final withMessage = uploaderWith(
+        MockClient((_) async => http.Response('{"message":"Bucket not found"}', 404)),
+      );
+      await expectLater(
+        withMessage.upload(file, 'a/b.jpg'),
+        throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Bucket not found')),
+      );
+
+      final plain = uploaderWith(MockClient((_) async => http.Response('', 500)));
+      await expectLater(
+        plain.upload(file, 'a/b.jpg'),
+        throwsA(isA<ApiException>().having((e) => e.message, 'message', 'no subió')),
+      );
+    });
+  });
+
   group('compressionMinSide', () {
     /// La fórmula del plugin, medida sobre el archivo original.
     List<int> resultOf(int width, int height, int minSide) {

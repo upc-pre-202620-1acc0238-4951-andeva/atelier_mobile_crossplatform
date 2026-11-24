@@ -53,6 +53,7 @@ iOS no se puede compilar desde Windows. Los cambios de `ios/` quedan marcados co
 | 7 | `inventory` — catálogo, lotes y alertas | ✅ Sin `presentation` · Android en emulador · backend real, teléfono físico e iOS sin comprobar | `feature/inventory` |
 | 8 | `diagnostics` — OBD-II, DTC e informe IA | ✅ Sin `presentation` · Android en emulador con ECU simulada · ELM327 real, backend real, teléfono físico e iOS sin comprobar | `feature/diagnostics` |
 | 9 | `bays`, `cashier`, `reports`, `team` | ✅ Sin `presentation` · Android en emulador · backend real, SUNAT, teléfono físico e iOS sin comprobar | `feature/support` |
+| 10 | Presentación (`core/designsystem`, UI y navegación) | ✅ Android (`flutter analyze`, `flutter test`, APK debug) · backend real, teléfono físico e iOS sin comprobar | `feature/presentation` |
 
 Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecho.
 
@@ -369,6 +370,39 @@ Comprobado y sin comprobar:
 - **Comprobado en emulador** (API 37) con Drift real contra el servidor simulado, también sin red ([06](06-offline-sync.md) §8), con `integration_probe/support_probe_main.dart`. La guarda H28 se probó con conexiones cortadas después de crear el comprobante y después de cobrar.
 - Sin comprobar: backend real (H24–H32 y H44 solo están simulados como los documenta [03](03-traceability.md)), SUNAT y el PSE, abrir y compartir los PDF, teléfono físico, el push `OVERTIME_RECORDED` e iOS.
 - Riesgos que se heredan de Android: la guarda de H28 cubre este proceso y la relectura previa, no a otro dispositivo cobrando a la vez; tras un 401 `AuthenticatedClient` reenvía una vez el `POST` (seguro, porque el 401 llega antes de aplicar nada).
+
+## Paso 10 — Presentación (`core/designsystem`, UI y navegación)
+
+Se portó la capa visual de `atelier-mobile-android` (`core/designsystem`, `core/presentation`, `navigation` y `features/*/presentation`) siguiendo [08-presentation-port-plan.md](08-presentation-port-plan.md) sobre la rama `feature/presentation` (sin commits).
+
+**Hecho en el paso 10.**
+
+- **Design system y helpers de presentación:** 34 equivalentes de `core/designsystem/` (colores claro/oscuro, tipografía `Satoshi` / `PlusJakartaSans` / `JetBrainsMono` / `AlbertSans`, formas, tema, íconos vectoriales, componentes `Atelier*`, háptica/animación reducida) y `core/presentation/` (`date_format.dart`, `lima_time_format.dart`, `money_format.dart`, `document_intents.dart`, `state_sheet_host.dart`).
+- **Navegación raíz y push:** `AppRoot`, `AppNavigator`, `RootNavigator` y `AppNavHostViewModel`, con soporte de `Navigator` + `MaterialPageRoute`, barras de pestañas por permiso (`MainTab`) y despacho push excluyendo destinos de US29 y US34.
+- **Pantallas por feature:**
+  - `auth`: `LoginScreen` (sin "¿Olvidaste tu contraseña?"), `RegisterScreen`, `VerifyEmailScreen`, `BranchSelectionScreen`.
+  - `main`: `MainShell` + `MainNavigationBar`, `AdminDashboardScreen`, `AdminAttendanceScreen`, `ModulesSheet`, `NotificationsScreen`, `PendingOperationsScreen`, `ProfileScreen` (sin cerrar sesión).
+  - `attendance`: `AttendanceScreen`, `FloorHubScreen`.
+  - `tasks`: `MyTasksScreen`, `TaskDetailScreen` con cronómetro, repuestos y pausa mecánica.
+  - `reception` + `workorders`: `VehicleSearchScreen`, `RegisterCustomerScreen`, `AffiliationScreen`, `WorkOrdersScreen`, `OpenWorkOrderScreen`, `WorkOrderDetailScreen` (con proforma PDF/correo, notas, asignación de mecánico, eliminar tarea y catálogo), `ReportFindingScreen`, `IntakeGalleryScreen`, `ProposalsPanelScreen`, `ServicesCatalogScreen`.
+  - `inventory`: `PartsCatalogScreen`, `PartDetailScreen`, `PurchaseOrdersScreen`, `PurchaseOrderDetailScreen`, `SkuScannerScreen` (`mobile_scanner`), `SuppliersScreen`, `InventoryValuationScreen`.
+  - `diagnostics`: `DiagnosticsHubScreen` (Escáner, Dispositivos y Alertas), `VehicleFaultsScreen`, `AiHealthReportScreen`.
+  - `reports` + `cashier`: `ReportsScreen` (solo resumen y KPIs de flujo de caja / OTs) y `DailyCashScreen`.
+- **Actualizaciones de capas inferiores (post-paso 9):** se portaron `DELETE /api/v1/tasks/{taskId}` (`RemoveWorkOrderTaskUseCase`) y `DELETE /api/v1/services/{serviceId}` (`DeleteServiceUseCase`) en `workorders`; `AuthenticatedClient` mantiene reintento GET/HEAD idempotente y `WorkOrderRepositoryImpl` limpia de Drift órdenes cerradas (`PAID`/`CANCELED`). Sin cambios de esquema Drift.
+- **Historias excluidas omitidas de la UI (sin botones, pestañas, menús ni rutas):**
+  - `US04` (botón/diálogo de cierre de sesión en Perfil) y `US05` (recuperación y restablecimiento de contraseña en Auth).
+  - `US18` (`LiveTelemetryScreen` y fila "Telemetría en vivo") y `US19` (captura local/envío en lote de telemetría desde el hub OBD-II; `PendingOperationsScreen` de `main` sí se construye).
+  - `US28` (evidencia fotográfica en tareas), `US29` (solicitar/aprobar suspensión y reanudar tarea) y `US30` (cerrar tarea con horas hombre).
+  - `US34` (`StockAlertsScreen`, ruta/empuje de alertas de stock y recepción OC con foto), `US35` (rentabilidad/margen FIFO) y `US36` (tarjeta resumen Subtotal/IGV/Total de liquidación en cascada).
+  - `US37`, `US38`, `US39` y `US42` (`WorkOrderCheckoutScreen`, `VouchersScreen`, `FiscalSeriesScreen` y acceso rápido a comprobantes en `DailyCashScreen`).
+  - `US40` (`BaysScreen`, pestaña y atajo de bahías; solo queda lectura de bahía asignada en detalle OT).
+  - `US41` (exportación PDF de flujo de caja) y `US43` (sección/PDF de Salud de Flota en `ReportsScreen` y botones Abrir/Compartir PDF en `AiHealthReportScreen`).
+- **Auditoría de paridad:** documentada archivo por archivo (207 archivos Kotlin → Dart) en [08-presentation-parity.md](08-presentation-parity.md).
+
+Comprobado y sin comprobar:
+
+- **Comprobado en Windows:** `flutter analyze`, suite completa `flutter test` y compilación `flutter build apk --debug --dart-define-from-file=config/dev.json`.
+- **Sin comprobar:** ejecución visual manual en emulador/teléfono físico con backend real, cámara real para `SkuScannerScreen`, adaptador ELM327 real e **iOS** (requiere Mac).
 
 ---
 

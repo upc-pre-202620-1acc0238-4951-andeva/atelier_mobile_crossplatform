@@ -10,6 +10,17 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/vehicle
 abstract class DiagnosticsRepository {
   Future<List<ObdDevice>> getDevices({DeviceStatus? status});
 
+  /// Da de alta un escáner en el taller (`iot:devices:register`). En línea.
+  Future<ObdDevice> registerDevice({
+    required String deviceIdentifier,
+    required String connectionType,
+    String? hardwareModel,
+    String? firmwareVersion,
+  });
+
+  /// Cambia el estado operativo de un escáner (`iot:devices:register`). En línea.
+  Future<ObdDevice> updateDeviceStatus(String deviceId, DeviceStatus status);
+
   /// `null`: el vehículo no tiene escáner instalado (404).
   Future<DeviceInstallation?> getActiveInstallation(String vehicleId);
 
@@ -67,4 +78,17 @@ abstract class DiagnosticsRepository {
   Stream<List<PredictiveAlert>> watchPredictiveAlerts(String vehicleId);
 
   Future<PredictiveAlert> acknowledgePredictiveAlert(String id);
+
+  /// `GET /iot/alerts/tenant` (`iot:alerts:read`): alertas activas del taller. En línea; también las
+  /// guarda en la caché `predictive_alerts`, así que `watchPredictiveAlerts` las ve.
+  Future<List<PredictiveAlert>> getTenantPredictiveAlerts();
+
+  /// `POST /iot/alerts/{id}/convert-to-appointment` (`crm:appointments:create`). En línea. Manda la
+  /// sede de la sesión; el cuerpo opcional lo documenta Android, no `docs/api/iot.md`.
+  Future<ConvertedAppointment> convertAlertToAppointment(
+    String alertId, {
+    DateTime? scheduledAt,
+    int? estimatedDurationMinutes,
+    String? reason,
+  });
 }
