@@ -8,17 +8,32 @@ import 'package:permission_handler/permission_handler.dart' as handler;
 
 Future<bool> _requestSystemPermission() async {
   final status = await handler.Permission.notification.request();
+  if (status.isPermanentlyDenied) {
+    // El sistema ya no muestra el diálogo: lo único posible es llevar a los ajustes de la app.
+    await handler.openAppSettings();
+    return false;
+  }
+  return status.isGranted || status.isProvisional;
+}
+
+Future<bool> _checkSystemPermission() async {
+  final status = await handler.Permission.notification.status;
   return status.isGranted || status.isProvisional;
 }
 
 class NotificationPermissionRequester implements NotificationPermissionGateway {
   final DeviceTokenRegistrar registrar;
   final Future<bool> Function() requestSystemPermission;
+  final Future<bool> Function() checkSystemPermission;
 
   const NotificationPermissionRequester({
     required this.registrar,
     this.requestSystemPermission = _requestSystemPermission,
+    this.checkSystemPermission = _checkSystemPermission,
   });
+
+  @override
+  Future<bool> isGranted() => checkSystemPermission();
 
   /// En iOS `getToken` falla sin permiso (no hay APNs): el token del login pudo no enviarse.
   @override

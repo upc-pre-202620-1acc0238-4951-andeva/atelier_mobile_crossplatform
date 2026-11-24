@@ -1,9 +1,12 @@
+import 'package:atelier_mobile_crossplatform/core/domain/notification_record.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/push_destination.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/main/infrastructure/push_destination_repository_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('historial', _historyTests);
+
   late _Inbox inbox;
   late PushDestinationRepositoryImpl repository;
 
@@ -58,6 +61,52 @@ void main() {
       const TaskDetailDestination('w', 't'),
       isNot(const TaskProductsDestination('w', 't')),
     );
+  });
+}
+
+void _historyTests() {
+  late PushInbox inbox;
+  late PushDestinationRepositoryImpl repository;
+
+  setUp(() {
+    inbox = PushInbox();
+    repository = PushDestinationRepositoryImpl(inbox: inbox);
+  });
+
+  test('watchHistory repite el valor actual y emite al llegar un aviso', () async {
+    final seen = <List<NotificationRecord>>[];
+    final subscription = repository.watchHistory().listen(seen.add);
+    addTearDown(subscription.cancel);
+
+    inbox.record('Aviso', 'Cuerpo', const ClockInDestination('s1'));
+    await pumpEventQueue();
+
+    expect(seen.map((list) => list.length), [0, 1]);
+  });
+
+  test('open marca leído y deja el destino pendiente', () {
+    inbox.record('Aviso', '', const WorkOrderDetailDestination('w1'));
+    final id = inbox.history.single.id;
+
+    repository.open(id);
+
+    expect(inbox.history.single.read, isTrue);
+    expect(repository.consume(), const WorkOrderDetailDestination('w1'));
+  });
+
+  test('open con un id desconocido no hace nada', () {
+    repository.open('missing');
+
+    expect(inbox.pending, isNull);
+  });
+
+  test('markAllRead marca todo', () {
+    inbox.record('a', '', const ClockInDestination('s'));
+    inbox.record('b', '', const ClockInDestination('s'));
+
+    repository.markAllRead();
+
+    expect(inbox.history.every((record) => record.read), isTrue);
   });
 }
 

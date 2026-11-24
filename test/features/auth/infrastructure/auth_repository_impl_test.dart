@@ -154,6 +154,19 @@ void main() {
       expect(current.needsBranchChoice, isTrue);
     });
 
+    test('perfil laboral sin sede asignada también ofrece elegir sede', () async {
+      await repository(
+        login(
+          () async =>
+              http.Response('{"id":"e1","assignedShiftId":"s1"}', 200),
+        ),
+      ).signIn('m@taller.pe', 'clave');
+
+      final current = await session.getSession();
+      expect(current!.branchId, isNull);
+      expect(current.needsBranchChoice, isTrue);
+    });
+
     test('un 500 al pedir el perfil entra sin sede y sin elegir', () async {
       await repository(login(() async => _error(500)))
           .signIn('m@taller.pe', 'clave');

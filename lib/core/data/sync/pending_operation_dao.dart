@@ -26,7 +26,16 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
                 t.status.equals('PENDING') &
                 t.nextAttemptAt.isSmallerOrEqualValue(now),
           )
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+          // Primero las independientes: un padre y su hijo capturados en el mismo milisegundo no
+          // deben quedar en orden inverso (el hijo se saltaría y esperaría otra vuelta).
+          ..orderBy([
+            (t) => OrderingTerm.asc(
+              const CustomExpression<int>(
+                'CASE WHEN depends_on IS NULL THEN 0 ELSE 1 END',
+              ),
+            ),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
         .get();
   }
 

@@ -1,5 +1,6 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_profile_dto.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/employee/membership_dto.dart';
 
 /// Perfil laboral del colaborador. Lo usan `auth` (tras el login), `attendance` y `workorders`.
 class EmployeeApi {
@@ -24,6 +25,15 @@ class EmployeeApi {
     final List list = await client.get('/api/v1/hr/employees/branch/$branchId');
     return list
         .map((e) => EmployeeProfileDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Membresías del taller, para obtener el nombre (`employeeName`) de los colaboradores. Exige
+  /// `iam:members:read` (docs/api/iam.md).
+  Future<List<MembershipDto>> getMemberships() async {
+    final List list = await client.get('/api/v1/memberships');
+    return list
+        .map((e) => MembershipDto.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 }

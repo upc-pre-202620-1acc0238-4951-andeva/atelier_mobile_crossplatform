@@ -59,6 +59,11 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         current.pendingSuspensionReason,
         sameStatus ? prev.pendingSuspensionReason : null,
       ),
+      pendingSuspensionRequestedAt:
+          current.pendingSuspensionRequestedAt.present &&
+              current.pendingSuspensionRequestedAt.value != null
+          ? current.pendingSuspensionRequestedAt
+          : Value(sameStatus ? prev.pendingSuspensionRequestedAt : null),
     );
   }
 
@@ -71,6 +76,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     String? holdReason,
     String? missingItemDescription,
     String? pendingSuspensionReason,
+    int? pendingSuspensionRequestedAt,
     int? startedAt,
     required int totalPausedSeconds,
     required int syncedAt,
@@ -84,6 +90,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         holdReason: Value(holdReason),
         missingItemDescription: Value(missingItemDescription),
         pendingSuspensionReason: Value(pendingSuspensionReason),
+        pendingSuspensionRequestedAt: Value(pendingSuspensionRequestedAt),
         startedAt: Value(startedAt),
         totalPausedSeconds: Value(totalPausedSeconds),
         syncedAt: Value(syncedAt),

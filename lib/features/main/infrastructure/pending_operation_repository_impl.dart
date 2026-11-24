@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/upload_file_handler.dart';
@@ -21,6 +22,9 @@ class PendingOperationRepositoryImpl implements PendingOperationRepository {
   final Future<void> Function() requestSync;
   final DateTime Function() now;
 
+  /// Para `onDiscard` de los handlers que limpian filas optimistas. Sin él, solo se vacía la cola.
+  final OperationHandlerRegistry? handlers;
+
   const PendingOperationRepositoryImpl({
     required this.dao,
     required this.uploadDao,
@@ -28,6 +32,7 @@ class PendingOperationRepositoryImpl implements PendingOperationRepository {
     required this.supportDirectory,
     required this.requestSync,
     this.now = DateTime.now,
+    this.handlers,
   });
 
   @override
@@ -61,6 +66,9 @@ class PendingOperationRepositoryImpl implements PendingOperationRepository {
   }
 
   @override
+  Future<void> syncNow() => requestSync();
+
+  @override
   Future<bool> discard(String id) async {
     final operation = await _ownOperation(id);
     if (operation == null) return false;
@@ -81,15 +89,36 @@ class PendingOperationRepositoryImpl implements PendingOperationRepository {
 
     final ids = [root.id, ...await _descendantsOf(root.id)];
     final uploads = await _uploadsOf(ids);
+    final discarded = <PendingOperationEntity>[
+      for (final id in ids) ?await dao.findById(id),
+    ];
 
     // Primero la cola: es lo que decide si algo se está enviando. Después las filas y al final los
     // archivos, como `UploadFileHandler`.
     if (!await dao.discardUnlessSyncing(ids)) return false;
+    await _notifyDiscarded(discarded);
     for (final upload in uploads) {
       await uploadDao.deleteById(upload.id);
     }
     await _deleteFiles(uploads);
     return true;
+  }
+
+  /// Un fallo de un handler no debe impedir el descarte: la cola ya quedó limpia.
+  Future<void> _notifyDiscarded(List<PendingOperationEntity> operations) async {
+    final registry = handlers;
+    if (registry == null) return;
+    for (final operation in operations) {
+      try {
+        final Object? handler = registry.find(operation.type);
+        if (handler is DiscardAwareOperationHandler) {
+          await handler.onDiscard(operation);
+        }
+      } catch (e) {
+        // Cualquier fallo, también un `Error`: la cola ya quedó limpia.
+        log('onDiscard falló: $e', name: 'PendingOperationRepository');
+      }
+    }
   }
 
   /// Cambia sola al cambiar de usuario: nunca se ve la cola de otro (06 §3, "Cambio de usuario").

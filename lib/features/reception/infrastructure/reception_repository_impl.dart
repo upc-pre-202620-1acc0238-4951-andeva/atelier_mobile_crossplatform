@@ -10,6 +10,7 @@ import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/affiliation_lookup.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/appointment.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/customer.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/domain/invalid_reception_input_exception.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/reception_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/reception_validation.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/vehicle.dart';
@@ -20,11 +21,16 @@ import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/l
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/reception_cache_policy.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/affiliate_customer_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/appointment_api.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/appointment_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/cancel_appointment_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/create_company_customer_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/create_individual_customer_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/create_vehicle_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/customer_api.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/customer_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/reschedule_appointment_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/schedule_appointment_request_dto.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/update_customer_contact_request_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/vehicle_api.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/infrastructure/remote/vehicle_dto.dart';
 import 'package:drift/drift.dart';
@@ -111,14 +117,91 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
   }
 
   @override
+  Stream<List<Customer>> observeCustomers() {
+    return customerDao.watchAll().map(
+      (rows) => rows.map((row) => row.toDomain()).toList(),
+    );
+  }
+
+  @override
+  Stream<List<VehicleWithOwner>> observeWorkshopVehicles() {
+    return vehicleDao.watchAllWithOwners().map(
+      (rows) => rows.map((row) => row.toDomain()).toList(),
+    );
+  }
+
+  @override
+  Future<void> refreshCustomers({bool force = false}) async {
+    final current = await session.getSession();
+    if (current == null) throw StateError('Sin sesión');
+    if (!current.has(Permission.customersRead)) return;
+    final timestamp = now().millisecondsSinceEpoch;
+    if (!force &&
+        !await _isStale(
+          ReceptionCachePolicy.scopeCustomersPortfolio,
+          ReceptionCachePolicy.portfolioTtlMillis,
+        )) {
+      return;
+    }
+    final all = <CustomerDto>[];
+    for (var page = 0; page < ReceptionCachePolicy.maxPages; page++) {
+      final dtos = await customerApi.search(
+        null,
+        page: page,
+        size: ReceptionCachePolicy.pageSize,
+      );
+      all.addAll(dtos);
+      if (dtos.length < ReceptionCachePolicy.pageSize) break;
+    }
+    final byId = {for (final dto in all) dto.id: dto};
+    final rows = byId.values.map((dto) => dto.toEntity(timestamp)).toList();
+    await customerDao.upsertAll(rows);
+    for (final row in rows) {
+      await _touch(ReceptionCachePolicy.customerScope(row.id), timestamp);
+    }
+    await cacheMetadataDao.upsert(
+      CacheMetadataCompanion(
+        scope: const Value(ReceptionCachePolicy.scopeCustomersPortfolio),
+        lastSyncedAt: Value(timestamp),
+        recordCount: Value(rows.length),
+      ),
+    );
+  }
+
+  @override
+  Future<void> enrichReferences(
+    Iterable<String> vehicleIds,
+    Iterable<String> customerIds,
+  ) async {
+    final current = await session.getSession();
+    if (current == null) return;
+    await _enrich(
+      vehicleIds: vehicleIds,
+      customerIds: customerIds,
+      session: current,
+    );
+  }
+
+  /// Sin correo ni teléfono el backend rechaza el alta: se envía un teléfono de relleno (como Android).
+  static const defaultContactPhone = '900000000';
+
+  ({String? email, String? phone}) _contactOf(String? email, String? phone) {
+    final cleanEmail = _blankToNull(email);
+    final cleanPhone =
+        _blankToNull(phone) ?? (cleanEmail == null ? defaultContactPhone : null);
+    return (email: cleanEmail, phone: cleanPhone);
+  }
+
+  @override
   Future<Customer> registerIndividual(NewIndividualCustomer customer) async {
+    final contact = _contactOf(customer.email, customer.phone);
     final dto = await customerApi.createIndividual(
       CreateIndividualCustomerRequestDto(
         firstName: customer.firstName.trim(),
         lastName: customer.lastName.trim(),
         taxId: customer.taxId.trim(),
-        email: _blankToNull(customer.email),
-        phone: _blankToNull(customer.phone),
+        email: contact.email,
+        phone: contact.phone,
       ),
     );
     return _saveCustomer(dto);
@@ -126,12 +209,29 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
 
   @override
   Future<Customer> registerCompany(NewCompanyCustomer customer) async {
+    final contact = _contactOf(customer.email, customer.phone);
     final dto = await customerApi.createCompany(
       CreateCompanyCustomerRequestDto(
         companyName: customer.companyName.trim(),
         taxId: customer.taxId.trim(),
-        email: _blankToNull(customer.email),
-        phone: _blankToNull(customer.phone),
+        email: contact.email,
+        phone: contact.phone,
+      ),
+    );
+    return _saveCustomer(dto);
+  }
+
+  @override
+  Future<Customer> updateCustomerContact(
+    String id, {
+    String? email,
+    String? phone,
+  }) async {
+    final dto = await customerApi.updateContact(
+      id,
+      UpdateCustomerContactRequestDto(
+        email: _blankToNull(email),
+        phone: _blankToNull(phone),
       ),
     );
     return _saveCustomer(dto);
@@ -147,7 +247,8 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
         engineType: vehicle.engineType.value,
         customerId: vehicle.customerId,
         vin: _blankToNull(vehicle.vin),
-        year: vehicle.year,
+        // Sin año, el del día de Lima (como Android).
+        year: vehicle.year ?? int.parse(BusinessTime(now: now).today().substring(0, 4)),
       ),
     );
     return _saveVehicle(dto);
@@ -185,7 +286,14 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
   }
 
   @override
-  Future<void> refreshAppointments(String date) async {
+  Future<void> refreshAppointments(String date) {
+    return refreshAppointmentsRange(date, date);
+  }
+
+  /// `docs/api` solo documenta `date`: un rango se pide día por día.
+  @override
+  Future<void> refreshAppointmentsRange(String fromDate, String toDate) async {
+    final days = _days(fromDate, toDate);
     final current = await session.getSession();
     if (current == null) throw StateError('Sin sesión');
     final branchId = current.branchId;
@@ -193,13 +301,18 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
     if (!current.has(Permission.appointmentsRead)) return;
 
     final timestamp = now().millisecondsSinceEpoch;
-    final dtos = await appointmentApi.getAppointments(branchId, date);
-    final rows = dtos.map((dto) => dto.toEntity(timestamp)).toList();
-    final (from, to) = _dayRange(date);
+    final byId = <String, AppointmentDto>{};
+    for (final day in days) {
+      for (final dto in await appointmentApi.getAppointments(branchId, day)) {
+        byId[dto.id] = dto;
+      }
+    }
+    final rows = byId.values.map((dto) => dto.toEntity(timestamp)).toList();
+    final (from, to) = _rangeMillis(fromDate, toDate);
     await appointmentDao.replaceDay(branchId, from, to, rows);
     await cacheMetadataDao.upsert(
       CacheMetadataCompanion(
-        scope: Value(ReceptionCachePolicy.appointmentsScope(branchId, date)),
+        scope: Value(ReceptionCachePolicy.appointmentsScope(branchId, fromDate)),
         lastSyncedAt: Value(timestamp),
         recordCount: Value(rows.length),
       ),
@@ -213,7 +326,15 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
 
   @override
   Stream<List<Appointment>> observeAppointments(String date) {
-    final (from, to) = _dayRange(date);
+    return observeAppointmentsRange(date, date);
+  }
+
+  @override
+  Stream<List<Appointment>> observeAppointmentsRange(
+    String fromDate,
+    String toDate,
+  ) {
+    final (from, to) = _rangeMillis(fromDate, toDate);
     return session.switchOn<String?, List<Appointment>>(
       (current) => current?.branchId,
       (branchId) {
@@ -236,10 +357,77 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
 
   @override
   Future<Appointment> markArrived(String id) async {
-    final dto = await appointmentApi.arrive(id);
+    return _saveAppointment(await appointmentApi.arrive(id));
+  }
+
+  @override
+  Future<Appointment> createAppointment({
+    required String customerId,
+    required String vehicleId,
+    required DateTime scheduledAt,
+    int? estimatedDurationMinutes,
+    String? reason,
+  }) async {
+    final branchId = (await session.getSession())?.branchId;
+    if (branchId == null) throw const MissingBranchException();
+    return _saveAppointment(
+      await appointmentApi.schedule(
+        ScheduleAppointmentRequestDto(
+          branchId: branchId,
+          customerId: customerId,
+          vehicleId: vehicleId,
+          scheduledAt: scheduledAt.toUtc().toIso8601String(),
+          estimatedDurationMinutes: estimatedDurationMinutes,
+          reason: _blankToNull(reason),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<Appointment> confirmAppointment(String id) async {
+    return _saveAppointment(await appointmentApi.confirm(id));
+  }
+
+  @override
+  Future<Appointment> rescheduleAppointment(
+    String id,
+    DateTime newScheduledAt,
+  ) async {
+    return _saveAppointment(
+      await appointmentApi.reschedule(
+        id,
+        RescheduleAppointmentRequestDto(
+          newScheduledAt: newScheduledAt.toUtc().toIso8601String(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<Appointment> cancelAppointment(
+    String id,
+    String cancellationReason,
+  ) async {
+    return _saveAppointment(
+      await appointmentApi.cancel(
+        id,
+        CancelAppointmentRequestDto(
+          cancellationReason: cancellationReason.trim(),
+        ),
+      ),
+    );
+  }
+
+  /// Guarda la cita y la devuelve con la placa y el nombre que ya estén en caché.
+  Future<Appointment> _saveAppointment(AppointmentDto dto) async {
     final row = dto.toEntity(now().millisecondsSinceEpoch);
     await appointmentDao.upsert(row);
-    return row.toDomain();
+    final plate = (await vehicleDao.findById(dto.vehicleId))?.plate;
+    final customerName = (await customerDao.findById(
+      dto.customerId,
+    ))?.displayName;
+    return row.toDomain(plate: plate, customerName: customerName);
   }
 
   Future<Vehicle> _saveVehicle(VehicleDto dto) async {
@@ -340,10 +528,26 @@ class ReceptionRepositoryImpl implements ReceptionRepository {
     );
   }
 
-  (int, int) _dayRange(String date) {
+  /// Días de Lima `yyyy-MM-dd` de [from] a [to], ambos incluidos.
+  List<String> _days(String from, String to) {
+    final days = <String>[];
+    for (
+      var day = from;
+      day.compareTo(to) <= 0 && days.length <= ReceptionRepository.maxRangeDays;
+      day = BusinessTime.addDays(day, 1)
+    ) {
+      days.add(day);
+    }
+    if (days.isEmpty || days.length > ReceptionRepository.maxRangeDays) {
+      throw const InvalidReceptionInputException('range');
+    }
+    return days;
+  }
+
+  (int, int) _rangeMillis(String from, String to) {
     return (
-      BusinessTime.startOfDay(date).millisecondsSinceEpoch,
-      BusinessTime.startOfDay(BusinessTime.addDays(date, 1))
+      BusinessTime.startOfDay(from).millisecondsSinceEpoch,
+      BusinessTime.startOfDay(BusinessTime.addDays(to, 1))
           .millisecondsSinceEpoch,
     );
   }

@@ -117,6 +117,12 @@ class FakeTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<TaskDetail> reopen(TaskId id, {String? reason}) async {
+    calls.add('reopen:${id.value}:$reason');
+    return taskDetail!;
+  }
+
+  @override
   Future<void> attachEvidence(
     TaskId id,
     String workOrderId,

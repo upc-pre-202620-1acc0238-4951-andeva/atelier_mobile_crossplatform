@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/authenticated_user_dto.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/upload_file_handler.dart';
@@ -29,6 +30,26 @@ Future<void> _eventually(bool Function() condition) async {
     await Future<void>.delayed(const Duration(milliseconds: 5));
   }
   expect(condition(), isTrue);
+}
+
+class _PlainHandler implements OperationHandler {
+  @override
+  Future<OperationResult> send(PendingOperationEntity operation) async =>
+      const Applied();
+}
+
+class _DiscardAwareHandler extends _PlainHandler
+    implements DiscardAwareOperationHandler {
+  final bool throwing;
+  final discarded = <String>[];
+
+  _DiscardAwareHandler({this.throwing = false});
+
+  @override
+  Future<void> onDiscard(PendingOperationEntity operation) async {
+    discarded.add(operation.id);
+    if (throwing) throw StateError('falló');
+  }
 }
 
 void main() {
@@ -189,6 +210,49 @@ void main() {
 
       expect(await dao.findById('attach'), isNull);
       expect(await file.exists(), isFalse);
+    });
+
+    test('avisa a los handlers que limpian filas optimistas', () async {
+      final handler = _DiscardAwareHandler();
+      final registry = OperationHandlerRegistry()
+        ..register('PROBE', () => handler)
+        ..register('PLAIN', () => _PlainHandler());
+      final withHandlers = PendingOperationRepositoryImpl(
+        dao: dao,
+        uploadDao: uploadDao,
+        session: session,
+        supportDirectory: () async => directory,
+        requestSync: () async => syncRequests++,
+        now: () => clock,
+        handlers: registry,
+      );
+      await enqueue('a');
+      await enqueue('b', type: 'PLAIN');
+
+      expect(await withHandlers.discard('a'), isTrue);
+      expect(await withHandlers.discard('b'), isTrue);
+
+      expect(handler.discarded, ['a']);
+      expect(await dao.findById('a'), isNull);
+      expect(await dao.findById('b'), isNull);
+    });
+
+    test('un onDiscard que falla no impide descartar', () async {
+      final registry = OperationHandlerRegistry()
+        ..register('PROBE', () => _DiscardAwareHandler(throwing: true));
+      final withHandlers = PendingOperationRepositoryImpl(
+        dao: dao,
+        uploadDao: uploadDao,
+        session: session,
+        supportDirectory: () async => directory,
+        requestSync: () async => syncRequests++,
+        now: () => clock,
+        handlers: registry,
+      );
+      await enqueue('a');
+
+      expect(await withHandlers.discard('a'), isTrue);
+      expect(await dao.findById('a'), isNull);
     });
 
     test('la subida con otro hijo se conserva', () async {

@@ -87,9 +87,7 @@ class WorkOrderDetail {
 
   /// Tareas con una solicitud de suspensión esperando al supervisor (H5).
   List<TaskDetail> get tasksAwaitingSuspensionReview {
-    return tasks
-        .where((task) => task.pendingSuspensionRequestedAt != null)
-        .toList();
+    return tasks.where((task) => task.hasPendingSuspension).toList();
   }
 }
 

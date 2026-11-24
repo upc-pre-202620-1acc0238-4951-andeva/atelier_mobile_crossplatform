@@ -1,3 +1,4 @@
+import 'package:atelier_mobile_crossplatform/core/data/local/app_database.steps.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_lock_table.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_maintenance_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
@@ -104,7 +105,16 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: stepByStep(
+      from1To2: (m, schema) async {
+        await m.addColumn(schema.tasks, schema.tasks.pendingSuspensionRequestedAt);
+      },
+    ),
+  );
 
   /// Avisa a los `watch()` de este motor que otro motor escribió en el archivo.
   void notifyExternalChanges() {

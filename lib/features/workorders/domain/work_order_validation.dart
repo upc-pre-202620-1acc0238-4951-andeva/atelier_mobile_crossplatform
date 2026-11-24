@@ -9,6 +9,7 @@ class WorkOrderValidation {
   static const reasonMax = 1000;
   static const notesMax = 1000;
   static const photoDescriptionMax = 500;
+  static const serviceNameMax = 150;
 
   static bool isMileage(int value) => value >= 0;
 

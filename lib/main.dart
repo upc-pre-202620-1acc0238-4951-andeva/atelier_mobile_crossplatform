@@ -2,6 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_inbox.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
+import 'package:atelier_mobile_crossplatform/navigation/presentation_setup.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/local_change_notifier.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
@@ -40,7 +44,15 @@ Future<void> main() async {
   );
   await _bestEffort('Disparadores', getIt<SyncTriggers>().start);
 
-  runApp(MainApp(session: session));
+  setupPresentation();
+
+  runApp(
+    MainApp(
+      session: session,
+      pushInbox: getIt<PushInbox>(),
+      authDeepLinks: getIt<AuthDeepLinkInbox>(),
+    ),
+  );
 }
 
 /// Nada de esto debe impedir abrir la app: lo capturado sin red sigue guardado en la cola.
@@ -54,8 +66,10 @@ Future<void> _bestEffort(String step, Future<void> Function() run) async {
 
 class MainApp extends StatelessWidget {
   final SessionManager session;
+  final PushInbox? pushInbox;
+  final AuthDeepLinkInbox? authDeepLinks;
 
-  const MainApp({super.key, required this.session});
+  const MainApp({super.key, required this.session, this.pushInbox, this.authDeepLinks});
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +79,12 @@ class MainApp extends StatelessWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
-      home: AppRoot(session: session),
+      // Claro y oscuro son esquemas completos; sin color dinámico, la paleta de marca es fija.
+      theme: AtelierTheme.light,
+      darkTheme: AtelierTheme.dark,
+      themeMode: ThemeMode.system,
+      builder: (context, child) => AtelierSystemUiScope(child: child ?? const SizedBox.shrink()),
+      home: AppRoot(session: session, pushInbox: pushInbox, authDeepLinks: authDeepLinks),
     );
   }
 }

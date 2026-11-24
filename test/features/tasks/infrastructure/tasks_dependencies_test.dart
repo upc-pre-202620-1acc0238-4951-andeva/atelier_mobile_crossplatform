@@ -13,6 +13,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/application/pause_ta
 import 'package:atelier_mobile_crossplatform/features/tasks/application/refresh_my_tasks_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/remove_part_from_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reopen_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/request_suspension_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/search_parts_use_case.dart';
@@ -61,7 +62,7 @@ void main() {
     expect(getIt<TaskRepository>(), isNotNull);
   });
 
-  test('los 18 casos de uso de tareas se pueden resolver', () {
+  test('los 19 casos de uso de tareas se pueden resolver', () {
     setup();
     expect(getIt<ObserveMyTasksUseCase>(), isNotNull);
     expect(getIt<RefreshMyTasksUseCase>(), isNotNull);
@@ -81,5 +82,6 @@ void main() {
     expect(getIt<AddPartToTaskUseCase>(), isNotNull);
     expect(getIt<UpdateTaskPartQuantityUseCase>(), isNotNull);
     expect(getIt<RemovePartFromTaskUseCase>(), isNotNull);
+    expect(getIt<ReopenTaskUseCase>(), isNotNull);
   });
 }

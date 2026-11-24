@@ -16,7 +16,20 @@ void main() {
     expect(AuthValidation.isOtp('12345a'), isFalse);
   });
 
-  group('tokenFrom (H1)', () {
+  test('isEmail estricto', () {
+    expect(AuthValidation.isEmail(' a.b@sub.dominio.pe '), isTrue);
+    expect(AuthValidation.isEmail('a@@b.pe'), isFalse);
+    expect(AuthValidation.isEmail('@b.pe'), isFalse);
+    expect(AuthValidation.isEmail('.a@b.pe'), isFalse);
+    expect(AuthValidation.isEmail('a..b@b.pe'), isFalse);
+    expect(AuthValidation.isEmail('a@b..pe'), isFalse);
+    expect(AuthValidation.isEmail('a@.b.pe'), isFalse);
+    expect(AuthValidation.isEmail('a@-b.pe'), isFalse);
+    expect(AuthValidation.isEmail('a@b.p'), isFalse);
+    expect(AuthValidation.isEmail('a@b.p-e'), isFalse);
+  });
+
+  group('tokenFrom', () {
     test('un token pegado queda igual, sin espacios', () {
       expect(AuthValidation.tokenFrom('  abc123 '), 'abc123');
     });
@@ -38,8 +51,19 @@ void main() {
       expect(AuthValidation.tokenFrom('https://x/y?token=a%zz'), 'a%zz');
     });
 
-    test('un enlace sin token queda igual', () {
-      expect(AuthValidation.tokenFrom('https://x/y?a=1'), 'https://x/y?a=1');
+    test('un enlace sin token o con token vacío da cadena vacía', () {
+      expect(AuthValidation.tokenFrom('https://x/y?a=1'), '');
+      expect(AuthValidation.tokenFrom('https://x/y?token='), '');
+    });
+
+    test('un texto con ? que no es URL queda igual', () {
+      expect(AuthValidation.tokenFrom('abc?def'), 'abc?def');
+    });
+
+    test('vacío da cadena vacía y el token se recorta a 512', () {
+      expect(AuthValidation.tokenFrom('   '), '');
+      expect(AuthValidation.tokenFrom('x' * 600).length, 512);
+      expect(AuthValidation.tokenFrom('https://x/y?token=${'y' * 600}').length, 512);
     });
   });
 }

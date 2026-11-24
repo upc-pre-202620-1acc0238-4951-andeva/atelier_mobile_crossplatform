@@ -12,7 +12,8 @@ import 'package:drift/drift.dart';
 /// `REGISTER_FAULT` (06 §3 y §6): si el vehículo ya tiene ese DTC activo el backend devuelve esa falla (R3). Al
 /// aplicarse, la fila `local-{id de la operación}` pasa a tener el id real; si se borró en el auto mientras se
 /// enviaba, conserva la marca de resuelta para que su `RESOLVE_FAULT` la cierre.
-class RegisterFaultHandler implements OperationHandler {
+class RegisterFaultHandler
+    implements OperationHandler, DiscardAwareOperationHandler {
   static const type = 'REGISTER_FAULT';
 
   final IotApi api;
@@ -34,10 +35,7 @@ class RegisterFaultHandler implements OperationHandler {
       final dto = await api.registerFault(body);
       final localId = '${VehicleFault.localPrefix}${operation.id}';
       final local = await dao.findById(localId);
-      final saved = dto.toEntity(
-        body.vehicleId,
-        now().millisecondsSinceEpoch,
-      );
+      final saved = dto.toEntity(body.vehicleId, now().millisecondsSinceEpoch);
       await dao.replaceLocal(
         localId,
         local?.isResolved == true
@@ -48,5 +46,12 @@ class RegisterFaultHandler implements OperationHandler {
             : saved,
       );
     });
+  }
+
+  /// El usuario descartó el registro en "Pendientes de sincronizar": la falla `local-` ya no se enviará
+  /// y no debe seguir contando como pendiente.
+  @override
+  Future<void> onDiscard(PendingOperationEntity operation) {
+    return dao.deleteById('${VehicleFault.localPrefix}${operation.id}');
   }
 }

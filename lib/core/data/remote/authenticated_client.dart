@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/session_store.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/public_endpoints.dart';
@@ -43,7 +44,38 @@ class AuthenticatedClient extends http.BaseClient {
   /// El timeout es por intento, no del flujo completo: si envolviera también el refresh, la UI
   /// vería "sin respuesta" mientras el `POST` reintentado aún puede llegar al backend (H28).
   Future<http.StreamedResponse> _attempt(http.Request request) async {
-    final response = await inner.send(request).timeout(attemptTimeout);
+    final http.StreamedResponse response;
+    try {
+      response = await inner.send(request).timeout(attemptTimeout);
+    } on Exception catch (e) {
+      // Reintento acotado (1 vez) solo de GET/HEAD ante un corte de socket previo a la respuesta
+      // (keep-alive cerrado por Render o salto Wi-Fi/4G). Los POST/PUT/PATCH/DELETE nunca se
+      // reintentan aquí: protege cobros, comprobantes y la rotación del refresh token (H28).
+      // Un timeout tampoco: ya esperó `attemptTimeout`.
+      if (!_isIdempotent(request.method) || !_isSocketFailure(e)) rethrow;
+      return _sendOnce(request);
+    }
+    return _wrap(response);
+  }
+
+  Future<http.StreamedResponse> _sendOnce(http.Request request) async {
+    final response = await inner.send(_clone(request)).timeout(attemptTimeout);
+    return _wrap(response);
+  }
+
+  static bool _isIdempotent(String method) => method == 'GET' || method == 'HEAD';
+
+  static bool _isSocketFailure(Exception e) =>
+      e is SocketException || e is http.ClientException || e is HandshakeException;
+
+  http.Request _clone(http.Request original) {
+    return http.Request(original.method, original.url)
+      ..headers.addAll(original.headers)
+      ..followRedirects = original.followRedirects
+      ..bodyBytes = original.bodyBytes;
+  }
+
+  http.StreamedResponse _wrap(http.StreamedResponse response) {
     return http.StreamedResponse(
       response.stream.timeout(attemptTimeout),
       response.statusCode,

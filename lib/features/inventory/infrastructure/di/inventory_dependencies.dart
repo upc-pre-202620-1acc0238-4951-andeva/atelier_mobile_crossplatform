@@ -4,6 +4,18 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/media/supabase_uploader.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/add_purchase_order_item_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/cancel_purchase_order_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/create_part_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/create_purchase_order_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/create_supplier_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/dispatch_fifo_batch_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_suppliers_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/issue_purchase_order_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/receive_direct_batch_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/restore_batch_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/update_part_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/update_supplier_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/find_part_by_sku_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_inventory_valuation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_part_detail_use_case.dart';
@@ -87,5 +99,41 @@ void setupInventoryDependencies() {
   );
   getIt.registerLazySingleton<ReceivePurchaseOrderUseCase>(
     () => ReceivePurchaseOrderUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<AddPurchaseOrderItemUseCase>(
+    () => AddPurchaseOrderItemUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<CancelPurchaseOrderUseCase>(
+    () => CancelPurchaseOrderUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<CreatePartUseCase>(
+    () => CreatePartUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<CreatePurchaseOrderUseCase>(
+    () => CreatePurchaseOrderUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<CreateSupplierUseCase>(
+    () => CreateSupplierUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<DispatchFifoBatchUseCase>(
+    () => DispatchFifoBatchUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<GetSuppliersUseCase>(
+    () => GetSuppliersUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<IssuePurchaseOrderUseCase>(
+    () => IssuePurchaseOrderUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<ReceiveDirectBatchUseCase>(
+    () => ReceiveDirectBatchUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<RestoreBatchUseCase>(
+    () => RestoreBatchUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<UpdatePartUseCase>(
+    () => UpdatePartUseCase(repository: getIt<InventoryRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateSupplierUseCase>(
+    () => UpdateSupplierUseCase(repository: getIt<InventoryRepository>()),
   );
 }

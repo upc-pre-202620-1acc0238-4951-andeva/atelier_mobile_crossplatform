@@ -24,3 +24,21 @@ class MissingAssignmentException implements Exception {
 class InvalidJustificationException implements Exception {
   const InvalidJustificationException();
 }
+
+/// Ubicación simulada: no se marca ni se encola una ubicación no verificable.
+class MockLocationException implements Exception {
+  const MockLocationException();
+}
+
+/// La sede asignada no está en caché: sin su geocerca no se puede validar la ubicación.
+class BranchGeofenceUnavailableException implements Exception {
+  const BranchGeofenceUnavailableException();
+}
+
+/// Fuera de la geocerca: el bloqueo se aplica también sin conexión; el backend repite la validación.
+class LocationOutsideGeofenceException implements Exception {
+  final double distanceMeters;
+  final double radiusMeters;
+
+  const LocationOutsideGeofenceException(this.distanceMeters, this.radiusMeters);
+}

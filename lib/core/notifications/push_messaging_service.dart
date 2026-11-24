@@ -73,6 +73,11 @@ class PushMessagingService {
   Future<void> _show(RemoteMessage message) async {
     final destination = PushRouter.route(message.data);
     if (destination == null) return;
+    inbox.record(
+      message.notification?.title,
+      message.notification?.body,
+      destination,
+    );
     final channel = NotificationChannels.channelFor(
       PushRouter.channelFor(destination),
       strings,

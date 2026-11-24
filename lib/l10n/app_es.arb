@@ -51,5 +51,3658 @@
   "placeholderSignedIn": "Sesión iniciada",
   "@placeholderSignedIn": {
     "description": "Marcador hasta que exista el paso 3"
-  }
+  },
+  "appName": "Atelier Workshop",
+  "errorRequiresConnection": "Requiere conexión",
+  "errorGeneric": "Ocurrió un error. Inténtalo de nuevo.",
+  "errorDeviceClock": "Revisa la hora de tu teléfono",
+  "commonBack": "Volver",
+  "commonRetry": "Reintentar",
+  "plateA11y": "placa {p1}",
+  "@plateA11y": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionWithCount": "{p1} · {p2}",
+  "@sectionWithCount": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "stateOfflineNoCache": "Sin conexión y sin datos guardados",
+  "authEmailLabel": "Correo institucional",
+  "authPasswordLabel": "Contraseña",
+  "authConfirmPassword": "Confirmar contraseña",
+  "authShowPassword": "Mostrar contraseña",
+  "authHidePassword": "Ocultar contraseña",
+  "authFirstName": "Nombres",
+  "authLastName": "Apellidos",
+  "authLoginTitle": "Inicia sesión",
+  "authLoginSubtitle": "Con el correo institucional de tu taller.",
+  "authLoginAction": "Iniciar sesión",
+  "authForgotPassword": "¿Olvidaste tu contraseña?",
+  "authOr": "o",
+  "authHaveInvitation": "Tengo un enlace de invitación",
+  "authEmailVerified": "Correo verificado. Ya puedes iniciar sesión.",
+  "authRegisterTitle": "Crear tu cuenta",
+  "authLinkTitle": "Pega tu enlace",
+  "authLinkBody": "Usa el enlace del correo con el que te invitó el administrador de tu taller.",
+  "authLinkLabel": "Enlace de invitación",
+  "authLinkPlaceholder": "Pega el enlace o el código",
+  "authContinue": "Continuar",
+  "authInvitedTo": "Te invitaron a",
+  "authInvitedRole": "Rol: {p1}",
+  "@authInvitedRole": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "authRuleLength": "Al menos 8 caracteres",
+  "authRuleUppercase": "Una letra mayúscula",
+  "authRuleMatch": "Coincide con la confirmación",
+  "authRuleMet": "Cumplido",
+  "authRulePending": "Pendiente",
+  "authCompleteRegistration": "Completar registro",
+  "authInvitationExpiredTitle": "Esta invitación venció.",
+  "authInvitationExpiredBody": "Pide una nueva al administrador de tu taller.",
+  "authInvitationGoneTitle": "Esta invitación ya no es válida.",
+  "authInvitationGoneBody": "Fue revocada o el enlace está incompleto. Pide una nueva al administrador de tu taller.",
+  "authBackToLogin": "Volver a iniciar sesión",
+  "authVerifyTitle": "Verifica tu correo",
+  "authOtpTitle": "Ingresa el código",
+  "authOtpSentTo": "Lo enviamos a {p1}",
+  "@authOtpSentTo": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "authOtpLabel": "Código de verificación de {p1} dígitos",
+  "@authOtpLabel": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "authOtpProgress": "{p1} de {p2} dígitos",
+  "@authOtpProgress": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "authOtpExpiresIn": "Vence en {p1}",
+  "@authOtpExpiresIn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "authOtpExpired": "El código venció. Pide uno nuevo.",
+  "authOtpResent": "Te enviamos un código nuevo.",
+  "authResend": "Reenviar código",
+  "authResendIn": "Reenviar en {p1}",
+  "@authResendIn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "authVerifyAction": "Verificar código",
+  "authForgotTitle": "Recupera tu contraseña",
+  "authForgotBody": "Escribe el correo de tu cuenta y te enviaremos un enlace para crear una contraseña nueva. El enlace vence en 2 horas.",
+  "authForgotAction": "Enviar enlace",
+  "authForgotSentTitle": "Revisa tu correo",
+  "authForgotSent": "Si el correo pertenece a una cuenta, te enviamos un enlace para restablecer la contraseña.",
+  "authHaveToken": "Ya tengo el enlace",
+  "authRequestAgain": "Pedir otro enlace",
+  "authResetTitle": "Nueva contraseña",
+  "authResetBody": "Pega el enlace del correo, o solo el código que trae, y elige tu contraseña nueva.",
+  "authResetTokenLabel": "Enlace o código",
+  "authResetHint": "El enlace vence 2 horas después de pedirlo y solo sirve una vez.",
+  "authResetAction": "Cambiar contraseña",
+  "authResetInvalid": "El enlace venció o no es válido. Pide uno nuevo.",
+  "authResetRequestNew": "Pedir un enlace nuevo",
+  "authPasswordUpdated": "Contraseña actualizada. Ya puedes iniciar sesión.",
+  "attendanceTitle": "Asistencia",
+  "attendanceToday": "Mi jornada de hoy",
+  "attendanceNotClockedIn": "Todavía no has marcado tu ingreso.",
+  "attendanceClockInPending": "Ingreso guardado. Se sincronizará cuando vuelva la conexión.",
+  "attendanceClockOutPending": "Salida guardada. Se sincronizará cuando vuelva la conexión.",
+  "attendanceCapturedAt": "Hora registrada en el dispositivo: {p1}",
+  "@attendanceCapturedAt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceClockedInAt": "Ingreso: {p1}",
+  "@attendanceClockedInAt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceCompletedAt": "Jornada finalizada: {p1}",
+  "@attendanceCompletedAt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceClockOutAt": "Salida: {p1}",
+  "@attendanceClockOutAt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceDistance": "Distancia estimada a la sede: {p1} m",
+  "@attendanceDistance": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceWorkedMinutes": "Tiempo trabajado: {p1} min",
+  "@attendanceWorkedMinutes": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceRegularMinutes": "Tiempo regular: {p1} min",
+  "@attendanceRegularMinutes": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceOvertimeMinutes": "Sobretiempo: {p1} min",
+  "@attendanceOvertimeMinutes": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceClockIn": "Marcar ingreso",
+  "attendanceClockOut": "Marcar salida",
+  "attendanceRefresh": "Actualizar",
+  "attendanceRefreshing": "Actualizando asistencia…",
+  "attendanceMyShift": "Mi turno",
+  "attendanceNoShift": "No tienes un turno asignado. Contacta al administrador de tu taller.",
+  "attendanceShiftHours": "Horario: {p1} – {p2}",
+  "@attendanceShiftHours": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceGracePeriod": "Tolerancia: {p1} minutos",
+  "@attendanceGracePeriod": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceBranchUnavailable": "Sede no disponible en caché",
+  "attendanceWorkDay": "Laborable",
+  "attendanceRestDay": "Descanso",
+  "attendanceHistory": "Historial de asistencia",
+  "attendanceHistoryEmpty": "Todavía no hay asistencias en el historial disponible.",
+  "attendanceStatus": "Estado: {p1}",
+  "@attendanceStatus": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceStatusUnknown": "Sin clasificar",
+  "attendanceStatusOnTime": "A tiempo",
+  "attendanceStatusLate": "Tardanza",
+  "attendanceStatusExcused": "Justificada",
+  "attendanceStatusAbsent": "Ausencia",
+  "attendanceJustificationReason": "Motivo enviado: {p1}",
+  "@attendanceJustificationReason": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceJustificationStatus": "Descargo: {p1}",
+  "@attendanceJustificationStatus": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceJustificationPending": "Pendiente de revisión",
+  "attendanceJustificationApproved": "Aprobado",
+  "attendanceJustificationRejected": "Rechazado",
+  "attendanceJustify": "Presentar descargo",
+  "attendanceJustificationTitle": "Justificar asistencia",
+  "attendanceJustificationHelp": "Explica el motivo de la tardanza o ausencia. El administrador revisará el descargo.",
+  "attendanceJustificationLabel": "Motivo",
+  "attendanceJustificationSend": "Enviar descargo",
+  "attendanceCancel": "Cancelar",
+  "attendanceLocationUnavailable": "No se pudo obtener la ubicación actual. Activa la ubicación del dispositivo e inténtalo de nuevo.",
+  "attendanceLocationInaccurate": "La ubicación tiene una precisión de aproximadamente {p1} m. Sal a un lugar abierto e inténtalo otra vez; se requiere una precisión de 50 m o mejor.",
+  "@attendanceLocationInaccurate": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceJustificationInvalid": "Escribe un motivo de descargo de hasta 500 caracteres.",
+  "attendanceLocationPermissionRequired": "Para marcar el ingreso, permite el acceso a la ubicación precisa en los permisos de la aplicación.",
+  "attendanceMockLocationWarning": "El dispositivo reporta una ubicación simulada. El backend decide si puede aceptar la marcación.",
+  "attendanceOutsideGeofenceWarning": "Estás aproximadamente a {p1} m de la sede, fuera de la geocerca. El backend validará la marcación.",
+  "@attendanceOutsideGeofenceWarning": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendancePermissionClockIn": "Tu cuenta no tiene permiso para marcar ingreso.",
+  "attendancePermissionClockOut": "Tu cuenta no tiene permiso para marcar salida.",
+  "attendancePermissionJustification": "Tu cuenta no tiene permiso para presentar descargos.",
+  "attendanceMissingAssignment": "No tienes sede o turno asignado. Contacta al administrador del taller.",
+  "attendanceClockInRecorded": "Ingreso registrado correctamente.",
+  "attendanceClockInQueued": "Ingreso guardado sin conexión; se enviará automáticamente al recuperar señal.",
+  "attendanceClockOutRecorded": "Salida registrada correctamente.",
+  "attendanceClockOutQueued": "Salida guardada sin conexión; se enviará automáticamente al recuperar señal.",
+  "attendanceJustificationRecorded": "Descargo enviado correctamente.",
+  "attendanceJustificationQueued": "Descargo guardado sin conexión; se enviará automáticamente al recuperar señal.",
+  "attendanceAlreadyQueued": "Esta acción ya está pendiente o falló. Revísala en Pendientes de sincronizar.",
+  "dayMonday": "Lunes",
+  "dayTuesday": "Martes",
+  "dayWednesday": "Miércoles",
+  "dayThursday": "Jueves",
+  "dayFriday": "Viernes",
+  "daySaturday": "Sábado",
+  "daySunday": "Domingo",
+  "branchTitle": "Elige tu sede",
+  "branchSubtitle": "Tu cuenta no tiene una sede asignada. Elige en cuál vas a trabajar.",
+  "branchGeofence": "Marcación en un radio de {p1} m",
+  "@branchGeofence": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "branchContinue": "Continuar",
+  "branchContinueIn": "Continuar en {p1}",
+  "@branchContinueIn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "branchLater": "Elegir después",
+  "branchRetry": "Reintentar",
+  "branchLoading": "Cargando sedes",
+  "branchEmptyTitle": "Tu taller aún no tiene sedes activas.",
+  "branchEmptyBody": "Pide al administrador que cree una y vuelve a entrar.",
+  "receptionInvalidInput": "Revisa los datos marcados.",
+  "receptionFieldEmail": "Ingresa un correo válido.",
+  "receptionFieldTaxIdPerson": "El documento debe tener entre 8 y 20 caracteres.",
+  "receptionFieldTaxIdCompany": "El RUC debe tener entre 11 y 20 caracteres.",
+  "receptionFieldPhone": "Máximo 20 caracteres.",
+  "receptionFieldFirstName": "Ingresa los nombres (máximo 100 caracteres).",
+  "receptionFieldLastName": "Ingresa los apellidos (máximo 100 caracteres).",
+  "receptionFieldCompanyName": "Ingresa la razón social (máximo 150 caracteres).",
+  "receptionFieldPlate": "Ingresa la placa (máximo 15 caracteres).",
+  "receptionFieldBrand": "Ingresa la marca (máximo 50 caracteres).",
+  "receptionFieldModel": "Ingresa el modelo (máximo 50 caracteres).",
+  "receptionFieldVin": "Máximo 17 caracteres.",
+  "receptionFieldYear": "El año debe ser 1950 o posterior.",
+  "receptionNoPermission": "Tu perfil no tiene permiso para esta acción.",
+  "affiliationTitle": "Afiliar cliente",
+  "affiliationSubtitle": "Busca el correo del conductor para ver si ya usa Atelier.",
+  "affiliationEmail": "Correo del conductor",
+  "affiliationSearch": "Buscar",
+  "affiliationAlreadyTitle": "Ya es cliente del taller.",
+  "affiliationAlreadyBody": "{p1} ya está afiliado. No hace falta registrarlo otra vez.",
+  "@affiliationAlreadyBody": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "affiliationFoundTitle": "Cuenta de Atelier encontrada.",
+  "affiliationFoundBody": "{p1} tiene {p2} vehículo(s) registrado(s). Pide su documento para afiliarlo.",
+  "@affiliationFoundBody": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "affiliationNotFoundTitle": "Sin cuenta en Atelier.",
+  "affiliationNotFoundBody": "Registra al cliente y su vehículo en el taller.",
+  "affiliationTaxId": "Documento (DNI)",
+  "affiliationPhone": "Teléfono (opcional)",
+  "affiliationSubmit": "Afiliar al taller",
+  "affiliationRegisterWalkIn": "Registrar cliente presencial",
+  "affiliationDone": "Cliente afiliado: {p1}",
+  "@affiliationDone": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "registerCustomerTitle": "Registrar cliente",
+  "registerCustomerIndividual": "Persona",
+  "registerCustomerCompany": "Empresa",
+  "registerCustomerSectionCustomer": "Cliente",
+  "registerCustomerSectionVehicle": "Vehículo",
+  "registerCustomerFirstName": "Nombres",
+  "registerCustomerLastName": "Apellidos",
+  "registerCustomerCompanyName": "Razón social",
+  "registerCustomerTaxIdPerson": "Documento (DNI)",
+  "registerCustomerTaxIdCompany": "RUC",
+  "registerCustomerEmail": "Correo electrónico (opcional)",
+  "registerCustomerPhone": "Teléfono",
+  "registerVehiclePlate": "Placa",
+  "registerVehicleBrand": "Marca",
+  "registerVehicleModel": "Modelo",
+  "registerVehicleEngine": "Motor",
+  "registerVehicleVin": "VIN (opcional)",
+  "registerVehicleYear": "Año",
+  "engineGasoline": "Gasolina",
+  "engineDiesel": "Diésel",
+  "engineElectric": "Eléctrico",
+  "engineHybrid": "Híbrido",
+  "registerCustomerSubmit": "Registrar cliente y vehículo",
+  "registerCustomerRetryVehicle": "Registrar vehículo",
+  "registerCustomerSavedPendingVehicle": "El cliente ya se guardó. Falta registrar el vehículo.",
+  "searchTitle": "Recepción",
+  "searchSubtitle": "Busca la unidad por placa o al cliente por documento.",
+  "searchModePlate": "Placa",
+  "searchModeDocument": "DNI / RUC",
+  "searchFieldPlate": "Placa del vehículo",
+  "searchFieldDocument": "Documento del cliente",
+  "searchSubmit": "Buscar",
+  "searchVehicleOwner": "Titular: {p1}",
+  "@searchVehicleOwner": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "searchVehicleNoOwner": "Sin titular registrado",
+  "searchNotFoundTitle": "Vehículo no registrado.",
+  "searchNotFoundBody": "Es un primer ingreso. Registra al cliente y su vehículo, o afilia su cuenta de Atelier.",
+  "searchCustomersEmpty": "No hay clientes con ese documento.",
+  "searchCustomersTitle": "Clientes encontrados",
+  "searchCustomerVehiclesTitle": "Vehículos de {p1}",
+  "@searchCustomerVehiclesTitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "searchLoading": "Cargando…",
+  "searchCustomerVehiclesEmpty": "Este cliente no tiene vehículos.",
+  "searchRegister": "Registrar cliente y vehículo",
+  "searchAffiliate": "Afiliar por correo",
+  "searchAppointmentsTitle": "Citas de hoy",
+  "searchAppointmentsEmpty": "No hay citas para hoy.",
+  "searchAppointmentsRefresh": "Actualizar citas",
+  "searchAppointmentLine": "{p1} · {p2}",
+  "@searchAppointmentLine": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "searchAppointmentUnknownPlate": "Placa sin cargar",
+  "searchAppointmentArrived": "Marcar llegada",
+  "appointmentStatusPending": "Pendiente",
+  "appointmentStatusConfirmed": "Confirmada",
+  "appointmentStatusArrived": "Llegó",
+  "appointmentStatusCanceled": "Cancelada",
+  "searchStartService": "Iniciar atención",
+  "searchCompleteOrder": "Completar orden",
+  "searchArrivalReady": "Llegada registrada. La orden en borrador ya está lista.",
+  "searchArrivalPending": "Llegada registrada. La orden se está creando: actualiza en unos segundos.",
+  "workorderInvalidInput": "Revisa los datos marcados.",
+  "openOrderTitle": "Abrir orden",
+  "openOrderDraftNotice": "Este vehículo ya tiene una orden en borrador. Completa sus datos de ingreso.",
+  "openOrderSavedPendingTasks": "La orden ya se abrió. Faltan agregar algunas faenas.",
+  "openOrderMileage": "Kilometraje (km)",
+  "openOrderFieldMileage": "Ingresa el kilometraje como un número.",
+  "openOrderFuel": "Nivel de combustible",
+  "fuelReserve": "Reserva",
+  "fuelQuarter": "1/4",
+  "fuelHalf": "1/2",
+  "fuelThreeQuarters": "3/4",
+  "fuelFull": "Lleno",
+  "openOrderReason": "Motivo de ingreso",
+  "openOrderFieldReason": "El motivo es demasiado largo (máximo 2000 caracteres).",
+  "openOrderTasks": "Faenas iniciales",
+  "openOrderTasksEmpty": "No hay servicios para elegir. Puedes abrir la orden sin faenas.",
+  "openOrderTaskAdded": "{p1} (agregada)",
+  "@openOrderTaskAdded": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "openOrderMechanic": "Asignar a (opcional)",
+  "openOrderMechanicNone": "Sin asignar",
+  "openOrderMechanicFallback": "Colaborador {p1}",
+  "@openOrderMechanicFallback": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "openOrderSubmit": "Abrir orden",
+  "openOrderRetryTasks": "Agregar faenas pendientes",
+  "galleryTitle": "Fotos de recepción",
+  "gallerySubtitle": "Toca un panel para fotografiarlo. Las fotos se guardan aunque no haya señal.",
+  "galleryNote": "Nota del daño (opcional)",
+  "galleryCameraDenied": "Sin permiso de cámara no se pueden tomar fotos.",
+  "galleryTakePhoto": "Tomar foto: {p1}",
+  "@galleryTakePhoto": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "galleryAngleFront": "Frente",
+  "galleryAngleRear": "Trasera",
+  "galleryAngleLeft": "Lateral izquierdo",
+  "galleryAngleRight": "Lateral derecho",
+  "galleryAngleRoof": "Techo",
+  "galleryAngleDashboard": "Tablero",
+  "galleryAngleOther": "Otra foto",
+  "galleryOther": "Otras fotos",
+  "galleryAddOther": "Agregar otra foto",
+  "galleryStatusUploaded": "Subida",
+  "galleryStatusQueued": "En cola",
+  "galleryStatusFailed": "Falló",
+  "galleryDone": "Listo",
+  "severityLow": "Baja",
+  "severityMedium": "Media",
+  "severityHigh": "Alta",
+  "severityCritical": "Crítica",
+  "proposalStatusPending": "En revisión",
+  "proposalStatusApproved": "Aprobada",
+  "proposalStatusRejected": "Rechazada",
+  "findingTitle": "Reportar hallazgo",
+  "findingSubtitle": "Describe el imprevisto que encontraste y adjunta una foto como prueba.",
+  "findingSaved": "Hallazgo guardado. Se enviará a supervisión en cuanto haya señal.",
+  "findingSeverity": "Severidad",
+  "findingDescription": "Descripción técnica",
+  "findingFieldDescription": "Ingresa la descripción (máximo 2000 caracteres).",
+  "findingPhoto": "Foto del hallazgo",
+  "findingTakePhoto": "Tomar foto",
+  "findingChangePhoto": "Cambiar foto",
+  "findingPhotoRequired": "La foto es obligatoria para enviar el hallazgo.",
+  "findingService": "Servicio sugerido (opcional)",
+  "findingServiceNone": "Sin sugerencia",
+  "findingPendingTitle": "Pendientes de envío",
+  "findingSubmit": "Enviar hallazgo",
+  "proposalsTitle": "Propuestas",
+  "proposalsSubtitle": "Notifica al cliente cada hallazgo y registra si lo aprobó o no.",
+  "proposalsEmpty": "Esta orden no tiene propuestas.",
+  "proposalsReport": "Reportar hallazgo",
+  "proposalsNotify": "Enviar al cliente por correo",
+  "proposalsApprove": "Aprobar y crear tarea",
+  "proposalsReject": "Registrar rechazo",
+  "proposalsNotified": "Correo enviado a {p1}.",
+  "@proposalsNotified": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "proposalsApproved": "Propuesta aprobada. Se creó la tarea en la orden.",
+  "proposalsRejected": "Propuesta rechazada.",
+  "proposalsCustomerNotes": "Observaciones del cliente: {p1}",
+  "@proposalsCustomerNotes": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "proposalsRecommendedService": "Servicio recomendado: {p1}",
+  "@proposalsRecommendedService": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "proposalsService": "Servicio de la tarea",
+  "proposalsFinalPrice": "Tarifa del servicio (sin IGV)",
+  "proposalsPriceFromCatalog": "Tarifa consolidada del catálogo de servicios (sin IGV).",
+  "proposalsLaborHours": "Horas estimadas",
+  "proposalsMechanic": "Mecánico responsable (opcional)",
+  "proposalsMechanicUnassigned": "Sin asignar",
+  "proposalsNotesOptional": "Observaciones (opcional)",
+  "proposalsCustomerNotesLabel": "Observaciones del cliente",
+  "proposalsFieldService": "Elige un servicio para la tarea.",
+  "proposalsFieldAmount": "Ingresa un número de 0 en adelante.",
+  "proposalsFieldNotes": "Escribe las observaciones (máximo 1000 caracteres).",
+  "proposalsConfirm": "Confirmar",
+  "proposalsCancel": "Cancelar",
+  "galleryProposals": "Propuestas de la orden",
+  "attendanceLocating": "Obteniendo ubicación…",
+  "attendanceRefreshingShort": "Actualizando",
+  "attendancePendingBadge": "Pendiente de sincronizar",
+  "attendanceCompletedBadge": "Jornada finalizada",
+  "attendanceActiveBadge": "Jornada activa",
+  "attendanceReadyBadge": "Listo para marcar",
+  "attendanceGeofenceTitle": "Geocerca del taller",
+  "attendanceGeofenceRadius": "Radio permitido: {p1} m",
+  "@attendanceGeofenceRadius": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceGeofenceNoBranch": "La sede no está disponible en caché.",
+  "attendanceRetryLocation": "Actualizar GPS",
+  "attendanceDistanceValue": "{p1} m",
+  "@attendanceDistanceValue": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceDistanceFromBranch": "del centro del taller",
+  "attendanceGpsUnavailableShort": "Sin GPS",
+  "attendanceMockShort": "GPS simulado",
+  "attendanceGpsReady": "GPS disponible",
+  "attendanceInsideGeofence": "Dentro del perímetro",
+  "attendanceOutsideGeofence": "Fuera del perímetro",
+  "attendanceGraceLabel": "Tolerancia de ingreso",
+  "attendanceBranchLabel": "Sede asignada",
+  "attendanceNoShiftShort": "Sin turno asignado",
+  "attendanceWeeklySchedule": "Semana laboral",
+  "attendanceMapRadius": "Vista esquemática · radio {p1} m",
+  "@attendanceMapRadius": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceMapNoData": "Vista esquemática · la sede aparecerá al cargar los datos",
+  "tasksTitle": "Mis tareas",
+  "tasksSubtitle": "Faenas asignadas en bahía, por prioridad.",
+  "tasksEmpty": "No tienes tareas asignadas.",
+  "tasksNoPermission": "Tu perfil no tiene permiso para ver tareas.",
+  "tasksCacheNotice": "Sin conexión: mostrando las tareas guardadas.",
+  "tasksRefresh": "Actualizar",
+  "taskStatusAssigned": "Asignada",
+  "taskStatusInProgress": "En curso",
+  "taskStatusOnHold": "En pausa",
+  "taskStatusSuspended": "Suspendida",
+  "taskStatusCompleted": "Completada",
+  "taskStatusCancelled": "Cancelada",
+  "taskStatusPending": "Pendiente",
+  "taskSuspensionPending": "Suspensión por aprobar",
+  "taskCardPlate": "Placa {p1}",
+  "@taskCardPlate": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskCardBay": "Bahía {p1}",
+  "@taskCardBay": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskCardWorkOrder": "OT #{p1}",
+  "@taskCardWorkOrder": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "taskCardEstimated": "{p1} h estimadas",
+  "@taskCardEstimated": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskCardNoPlate": "Vehículo sin placa en caché",
+  "taskDetailTitle": "Detalle de tarea",
+  "taskInvalidInput": "Revisa los datos marcados.",
+  "taskTimerLabel": "Labor efectiva",
+  "taskTimerPausedTotal": "En pausa acumulada: {p1}",
+  "@taskTimerPausedTotal": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskStart": "Iniciar faena",
+  "taskResume": "Reanudar",
+  "taskPause": "Pausar",
+  "taskComplete": "Terminar tarea",
+  "taskStarted": "Faena en curso.",
+  "taskPaused": "Tarea en pausa.",
+  "taskSuspendedNotice": "Tarea suspendida: solo un supervisor puede levantarla.",
+  "taskPauseTitle": "Pausar tarea",
+  "taskPauseBody": "Elige el motivo de la pausa.",
+  "taskPauseBreak": "Refrigerio",
+  "taskPauseEndOfShift": "Fin de turno",
+  "taskCompleteTitle": "Terminar tarea",
+  "taskCompleteBody": "Confirma las horas efectivas trabajadas. Puedes corregir la sugerencia del cronómetro.",
+  "taskCompleteHours": "Horas efectivas",
+  "taskCompleteNotes": "Notas (opcional)",
+  "taskCompleteConfirm": "Confirmar cierre",
+  "taskFieldHours": "Escribe un número de horas mayor o igual a 0.",
+  "taskFieldNotes": "Máximo 1000 caracteres.",
+  "catalogTitle": "Repuestos",
+  "catalogSearchLabel": "Buscar repuesto",
+  "catalogSearchHint": "Nombre o SKU",
+  "catalogNoPermission": "Tu perfil no tiene permiso para ver el catálogo.",
+  "catalogCacheNotice": "Sin conexión: mostrando el catálogo guardado.",
+  "catalogEmpty": "Todavía no hay repuestos en el catálogo.",
+  "catalogEmptyFiltered": "Ningún repuesto coincide con la búsqueda.",
+  "catalogClearFilters": "Quitar filtros",
+  "categoryLubricants": "Lubricantes",
+  "categoryBrakes": "Frenos",
+  "categorySuspension": "Suspensión",
+  "categoryEngine": "Motor",
+  "categoryElectrical": "Eléctrico",
+  "categoryTires": "Llantas",
+  "categoryFilters": "Filtros",
+  "categoryBodywork": "Carrocería",
+  "categoryAccessories": "Accesorios",
+  "stockOut": "Agotado",
+  "stockLow": "Stock mínimo",
+  "stockOk": "Disponible",
+  "partSku": "SKU {p1}",
+  "@partSku": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "partBrand": "Marca {p1}",
+  "@partBrand": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "partStock": "Stock: {p1}",
+  "@partStock": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "partPrice": "{p1} sin IGV",
+  "@partPrice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "partDetailTitle": "Detalle de repuesto",
+  "batchesTitle": "Lotes en orden FIFO",
+  "batchesSubtitle": "El descargo consume primero el lote más antiguo con saldo.",
+  "batchesEmpty": "Este repuesto no tiene lotes registrados.",
+  "batchesNoPermission": "Tu perfil no tiene permiso para ver los lotes.",
+  "batchesCacheNotice": "Sin conexión: mostrando los lotes guardados.",
+  "batchNext": "Siguiente en salir",
+  "batchWaiting": "Con saldo",
+  "batchDepleted": "Agotado",
+  "batchNumber": "Lote {p1}",
+  "@batchNumber": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "batchArrival": "Ingresó el {p1}",
+  "@batchArrival": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "batchRemaining": "Saldo: {p1}",
+  "@batchRemaining": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "batchUnitCost": "Costo unitario: {p1}",
+  "@batchUnitCost": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskPartsTitle": "Repuestos de la tarea",
+  "taskPartsEmpty": "Todavía no hay repuestos imputados.",
+  "taskPartsOnlineOnly": "Los repuestos imputados se consultan con conexión.",
+  "taskTimerUnknownHint": "El tiempo al pausar no está disponible en este teléfono.",
+  "taskPartsCharge": "Imputar repuesto",
+  "taskPartUnnamed": "Repuesto sin nombre",
+  "taskPartQuantity": "Cantidad: {p1}",
+  "@taskPartQuantity": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskPartUnitPrice": "Unitario: {p1}",
+  "@taskPartUnitPrice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskPartTotal": "Total: {p1}",
+  "@taskPartTotal": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "taskPartEdit": "Corregir cantidad",
+  "taskPartReturn": "Devolver a inventario",
+  "taskPartCharged": "Repuesto imputado: el stock bajó por lotes FIFO.",
+  "taskPartUpdated": "Cantidad actualizada.",
+  "taskPartReturned": "Repuesto devuelto al lote de origen.",
+  "taskFieldQuantity": "Escribe una cantidad mayor a 0.",
+  "chargeTitle": "Imputar repuesto",
+  "chargeSelectPartPrompt": "Repuestos disponibles en almacén:",
+  "chargeChangePartBtn": "Cambiar repuesto seleccionado",
+  "chargeQuantity": "Cantidad",
+  "chargeConfirm": "Imputar a la tarea",
+  "editPartTitle": "Corregir cantidad",
+  "editPartBody": "El backend recalcula el costo de la orden con la nueva cantidad.",
+  "editPartConfirm": "Guardar cantidad",
+  "returnTitle": "Devolver a inventario",
+  "returnBody": "Las unidades vuelven al lote del que salieron y se rebaja el costo imputado en la orden.",
+  "returnConfirm": "Devolver repuesto",
+  "mainTabHome": "Inicio",
+  "mainTabTasks": "Tareas",
+  "mainTabOrders": "Órdenes",
+  "mainTabReception": "Recepción",
+  "mainTabObd": "OBD-II",
+  "mainTabStock": "Stock",
+  "mainTabProfile": "Perfil",
+  "mainTabSettings": "Ajustes",
+  "mainTabMore": "Más",
+  "mainTabToday": "Hoy",
+  "mainTabTeam": "Equipo",
+  "mainObdTitle": "Escáneres OBD-II",
+  "mainObdSubtitle": "Enciende tu escáner OBD-II y acércalo al teléfono.",
+  "profileSignOut": "Cerrar sesión",
+  "profileSignOutTitle": "¿Cerrar sesión?",
+  "profileSignOutMessage": "Los registros pendientes de sincronizar se conservan cifrados en el teléfono.",
+  "profileVersion": "Atelier Workshop Mobile · versión {p1}",
+  "@profileVersion": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSectionAccount": "Mi cuenta y taller",
+  "profileSectionOps": "Operaciones y sincronización",
+  "profileSectionSession": "Seguridad y sesión",
+  "profileSupportBtn": "Habla con soporte técnico Atelier",
+  "profileSupportToast": "Canal directo de soporte Atelier disponible vía WhatsApp o correo oficial.",
+  "profileItemPersonalData": "Datos personales y rol",
+  "profileItemBranchShift": "Sede activa y turno",
+  "profileItemPlan": "Plan y módulos contratados",
+  "profilePlanFormat": "Plan {p1}",
+  "@profilePlanFormat": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "profileItemSync": "Cola de sincronización offline",
+  "profileItemNotifications": "Bandeja de notificaciones",
+  "profileItemPermissions": "Permisos de acceso de tu rol",
+  "profileSyncUpToDate": "Todo sincronizado con el servidor",
+  "profilePermissionsCount": "{p1} permisos operativos asignados",
+  "@profilePermissionsCount": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "commonCancel": "Cancelar",
+  "profilePendingCount": "{count, plural, one{{count} registro pendiente de sincronizar} other{{count} registros pendientes de sincronizar}}",
+  "@profilePendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ordersTitle": "Órdenes de la sede",
+  "ordersSubtitle": "Órdenes de trabajo abiertas. Entra a una para ver sus tareas.",
+  "ordersEmpty": "No hay órdenes abiertas.",
+  "ordersNoPermission": "Tu perfil no tiene permiso para ver órdenes.",
+  "ordersCacheNotice": "Sin conexión: mostrando las órdenes guardadas.",
+  "ordersNoNumber": "Orden sin número",
+  "ordersTotal": "Total: {p1}",
+  "@ordersTotal": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderDetailTitle": "Detalle de orden",
+  "orderTasksTitle": "Tareas de la orden",
+  "orderTasksEmpty": "Esta orden aún no tiene tareas.",
+  "orderTaskMechanic": "Mecánico: {p1}",
+  "@orderTaskMechanic": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTaskParts": "Repuestos imputados: {p1}",
+  "@orderTaskParts": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "orderStatusDraft": "Borrador",
+  "orderStatusInProgress": "En curso",
+  "orderStatusCompleted": "Completada",
+  "orderStatusPaid": "Pagada",
+  "orderStatusCanceled": "Cancelada",
+  "orderStatusUnknown": "Sin estado",
+  "orderCodeFormat": "OT-{p1}",
+  "@orderCodeFormat": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderStatusWaitingCustomer": "Esperando al cliente",
+  "orderTaskLabor": "Mano de obra",
+  "orderTaskHours": "{p1} h",
+  "@orderTaskHours": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "orderTaskMinutes": "{p1} min",
+  "@orderTaskMinutes": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "orderTaskHoursMinutes": "{p1} h {p2} min",
+  "@orderTaskHoursMinutes": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "orderPartLineDetail": "{p1} × {p2}",
+  "@orderPartLineDetail": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAddPart": "Agregar repuesto",
+  "orderAddTask": "Agregar tarea",
+  "orderEditLabor": "Editar mano de obra",
+  "orderOpenTaskDetail": "Abrir cronómetro y tarea",
+  "orderAddTaskTitle": "Agregar tarea",
+  "orderAddTaskService": "Servicio",
+  "orderAddTaskDescription": "Descripción de la tarea",
+  "orderAddTaskPrice": "Mano de obra sin IGV",
+  "orderAddTaskConfirm": "Agregar a la orden",
+  "orderEditLaborTitle": "Editar mano de obra",
+  "orderEditLaborConfirm": "Guardar precio",
+  "orderFieldService": "Elige un servicio del catálogo.",
+  "orderFieldDescription": "Escribe la descripción de la tarea.",
+  "orderFieldPrice": "Escribe un monto mayor o igual a 0.",
+  "orderTaskAdded": "Tarea agregada y totales recalculados.",
+  "orderTaskUpdated": "Mano de obra actualizada y totales recalculados.",
+  "orderDeleteTask": "Eliminar tarea",
+  "orderDeleteTaskTitle": "Eliminar tarea de la orden",
+  "orderDeleteTaskBody": "Se quitará \"{p1}\" de la orden y se recalcularán los totales.",
+  "@orderDeleteTaskBody": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderDeleteTaskHasParts": "Esta tarea tiene repuestos imputados. Retira primero los repuestos antes de eliminarla.",
+  "orderDeleteTaskConfirm": "Eliminar tarea",
+  "orderTaskDeleted": "Tarea eliminada y totales recalculados.",
+  "servicesTitle": "Servicios del taller",
+  "servicesSubtitle": "Mano de obra estándar y tarifas base (sin IGV)",
+  "servicesSearchHint": "Buscar servicio…",
+  "servicesEmpty": "Aún no hay servicios registrados en el catálogo del taller.",
+  "servicesEmptySearch": "No encontramos servicios con ese nombre.",
+  "servicesAdd": "Nuevo servicio",
+  "servicesNewTitle": "Nuevo servicio",
+  "servicesEditTitle": "Editar servicio",
+  "servicesSaveCreate": "Crear servicio",
+  "servicesSaveEdit": "Guardar cambios",
+  "servicesNameLabel": "Nombre del servicio",
+  "servicesNameHint": "Ej. Afinamiento de motor",
+  "servicesPriceLabel": "Tarifa base sin IGV (S/)",
+  "servicesPriceHint": "120.00",
+  "servicesDurationLabel": "Duración estimada (minutos)",
+  "servicesDurationHint": "45",
+  "servicesFieldName": "Escribe el nombre del servicio (máximo 150 caracteres).",
+  "servicesFieldPrice": "Escribe una tarifa mayor a 0.",
+  "servicesFieldDuration": "Escribe una duración en minutos mayor a 0.",
+  "servicesDurationMin": "{p1} min",
+  "@servicesDurationMin": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "servicesDeleteAction": "Eliminar servicio",
+  "servicesDeleteTitle": "Eliminar servicio",
+  "servicesDeleteBody": "¿Seguro que deseas eliminar \"{p1}\" del catálogo? Solo se puede eliminar si no tiene tareas registradas en órdenes de trabajo.",
+  "@servicesDeleteBody": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesDeleteConfirm": "Eliminar",
+  "servicesCreatedNotice": "Servicio agregado al catálogo.",
+  "servicesUpdatedNotice": "Servicio actualizado.",
+  "servicesDeletedNotice": "Servicio eliminado del catálogo.",
+  "servicesReadonlyHint": "Solo puedes consultar el catálogo. Para editar tarifas necesitas permiso de gestión de servicios.",
+  "quotationSubtotal": "Subtotal",
+  "quotationIgv": "IGV 18 %",
+  "quotationTotal": "Total",
+  "quotationGeneratePdf": "Generar proforma",
+  "quotationSharePdf": "Compartir proforma PDF",
+  "quotationSendEmail": "Enviar proforma por correo",
+  "quotationPdfReady": "Proforma generada y lista para compartir.",
+  "quotationSentNotice": "Proforma enviada a {p1}.",
+  "@quotationSentNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "quotationShareChooser": "Compartir proforma",
+  "quotationNoPdfApp": "No hay una aplicación instalada para abrir o compartir el PDF.",
+  "quotationCustomerQuestion": "¿Qué respondió el cliente?",
+  "quotationApproveAction": "Aceptó. Iniciar trabajos",
+  "quotationRejectAction": "Rechazó. Cancelar orden",
+  "quotationApprovedNotice": "Orden en progreso. Los técnicos ya pueden empezar.",
+  "quotationRejectedNotice": "Orden cancelada. Los repuestos reservados volvieron al inventario.",
+  "quotationRejectTitle": "Cancelar la orden",
+  "quotationRejectBody": "Los repuestos reservados volverán al inventario.",
+  "quotationRejectReasonLabel": "Motivo del rechazo",
+  "quotationRejectReasonHint": "Precio fuera de presupuesto",
+  "quotationRejectFieldError": "Escribe el motivo del rechazo (máximo 1000 caracteres).",
+  "quotationRejectConfirm": "Cancelar orden",
+  "quotationRejectBack": "Volver",
+  "orderOpenProposals": "Ver propuestas de hallazgos",
+  "orderOpenGallery": "Ver fotos de recepción",
+  "orderIntakeIncompleteTitle": "Datos de ingreso pendientes",
+  "orderIntakeIncompleteBody": "El odómetro actual o la recepción de patio no han sido completados para esta orden.",
+  "orderCompleteIntakeBtn": "Completar odómetro e ingreso",
+  "ordersNewBtn": "Nueva orden",
+  "ordersNewSheetTitle": "Nueva orden de trabajo",
+  "ordersNewSheetSubtitle": "Selecciona una cita programada para hoy o realiza un ingreso presencial.",
+  "ordersNewByAppointmentSection": "Citas agendadas para hoy",
+  "ordersNewAppointmentArriveCta": "Marcar llegada y abrir orden",
+  "ordersNewNoAppointments": "No hay citas agendadas para el día de hoy.",
+  "ordersNewWalkInSection": "Ingreso presencial sin cita",
+  "ordersNewWalkInTitle": "Ingreso directo en patio",
+  "ordersNewWalkInDesc": "Consultar placa o DNI para registrar recepción y abrir orden",
+  "ordersNewWalkInCta": "Consultar placa en recepción",
+  "ordersCompleteDraftCta": "Completar ingreso",
+  "attendanceOutsideGeofenceBlocked": "No puedes marcar fuera de la geocerca: estás a {p1} m de la sede y el radio permitido es {p2} m.",
+  "@attendanceOutsideGeofenceBlocked": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceMockLocationBlocked": "No se permite marcar con una ubicación simulada. Desactiva la aplicación de ubicación ficticia e inténtalo de nuevo.",
+  "attendanceBranchGeofenceUnavailable": "No se pudo validar la geocerca de tu sede porque no está disponible sin conexión. Conéctate y actualiza la información antes de marcar.",
+  "attendanceSelectedDayHours": "Horario asignado: {p1} – {p2}",
+  "@attendanceSelectedDayHours": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceSelectedDayRest": "No tienes turno asignado para este día.",
+  "attendanceClockOutConfirmTitle": "Confirmar salida",
+  "attendanceClockOutConfirmMessage": "¿Deseas cerrar tu jornada laboral? El sistema registrará la hora de salida y calculará las horas regulares y el sobretiempo.",
+  "attendanceClockOutConfirmAction": "Confirmar salida",
+  "branchAssignedBadge": "Sucursal asignada para tu jornada",
+  "receptionTabCounter": "Recepción",
+  "receptionTabCustomersCount": "Clientes ({p1})",
+  "@receptionTabCustomersCount": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "receptionTabVehiclesCount": "Vehículos ({p1})",
+  "@receptionTabVehiclesCount": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "receptionQuickWalkIn": "Ingreso presencial",
+  "receptionCustomersDirectoryTitle": "Cartera de clientes del taller",
+  "receptionNewCustomerBtn": "Nuevo cliente",
+  "receptionCustomersFilterLabel": "Filtrar por nombre, DNI/RUC, teléfono o correo",
+  "receptionCustomersEmptyDirectory": "No hay clientes registrados con ese filtro.",
+  "receptionRefreshDirectory": "Actualizar cartera",
+  "receptionVehiclesDirectoryTitle": "Vehículos registrados en el taller",
+  "receptionNewVehicleBtn": "Nuevo vehículo",
+  "receptionVehiclesFilterLabel": "Filtrar por placa, marca, modelo o propietario",
+  "receptionVehiclesEmptyDirectory": "No hay vehículos registrados con ese filtro.",
+  "receptionVehicleMileageKm": "Odómetro: {p1} km",
+  "@receptionVehicleMileageKm": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "receptionAddVehicleToCustomer": "Agregar vehículo al cliente",
+  "registerVehicleForCustomerTitle": "Agregar vehículo a cliente",
+  "registerVehicleForCustomerBanner": "Propietario seleccionado: {p1}",
+  "@registerVehicleForCustomerBanner": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "openOrderQuickReasonGeneral": "Ingreso presencial / Revisión general",
+  "openOrderQuickReasonPreventive": "Mantenimiento preventivo",
+  "quotationLaborSubtotal": "Subtotal mano de obra",
+  "quotationPartsSubtotal": "Subtotal repuestos",
+  "quotationPdfPreviewTitle": "Proforma digital (PDF)",
+  "quotationPdfPageDesc": "Página {p1} de la proforma",
+  "@quotationPdfPageDesc": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "quotationPdfClose": "Cerrar vista previa",
+  "orderIntakePhotosBadge": "{p1} fotos en patio",
+  "@orderIntakePhotosBadge": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "orderAssignBayTitle": "Asignar bahía de trabajo",
+  "orderAssignBaySubtitle": "Selecciona una bahía libre para la intervención técnica del vehículo.",
+  "orderBayCurrent": "Bahía actual",
+  "orderAssignToBay": "Asignar a {p1}",
+  "@orderAssignToBay": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAssignBayBtn": "Asignar bahía de trabajo",
+  "orderChangeBayBtn": "Bahía: {p1} (Cambiar)",
+  "@orderChangeBayBtn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderBayAssignedNotice": "Orden asignada a {p1} para intervención técnica.",
+  "@orderBayAssignedNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTaskMechanicLabel": "Mecánico asignado",
+  "orderAssignMechanicBtn": "Asignar mecánico",
+  "orderReassignMechanicBtn": "Reasignar mecánico",
+  "orderMechanicUnassigned": "Sin mecánico asignado",
+  "orderAssignMechanicTitle": "Asignar mecánico a la tarea",
+  "orderAssignMechanicSubtitle": "Selecciona el especialista técnico para la tarea «{p1}».",
+  "@orderAssignMechanicSubtitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderMechanicsEmpty": "No hay mecánicos disponibles en la sede.",
+  "orderMechanicCurrent": "Asignado actualmente",
+  "orderMechanicAssignedNotice": "Mecánico {p1} asignado a la tarea.",
+  "@orderMechanicAssignedNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAddTaskMechanic": "Mecánico responsable (opcional)",
+  "orderMechanicRoleDefault": "Técnico automotriz",
+  "baysTitle": "Bahías de trabajo",
+  "baysNoPermission": "Tu perfil no tiene permiso para consultar las bahías.",
+  "baysFilterAll": "Todas ({p1})",
+  "@baysFilterAll": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "baysFilterAvailable": "Libres ({p1})",
+  "@baysFilterAvailable": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "baysFilterOccupied": "Ocupadas ({p1})",
+  "@baysFilterOccupied": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "baysEmpty": "No hay bahías registradas para este filtro.",
+  "baysRefresh": "Actualizar",
+  "baysSelectOrderPrompt": "Elige la orden de trabajo que ingresará a esta bahía:",
+  "baysAssignOrderBtn": "Ingresar orden a esta bahía",
+  "baysNewBtn": "Nueva bahía",
+  "baysCreateDialogTitle": "Registrar bahía física",
+  "baysNameLabel": "Nombre de la bahía",
+  "baysNameHint": "Ej. Elevador 3, Bahía Rápida 2",
+  "baysTypeLabel": "Tipo de instalación",
+  "baysCreateConfirm": "Registrar bahía",
+  "baysCreatedNotice": "Bahía {p1} registrada exitosamente.",
+  "@baysCreatedNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "bayTypeLift": "Elevador hidráulico",
+  "bayTypeMechanicalLift": "Elevador mecánico",
+  "bayTypeDiagnosticPit": "Fosa de diagnóstico",
+  "bayTypeWashBay": "Bahía de lavado",
+  "bayTypeAlignment": "Estación de alineación",
+  "bayTypePaintBooth": "Cabina de pintura",
+  "bayStatusOccupiedDesc": "En intervención técnica · Trabajo en curso",
+  "bayStatusAvailableDesc": "Bahía libre · Lista para recibir vehículo",
+  "bayStatusMaintenanceDesc": "Fuera de servicio · En mantenimiento",
+  "bayStatusAvailable": "Libre",
+  "bayStatusOccupied": "Ocupada",
+  "bayStatusMaintenance": "Mantenimiento",
+  "obdInventorySubtitle": "Inventario de escáneres OBD-II registrados en el taller y su estado operativo.",
+  "obdRegisterBtn": "Registrar escáner OBD-II",
+  "obdFilterAll": "Todos",
+  "obdFilterActive": "Activos",
+  "obdFilterInactive": "Inactivos",
+  "obdEmptyList": "No hay escáneres OBD-II registrados con este filtro.",
+  "obdRegisterDialogTitle": "Registrar escáner OBD-II",
+  "obdFieldIdentifier": "Identificador / MAC / Serie",
+  "obdFieldConnectionType": "Tipo de conexión",
+  "obdFieldModel": "Modelo de hardware",
+  "obdFieldFirmware": "Versión de firmware",
+  "obdRegisterConfirm": "Registrar dispositivo",
+  "obdChangeStatusPrompt": "Selecciona el nuevo estado operativo del escáner:",
+  "obdChangeStatusBtn": "Cambiar estado",
+  "obdStatusActive": "Activo",
+  "obdStatusInactive": "Inactivo",
+  "obdStatusLost": "Extraviado",
+  "obdStatusBroken": "Averiado",
+  "obdRegisteredNotice": "Escáner {p1} registrado en el inventario del taller.",
+  "@obdRegisteredNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "obdStatusUpdatedNotice": "Estado de {p1} actualizado.",
+  "@obdStatusUpdatedNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "obdConnectedVehicle": "Conectado a vehículo",
+  "obdConnectedVehicleFormat": "{p1} · {p2}",
+  "@obdConnectedVehicleFormat": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "obdConnectedOwnerFormat": "Titular: {p1}",
+  "@obdConnectedOwnerFormat": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "obdNotConnected": "Sin vehículo asignado",
+  "obdInstallBtn": "Vincular",
+  "obdUninstallBtn": "Desvincular",
+  "obdInstallDialogTitle": "Vincular escáner a vehículo",
+  "obdInstallSelectPrompt": "Selecciona un vehículo del padrón del taller:",
+  "obdUninstallConfirmTitle": "Desvincular escáner",
+  "obdUninstallConfirmPrompt": "¿Confirmas desvincular este escáner de {p1}?",
+  "@obdUninstallConfirmPrompt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "obdInstallSuccess": "Escáner vinculado a {p1}.",
+  "@obdInstallSuccess": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "obdUninstallSuccess": "Escáner desvinculado con éxito.",
+  "syncQueueTitle": "Sincronización offline",
+  "syncQueueSubtitle": "Registros capturados en el teléfono pendientes de envío al servidor.",
+  "syncStatusOnline": "Conectado: la sincronización automática está activa.",
+  "syncStatusOffline": "Sin conexión: los registros se enviarán en cuanto vuelva la red.",
+  "syncRequestedNotice": "Sincronización iniciada en segundo plano.",
+  "syncNowBtn": "Sincronizar ahora ({p1})",
+  "@syncNowBtn": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "syncEmptyTitle": "Todo sincronizado",
+  "syncEmptyBody": "No tienes registros pendientes de envío en la cola local.",
+  "syncOpPending": "En cola",
+  "syncOpSyncing": "Enviando",
+  "syncOpFailed": "Con error",
+  "syncOpMeta": "Creado: {p1} · Intentos: {p2}",
+  "@syncOpMeta": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "syncRetryBtn": "Reintentar",
+  "syncDiscardBtn": "Descartar",
+  "syncTypeClockIn": "Marcación de ingreso",
+  "syncTypeClockOut": "Marcación de salida",
+  "syncTypeJustification": "Justificación de asistencia",
+  "syncTypeUploadFile": "Subida de fotografía",
+  "syncTypeIntakeImage": "Evidencia fotográfica de recepción",
+  "syncTypeTaskEvidence": "Evidencia de tarea técnica",
+  "syncTypeStartTask": "Inicio de tarea",
+  "syncTypePauseTask": "Pausa de tarea",
+  "syncTypeResumeTask": "Reanudación de tarea",
+  "syncTypeCompleteTask": "Cierre de tarea",
+  "syncTypeTelemetry": "Lote de telemetría OBD-II",
+  "syncTypeRegisterFault": "Registro de falla DTC",
+  "syncTypeResolveFault": "Resolución de falla DTC",
+  "notificationsTitle": "Notificaciones y alertas",
+  "notificationsDisabledTitle": "Notificaciones desactivadas en el teléfono",
+  "notificationsDisabledBody": "Activa el permiso de notificaciones para recibir avisos de tareas, stock y asistencia.",
+  "notificationsEnableBtn": "Activar notificaciones",
+  "notificationsEnabledBanner": "Las notificaciones push están activas para tu sesión.",
+  "notificationsSyncPendingTitle": "{p1} registros pendientes de sincronizar",
+  "@notificationsSyncPendingTitle": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsSyncPendingBody": "Toca para revisar o forzar la sincronización con el servidor.",
+  "notificationsSectionStock": "Alertas de reposición de stock ({p1})",
+  "@notificationsSectionStock": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsStockDeficitLine": "SKU {p1} · Stock actual: {p2} (Mínimo: {p3})",
+  "@notificationsStockDeficitLine": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      },
+      "p3": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsLowStockChip": "Stock bajo",
+  "notificationsSectionJustifications": "Justificaciones por revisar ({p1})",
+  "@notificationsSectionJustifications": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsJustificationChip": "Por aprobar",
+  "notificationsSectionQuotations": "Proformas esperando al cliente ({p1})",
+  "@notificationsSectionQuotations": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsSectionPush": "Avisos recibidos en esta sesión",
+  "notificationsMarkAllRead": "Marcar leídos",
+  "notificationsEmptyTitle": "Sin alertas pendientes",
+  "notificationsEmptyBody": "Aquí verás los avisos push, alertas de stock mínimo y justificaciones del personal.",
+  "adminAttendanceTitle": "Asistencia y personal",
+  "adminAttendanceTabBranch": "Sede hoy ({p1})",
+  "@adminAttendanceTabBranch": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "adminAttendanceTabJustifications": "Justificaciones ({p1})",
+  "@adminAttendanceTabJustifications": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "adminAttendanceTabOwn": "Mi asistencia",
+  "adminAttendanceEmpty": "No hay registros de asistencia para mostrar hoy en esta sede.",
+  "adminAttendanceJustificationLine": "Descargo: {p1}",
+  "@adminAttendanceJustificationLine": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAttendanceApproveBtn": "Aprobar justificación",
+  "adminAttendanceRejectBtn": "Rechazar",
+  "adminAttendanceJustificationApproved": "Justificación aprobada (asistencia justificada).",
+  "adminAttendanceJustificationRejected": "Justificación desestimada.",
+  "dashboardTitle": "Panel de sede",
+  "dashboardSyncBadge": "Cola ({p1})",
+  "@dashboardSyncBadge": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardAlertsBadge": "Alertas ({p1})",
+  "@dashboardAlertsBadge": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardAlertsBtn": "Alertas",
+  "dashboardBranchLabel": "Sucursal activa de la jornada",
+  "dashboardSelectBranchPrompt": "Seleccionar sucursal asignada",
+  "dashboardChangeBranchBtn": "Sucursal",
+  "dashboardReceptionCtaTitle": "Recepción de vehículos en patio",
+  "dashboardReceptionCtaBody": "Consulta por placa de rodaje o DNI/RUC, registra el odómetro, adjunta fotos de ingreso y genera la proforma digital.",
+  "dashboardSearchPlateBtn": "Consultar placa",
+  "dashboardKpiOrders": "Órdenes activas",
+  "dashboardKpiOrdersSub": "{p1} en proforma · {p2} en bahía",
+  "@dashboardKpiOrdersSub": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardKpiDraftsChip": "{p1} proformas",
+  "@dashboardKpiDraftsChip": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardKpiBays": "Bahías de trabajo",
+  "dashboardKpiBaysSub": "{p1} bahías disponibles",
+  "@dashboardKpiBaysSub": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardKpiCrm": "Clientes y vehículos",
+  "dashboardKpiCrmSub": "{p1} citas agendadas hoy",
+  "@dashboardKpiCrmSub": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardKpiStock": "Alertas de stock",
+  "dashboardKpiStockSub": "Repuestos bajo el mínimo",
+  "dashboardKpiAttendance": "Personal en sede",
+  "dashboardKpiAttendanceSub": "{p1} justificaciones pendientes",
+  "@dashboardKpiAttendanceSub": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardKpiObd": "Escáneres OBD-II",
+  "dashboardKpiObdSub": "Activos en inventario",
+  "dashboardSectionDrafts": "Proformas pendientes de aprobación ({p1})",
+  "@dashboardSectionDrafts": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardSectionInProgress": "En intervención técnica en bahía ({p1})",
+  "@dashboardSectionInProgress": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardSeeAll": "Ver todas",
+  "dashboardSeeBays": "Ver bahías",
+  "dashboardWalkInBtn": "Registrar ingreso presencial",
+  "dashboardOpenProformaBtn": "Abrir proforma",
+  "dashboardManageOrderBtn": "Ver intervención",
+  "moreHubTitle": "Gestión del taller",
+  "moreHubSubtitle": "Todos los módulos operativos, administrativos y de sincronización de tu sede.",
+  "moreSectionOperations": "Operaciones y recepción",
+  "moreItemBranchTitle": "Cambiar o confirmar sucursal",
+  "moreItemBranchSub": "Selecciona la sede asignada para tu jornada operativa",
+  "moreItemReceptionTitle": "Recepción, clientes y vehículos",
+  "moreItemReceptionSub": "Búsqueda por placa, cartera de clientes y padrón de vehículos",
+  "moreItemBaysSub": "Disponibilidad de bahías y asignación de órdenes en curso",
+  "moreItemObdSub": "Consultar, registrar y actualizar el estado de los escáneres OBD-II",
+  "moreSectionInventoryHr": "Almacén y recursos humanos",
+  "moreItemCatalogTitle": "Catálogo y lotes de repuestos",
+  "moreItemCatalogSub": "Existencias por SKU, precios base y lotes FIFO",
+  "moreItemStockAlertsTitle": "Alertas de reposición",
+  "moreItemStockAlertsSub": "Ítems en stock mínimo o agotados",
+  "moreItemPurchasesTitle": "Órdenes de compra",
+  "moreItemPurchasesSub": "Recepción de mercadería e ingreso al almacén",
+  "moreItemValuationTitle": "Valorización de inventario",
+  "moreItemValuationSub": "Valor contable del stock en sede",
+  "moreItemAttendanceSub": "Asistencia diaria del personal de sede, justificaciones y marcación propia",
+  "moreSectionSystem": "Sistema, alertas y cuenta",
+  "moreItemNotificationsSub": "Bandeja de notificaciones push y alertas operativas",
+  "moreItemSyncSub": "Cola de operaciones capturadas sin conexión y reintento manual",
+  "moreItemProfileSub": "Datos de tu cuenta y cierre de sesión",
+  "registerVehicleForExistingCustomer": "Propietario seleccionado: {p1} ({p2})",
+  "@registerVehicleForExistingCustomer": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeDashboardTitle": "Panel del colaborador",
+  "employeeShiftLabel": "Jornada laboral",
+  "employeeShiftNotAssigned": "Sin turno asignado para hoy",
+  "employeeAttendanceStatusIn": "Jornada iniciada",
+  "employeeAttendanceStatusOut": "Jornada finalizada",
+  "employeeAttendanceStatusPending": "Pendiente de ingreso",
+  "employeeClockInBtn": "Marcar ingreso",
+  "employeeClockOutBtn": "Marcar salida",
+  "employeeActiveTaskSection": "Tarea en curso",
+  "employeeNoActiveTask": "Sin labor activa en curso",
+  "employeeNoActiveTaskSub": "Selecciona una tarea de tu lista para iniciar el cronómetro de patio",
+  "employeeSeeAllTasks": "Ver mis tareas",
+  "employeeKpiCompletedToday": "Completadas hoy",
+  "employeeKpiPendingTasks": "Por realizar",
+  "employeeKpiTotalTasks": "Asignadas",
+  "employeeQuickActions": "Operaciones de patio",
+  "employeeActionObd": "Escáneres OBD-II",
+  "employeeActionReportFinding": "Reportar hallazgo",
+  "employeeActionViewStock": "Consultar repuestos",
+  "employeeActionAttendanceDetails": "Ver registro de asistencia",
+  "employeeClockOutConfirmTitle": "Confirmar marcación de salida",
+  "employeeClockOutConfirmMsg": "¿Deseas registrar la salida de tu jornada laboral ahora?",
+  "employeeFindingNoOrdersTitle": "Sin órdenes asignadas",
+  "employeeFindingNoOrdersMessage": "No tienes tareas asignadas a ninguna orden de trabajo en este momento. Solo puedes reportar hallazgos técnicos en las órdenes donde tengas una tarea asignada.",
+  "employeeFindingSelectOrderTitle": "Seleccionar orden de trabajo",
+  "employeeFindingSelectOrderSubtitle": "Selecciona la orden donde detectaste el hallazgo técnico:",
+  "employeeDialogUnderstood": "Entendido",
+  "todayCars": "{count, plural, one{{count} auto} other{{count} autos}}",
+  "@todayCars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayCaption": "en el taller hoy",
+  "todayContext": "{p1} · {p2}",
+  "@todayContext": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "todayFigureInBay": "en bahía",
+  "todayFigureReady": "listos para entregar",
+  "todayFigureOnShift": "en turno",
+  "todayDecisions": "Esperan tu decisión",
+  "todayOpenOrders": "Órdenes abiertas",
+  "todaySeeAll": "Ver todas",
+  "todayReceiveVehicle": "Recibir vehículo",
+  "todayOrdersEmpty": "No hay órdenes abiertas en esta sede.",
+  "todayOrdersNoPermission": "Tu cuenta no puede ver las órdenes de la sede.",
+  "todayOfflineCache": "Sin conexión. Ves lo último que se guardó en este teléfono.",
+  "todayOrderNumber": "Orden #{p1}",
+  "@todayOrderNumber": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "todayOrderNoNumber": "Orden sin número",
+  "todayDecisionDraft": "Orden sin iniciar",
+  "todayDecisionJustification": "Descargo de asistencia",
+  "todayDecisionJustificationLate": "Descargo por tardanza",
+  "todayDecisionJustificationAbsent": "Descargo por falta",
+  "todayCollaboratorFallback": "Colaborador",
+  "todayJustificationApprove": "Aprobar descargo",
+  "todayJustificationReject": "Rechazar descargo",
+  "todayJustificationApproved": "Aprobado",
+  "todayJustificationRejected": "Rechazado",
+  "todayJustificationNoReason": "Sin motivo escrito.",
+  "todayJustificationNoPermission": "Tu cuenta no puede aprobar ni rechazar descargos.",
+  "todayJustificationsPartial": "{count, plural, one{No se pudo consultar {count} día de descargos. Desliza para reintentar.} other{No se pudieron consultar {count} días de descargos. Desliza para reintentar.}}",
+  "@todayJustificationsPartial": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayDecisionSuspension": "Suspensión por pieza defectuosa",
+  "ordersPendingSuspensionChip": "Suspensión por revisar",
+  "syncTypeSubmitProposal": "Propuesta de hallazgo técnico",
+  "authDevicePendingBanner": "{count, plural, one{Hay {count} operación pendiente en este teléfono. Se sincronizará cuando la cuenta correspondiente inicie sesión.} other{Hay {count} operaciones pendientes en este teléfono. Se sincronizarán cuando la cuenta correspondiente inicie sesión.}}",
+  "@authDevicePendingBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "authDeeplinkSignedInWarning": "Cierra sesión para usar este enlace.",
+  "commonDiscardChangesTitle": "¿Descartar cambios?",
+  "commonDiscardChangesBody": "Si sales ahora se perderán los datos escritos en este formulario.",
+  "commonKeepEditing": "Seguir editando",
+  "commonDiscardAction": "Descartar",
+  "commonConfirm": "Aceptar",
+  "cashierMethodCash": "Efectivo",
+  "cashierMethodCreditCard": "Tarjeta de crédito",
+  "cashierMethodDebitCard": "Tarjeta de débito",
+  "cashierMethodBankTransfer": "Transferencia",
+  "cashierMethodYape": "Yape",
+  "cashierMethodPlin": "Plin",
+  "cashierMethodUnknown": "Otro medio",
+  "cashierTypeFactura": "Factura",
+  "cashierTypeBoleta": "Boleta",
+  "cashierTypeCreditNote": "Nota de crédito",
+  "cashierTypeUnknown": "Comprobante",
+  "cashierDocRuc": "RUC",
+  "cashierDocDni": "DNI",
+  "cashierDocCe": "CE",
+  "cashierDocPassport": "Pasaporte",
+  "cashierVstatusDraft": "Borrador",
+  "cashierVstatusIssued": "Emitido",
+  "cashierVstatusAccepted": "Aceptado por SUNAT",
+  "cashierVstatusRejected": "Rechazado por SUNAT",
+  "cashierVstatusVoided": "Anulado",
+  "cashierVstatusUnknown": "Sin estado",
+  "cashierPstatusPending": "Sin cobrar",
+  "cashierPstatusPartial": "Cobro parcial",
+  "cashierPstatusPaid": "Pagado",
+  "cashierSubtotal": "Subtotal",
+  "cashierIgv": "IGV ({p1} %)",
+  "@cashierIgv": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "cashierTotal": "Total",
+  "cashierCollected": "Cobrado",
+  "cashierBalance": "Saldo",
+  "cashierVoucherName": "{p1} {p2}",
+  "@cashierVoucherName": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierErrLines": "Falta el nombre de alguna línea del comprobante.",
+  "cashierErrTaxId": "Revisa el documento del cliente: la factura pide un RUC de 11 dígitos.",
+  "cashierErrSerie": "La serie debe tener 4 caracteres: la factura empieza con F y la boleta con B.",
+  "cashierErrInitial": "El correlativo inicial no puede ser negativo.",
+  "cashierErrAmount": "El monto debe ser de al menos 0.01, con dos decimales como máximo, y no superar el saldo.",
+  "cashierErrReference": "La referencia admite hasta 100 caracteres.",
+  "cashierErrStatus": "Este comprobante ya no admite cobros.",
+  "cashierErrInput": "Revisa los datos ingresados.",
+  "cashierErrNoSeries": "La sede no tiene una serie activa para este tipo de comprobante. Actívala en Series de facturación.",
+  "cashierErrOutcomeUnknown": "No sabemos si el cobro se registró. Revisa los pagos del comprobante antes de volver a cobrar.",
+  "cashierErrNoBranch": "Tu cuenta no tiene sede asignada. Pide a un administrador que te asigne una.",
+  "cashierErrLegalName": "Ingresa la razón social o nombre completo del receptor.",
+  "cashierErrTenantName": "Ingresa la razón social o nombre comercial del taller.",
+  "cashierCheckoutTitle": "Cobrar y entregar",
+  "cashierCheckoutNoAccess": "Tu cuenta no tiene acceso a cobros ni a entregas.",
+  "cashierOrderNumber": "Orden {p1}",
+  "@cashierOrderNumber": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "cashierStepTitle": "{p1}. {p2}",
+  "@cashierStepTitle": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierStepVoucher": "Comprobante",
+  "cashierStepPayments": "Cobros",
+  "cashierStepExitPass": "Pase de salida",
+  "cashierStepDelivery": "Entrega",
+  "cashierVoucherPrepare": "Preparar comprobante",
+  "cashierVoucherEmpty": "Esta orden aún no tiene comprobante.",
+  "cashierVoucherNeedsCompleted": "La orden debe estar completada para emitir el comprobante.",
+  "cashierIssueTitle": "Emitir comprobante",
+  "cashierIssueType": "Tipo de comprobante",
+  "cashierIssueDocument": "Documento del cliente",
+  "cashierIssueDocumentNumber": "Número de documento",
+  "cashierIssueNameCompany": "Razón social",
+  "cashierIssueNamePerson": "Nombre completo",
+  "cashierIssueAddress": "Dirección fiscal",
+  "cashierIssueLines": "Detalle",
+  "cashierIssueLineName": "Nombre de la línea",
+  "cashierIssueLineNeedsName": "Escribe qué se cobra en esta línea.",
+  "cashierIssueLineDetail": "{p1} × {p2}",
+  "@cashierIssueLineDetail": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierIssueDocumentError": "Revisa el número de documento.",
+  "cashierIssueNameError": "Falta el nombre del cliente.",
+  "cashierIssueIrreversible": "Al emitir, el comprobante se envía a SUNAT y no se puede deshacer.",
+  "cashierIssueConfirm": "Emitir {p1} por {p2}",
+  "@cashierIssueConfirm": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierIssueDone": "Comprobante emitido.",
+  "cashierIssueAlready": "La orden ya tenía un comprobante vigente; no se emitió otro.",
+  "cashierIssueDetailsPending": "El comprobante se emitió. Falta leer su detalle: actualiza en un momento.",
+  "cashierPaymentsEmpty": "Todavía no hay cobros de este comprobante.",
+  "cashierPaymentsNeedsVoucher": "Emite el comprobante para poder cobrar.",
+  "cashierPaymentRegister": "Registrar cobro",
+  "cashierPaymentTitle": "Registrar cobro",
+  "cashierPaymentAmount": "Monto a cobrar",
+  "cashierPaymentAmountError": "Ingresa un monto válido, hasta el saldo.",
+  "cashierPaymentMethod": "Medio de pago",
+  "cashierPaymentReference": "Referencia de la operación",
+  "cashierPaymentReferenceHint": "Ej. nro. de operación o voucher",
+  "cashierPaymentReferenceRequired": "Obligatoria para pagos que no son en efectivo.",
+  "cashierPaymentIrreversible": "El cobro queda registrado y no se puede deshacer.",
+  "cashierPaymentConfirm": "Cobrar {p1}",
+  "@cashierPaymentConfirm": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierPaymentDone": "Cobro registrado.",
+  "cashierPaymentTime": "{p1} · {p2}",
+  "@cashierPaymentTime": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierMarkPaid": "Marcar orden como pagada",
+  "cashierMarkPaidDone": "La orden quedó pagada.",
+  "cashierExitPassDownload": "Descargar pase de salida",
+  "cashierExitPassNeedsPaid": "Disponible cuando la orden esté pagada.",
+  "cashierExitPassChooser": "Compartir pase de salida",
+  "cashierExitPassNoApp": "No hay una app para abrir el PDF.",
+  "cashierDeliverAction": "Entregar vehículo",
+  "cashierDeliverTitle": "Entregar vehículo",
+  "cashierDeliverBody": "Confirma que el cliente se lleva el vehículo. La bahía se libera y no se puede deshacer.",
+  "cashierDeliverConfirm": "Entregar",
+  "cashierDeliverNeedsPaid": "Disponible cuando la orden esté pagada.",
+  "cashierDeliverDone": "Vehículo entregado.",
+  "cashierDelivered": "Entregado",
+  "cashierDailyTitle": "Caja del día",
+  "cashierDailyContext": "Caja de la sede · {p1}",
+  "@cashierDailyContext": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierDailyCaption": "cobrado",
+  "cashierDailyPayments": "{count, plural, one{cobro} other{cobros}}",
+  "@cashierDailyPayments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cashierDailyByMethod": "Por medio de pago",
+  "cashierDailyPaymentsHeader": "Cobros",
+  "cashierDailyEmpty": "No hay cobros registrados este día.",
+  "cashierDailyPrevious": "Día anterior",
+  "cashierDailyNext": "Día siguiente",
+  "cashierDailyToday": "Hoy",
+  "cashierDailyNoAccess": "Tu cuenta no puede ver la caja del día.",
+  "cashierSeriesTitle": "Series de facturación",
+  "cashierSeriesHint": "Series de la sede para emitir facturas y boletas electrónicas.",
+  "cashierSeriesEmpty": "La sede aún no tiene series. Agrega una para poder emitir comprobantes.",
+  "cashierSeriesAdd": "Agregar serie",
+  "cashierSeriesCorrelative": "Último número: {p1}",
+  "@cashierSeriesCorrelative": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "cashierSeriesActive": "Activa",
+  "cashierSeriesInactive": "Inactiva",
+  "cashierSeriesNewTitle": "Nueva serie",
+  "cashierSeriesType": "Tipo de comprobante",
+  "cashierSeriesSerie": "Serie (4 caracteres)",
+  "cashierSeriesSerieError": "Factura: F y 3 caracteres. Boleta: B y 3 caracteres.",
+  "cashierSeriesInitial": "Correlativo inicial (opcional)",
+  "cashierSeriesInitialError": "Ingresa un número entero.",
+  "cashierSeriesSave": "Guardar serie",
+  "cashierSeriesSaved": "Serie guardada.",
+  "cashierSeriesDetailTitle": "Serie {p1}",
+  "@cashierSeriesDetailTitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierSeriesDeactivate": "Desactivar serie",
+  "cashierSeriesActivate": "Activar serie",
+  "cashierSeriesDeactivateBody": "Mientras esté inactiva, la sede no podrá emitir con esta serie.",
+  "cashierSeriesActivateBody": "La sede volverá a emitir con esta serie.",
+  "cashierSeriesUpdated": "Serie actualizada.",
+  "cashierSeriesNoAccess": "Tu cuenta no puede configurar series de facturación.",
+  "cashierSunatStatusAcceptedNotice": "Comprobante aceptado por SUNAT.",
+  "cashierSunatStatusRejectedNotice": "Comprobante rechazado por SUNAT.",
+  "cashierSunatStatusPendingPseNotice": "Comprobante emitido y válido para cobro. El PSE del servidor opera en modo simulado y mantiene el estado Emitido sin constancia CDR.",
+  "reportsTitle": "Reportes",
+  "reportsContext": "Reporte del taller",
+  "reportsScopeNote": "El reporte suma todas las sedes del taller, no solo la tuya.",
+  "reportsLegendCaption": "cobrado en el periodo",
+  "reportsPeriodMonth": "Este mes",
+  "reportsPeriodPreviousMonth": "Mes pasado",
+  "reportsPeriodYear": "Este año",
+  "reportsPeriodRange": "{p1} al {p2}",
+  "@reportsPeriodRange": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsMovementsLabel": "{count, plural, one{movimiento} other{movimientos}}",
+  "@reportsMovementsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsMovementsHeader": "Movimientos",
+  "reportsMovementsEmpty": "No hay movimientos en este periodo.",
+  "reportsMovementDetail": "{p1} · {p2}",
+  "@reportsMovementDetail": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsDownloadsHeader": "Descargas",
+  "reportsDownloadCashflow": "Descargar PDF de flujo de caja",
+  "reportsDownloadFleet": "PDF de salud de flota",
+  "reportsPdfChooser": "Compartir reporte",
+  "reportsPdfNoApp": "No hay una app para abrir el PDF.",
+  "reportsFleetLocked": "La salud de flota con IA no está incluida en el plan de tu taller.",
+  "reportsFleetTitle": "Salud de flota",
+  "reportsFleetHint": "Elige al cliente cuyo informe quieres descargar.",
+  "reportsFleetSearch": "Buscar cliente por nombre o documento",
+  "reportsFleetSearchAction": "Buscar",
+  "reportsFleetEmpty": "No encontramos clientes con esa búsqueda.",
+  "reportsNoAccess": "Tu cuenta no tiene acceso a reportes.",
+  "reportsPeriodCustom": "Rango",
+  "reportsOpenPdf": "Abrir PDF",
+  "reportsSharePdf": "Compartir PDF",
+  "reportsFleetScopeNote": "Incluye todos los vehículos registrados del cliente seleccionado.",
+  "reportsH31IncomeOnlyNote": "Muestra únicamente los cobros confirmados del periodo; egresos y cuentas por cobrar no se contabilizan en este resumen.",
+  "cashierErrReason": "Ingresa un motivo válido de hasta 250 caracteres.",
+  "cashierErrCustomer": "El comprobante no tiene un cliente asociado.",
+  "cashierDailyVouchers": "Comprobantes SUNAT",
+  "cashierDailyVouchersSub": "Boletas, facturas, notas de crédito y anulaciones",
+  "cashierVouchersTitle": "Comprobantes SUNAT",
+  "cashierVouchersNoAccess": "Tu cuenta no puede consultar comprobantes emitidos.",
+  "cashierVouchersEmpty": "Aún no hay comprobantes emitidos en esta sede.",
+  "cashierVouchersEmptyFiltered": "No hay comprobantes con este filtro.",
+  "cashierVouchersFilterAll": "Todos",
+  "cashierVouchersFilterAccepted": "Aceptados",
+  "cashierVouchersFilterBalance": "Con saldo",
+  "cashierVouchersFilterVoided": "Anulados",
+  "cashierVouchersFilterCreditNotes": "Notas de crédito",
+  "cashierVouchersBalanceShort": "Saldo {p1}",
+  "@cashierVouchersBalanceShort": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierVouchersSunatLabel": "Estado SUNAT",
+  "cashierVouchersCdrCode": "CDR {p1} · {p2}",
+  "@cashierVouchersCdrCode": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierVouchersCustomerLabel": "Cliente",
+  "cashierVouchersIssuedAt": "Emitido el {p1}",
+  "@cashierVouchersIssuedAt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierVouchersLinesLabel": "Detalle del comprobante",
+  "cashierVouchersClose": "Cerrar",
+  "cashierVouchersNoActions": "Este comprobante no admite anulaciones ni notas de crédito.",
+  "cashierVoidAction": "Anular comprobante",
+  "cashierVoidShort": "Anular",
+  "cashierVoidTitle": "Anular {p1}",
+  "@cashierVoidTitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierVoidBody": "Se enviará la comunicación de baja a SUNAT (disponible dentro de los 7 días calendario). Esta acción no se puede deshacer.",
+  "cashierVoidReasonLabel": "Motivo de anulación",
+  "cashierVoidReasonPlaceholder": "Ej. Error en datos fiscales del cliente",
+  "cashierVoidReasonError": "Escribe el motivo (máximo 250 caracteres).",
+  "cashierVoidConfirm": "Confirmar anulación",
+  "cashierVoidDone": "Comprobante anulado.",
+  "cashierNcAction": "Emitir nota de crédito",
+  "cashierNcShort": "Nota de crédito",
+  "cashierNcTitle": "Emitir nota de crédito",
+  "cashierNcReference": "Comprobante de referencia: {p1}",
+  "@cashierNcReference": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierNcReasonLabel": "Motivo de la nota de crédito",
+  "cashierNcReasonPlaceholder": "Ej. Descuento o devolución parcial",
+  "cashierNcReasonError": "Escribe el motivo (máximo 250 caracteres).",
+  "cashierNcAmountLabel": "Monto de la nota de crédito",
+  "cashierNcAmountError": "Ingresa un monto válido, hasta el total del comprobante.",
+  "cashierNcIrreversible": "La nota de crédito se enviará a SUNAT y no se puede deshacer.",
+  "cashierNcConfirm": "Emitir nota por {p1}",
+  "@cashierNcConfirm": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "cashierNcDone": "Nota de crédito emitida.",
+  "cashierNcSerieLabel": "Serie de nota de crédito",
+  "cashierNcSerieError": "Serie de 4 caracteres acorde al comprobante (F para factura, B para boleta).",
+  "cashierDocOpenPdf": "Abrir PDF",
+  "cashierDocSharePdf": "Compartir PDF",
+  "cashierDocShareXml": "Compartir XML UBL 2.1",
+  "cashierDocShareCdr": "Compartir CDR SUNAT",
+  "cashierSunatRefreshStatus": "Actualizar estado SUNAT",
+  "cashierSunatRejectedReissueHint": "El comprobante fue rechazado por SUNAT. Puedes corregir los datos y volver a emitir.",
+  "cashierExitPassOpen": "Abrir pase de salida",
+  "cashierExitPassShare": "Compartir pase de salida",
+  "cashierCheckoutH26Note": "El total del comprobante incluye IGV sobre cada línea y define el saldo fiscal a cobrar.",
+  "cashierCheckoutProfitability": "Ver margen FIFO y rentabilidad",
+  "cashierFiscalTenantSection": "Información fiscal del taller",
+  "cashierFiscalTenantName": "Nombre comercial",
+  "cashierFiscalTenantLegalName": "Razón social",
+  "cashierFiscalTenantRuc": "RUC del emisor (11 dígitos)",
+  "cashierFiscalTenantEdit": "Editar datos fiscales",
+  "cashierFiscalTenantSave": "Guardar datos fiscales",
+  "cashierFiscalTenantSaved": "Datos fiscales del taller actualizados.",
+  "cashierFiscalPseManagedTitle": "PSE administrado por Atelier",
+  "cashierFiscalPseManagedBody": "La firma digital UBL 2.1 y la conexión con el Proveedor de Servicios Electrónicos (PSE) ante SUNAT están gestionadas directamente por la plataforma.",
+  "cashierSeriesBranchSection": "Series electrónicas de la sede",
+  "cashierSeriesNcHint": "Incluye series para Factura (F), Boleta (B) y Notas de Crédito.",
+  "receptionNewAppointment": "Nueva cita",
+  "receptionCreateAppointmentTitle": "Agendar cita",
+  "receptionAppointmentCustomerLabel": "Cliente",
+  "receptionAppointmentSelectCustomer": "Elige un cliente",
+  "receptionAppointmentVehicleLabel": "Vehículo",
+  "receptionAppointmentSelectVehicle": "Elige un vehículo",
+  "receptionAppointmentNoVehicles": "Este cliente no tiene vehículos registrados.",
+  "receptionAppointmentDateLabel": "Fecha (AAAA-MM-DD)",
+  "receptionAppointmentTimeLabel": "Hora (HH:MM)",
+  "receptionAppointmentTodayChip": "Hoy",
+  "receptionAppointmentTomorrowChip": "Mañana",
+  "receptionAppointmentDurationLabel": "Duración estimada (min)",
+  "receptionAppointmentReasonLabel": "Motivo de la cita (opcional)",
+  "receptionAppointmentReasonHint": "Ej. Mantenimiento 40,000 km o revisión de frenos",
+  "receptionAppointmentScheduleBtn": "Agendar cita",
+  "receptionAppointmentScheduledNotice": "Cita agendada correctamente.",
+  "receptionAppointmentsSectionTitle": "Agenda de citas",
+  "receptionAppointmentsRangeToday": "Hoy",
+  "receptionAppointmentsRangeWeek": "7 días",
+  "receptionAppointmentsRangeMonth": "30 días",
+  "receptionAppointmentsEmptyWeek": "No hay citas en los próximos 7 días.",
+  "receptionAppointmentsEmptyMonth": "No hay citas en los próximos 30 días.",
+  "receptionAppointmentActionsTitle": "Gestionar cita",
+  "receptionAppointmentConfirmBtn": "Confirmar cita",
+  "receptionAppointmentConfirmedNotice": "Cita confirmada.",
+  "receptionAppointmentRescheduleBtn": "Reprogramar",
+  "receptionAppointmentRescheduleConfirm": "Guardar nueva fecha",
+  "receptionAppointmentRescheduledNotice": "Cita reprogramada.",
+  "receptionAppointmentCancelBtn": "Cancelar cita",
+  "receptionAppointmentCancelReasonLabel": "Motivo de cancelación",
+  "receptionAppointmentCancelReasonHint": "Ej. El cliente reprogramará más adelante",
+  "receptionAppointmentCancelConfirm": "Sí, cancelar cita",
+  "receptionAppointmentCanceledNotice": "Cita cancelada.",
+  "receptionAppointmentInvalidDatetime": "Ingresa una fecha (AAAA-MM-DD) y hora (HH:MM) válidas.",
+  "receptionAppointmentInvalidDuration": "La duración mínima es de 15 minutos.",
+  "receptionAppointmentInvalidCancelReason": "Ingresa el motivo de cancelación (máximo 500 caracteres).",
+  "receptionEditContactBtn": "Editar contacto",
+  "receptionEditContactTitle": "Editar contacto del cliente",
+  "receptionEditContactEmailLabel": "Correo electrónico",
+  "receptionEditContactPhoneLabel": "Teléfono",
+  "receptionEditContactSave": "Guardar contacto",
+  "receptionEditContactNotice": "Contacto actualizado.",
+  "affiliationVehiclesHeader": "Vehículos que se vincularán",
+  "affiliationSearchingLabel": "Buscando cuenta en Atelier…",
+  "baysFilterMaintenance": "Mantenimiento ({p1})",
+  "@baysFilterMaintenance": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "baysOccupiedSheetTitle": "Bahía ocupada",
+  "baysAvailableSheetTitle": "Bahía libre",
+  "baysMaintenanceSheetTitle": "Bahía en mantenimiento",
+  "baysOpenOrderBtn": "Abrir orden de trabajo",
+  "baysReleaseBtn": "Liberar bahía",
+  "baysReleasedNotice": "Bahía {p1} liberada.",
+  "@baysReleasedNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "baysReassignSection": "Mover orden a otra bahía libre",
+  "baysSetMaintenanceBtn": "Poner en mantenimiento",
+  "baysMaintenanceReasonLabel": "Motivo del mantenimiento",
+  "baysMaintenanceReasonHint": "Ej. Calibración de elevador hidráulico",
+  "baysMaintenanceConfirmBtn": "Confirmar mantenimiento",
+  "baysMaintenanceNotice": "Bahía {p1} puesta en mantenimiento.",
+  "@baysMaintenanceNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "baysRestoreBtn": "Restaurar bahía",
+  "baysRestoredNotice": "Bahía {p1} restaurada y disponible.",
+  "@baysRestoredNotice": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "baysMaintenanceFieldError": "Escribe el motivo del mantenimiento (máximo 1000 caracteres).",
+  "ordersFilterToCollect": "Por cobrar",
+  "ordersObdDiagnosticBtn": "Diagnóstico OBD-II",
+  "diagHubTitle": "Diagnóstico OBD-II",
+  "diagHubPlanLocked": "Tu plan actual no incluye telemetría ni diagnóstico OBD-II. Disponible desde el plan Pro.",
+  "diagHubNoPermission": "Tu perfil no tiene permiso para operar el módulo de diagnóstico OBD-II.",
+  "diagTabScanner": "Escáner",
+  "diagTabDevices": "Dispositivos",
+  "diagTabAlerts": "Alertas",
+  "diagVehicleSection": "Vehículo en revisión",
+  "diagVehiclePick": "Elegir vehículo",
+  "diagVehicleChange": "Cambiar",
+  "diagVehicleNone": "Elige un vehículo de tus tareas u órdenes para empezar.",
+  "diagVehicleSearchLabel": "Buscar placa o modelo",
+  "diagVehicleSearchHint": "Ej. BKL-482 o Hilux",
+  "diagVehicleSheetTitle": "Elegir vehículo",
+  "diagVehicleEmptySearch": "No hay vehículos que coincidan con la búsqueda.",
+  "diagInstallationActive": "Escáner vinculado",
+  "diagInstallationActiveSub": "Listo para enviar lotes de telemetría.",
+  "diagInstallationNone": "Sin escáner vinculado",
+  "diagInstallationNoneSub": "Vincula un equipo antes de capturar lecturas, o las muestras quedarán pendientes al sincronizar.",
+  "diagInstallationOffline": "Sin conexión: puedes escanear y guardar lecturas en el teléfono; se enviarán al volver la red.",
+  "diagInstallationOdometerLabel": "Odómetro actual (km, opcional)",
+  "diagInstallationOdometerHint": "Ej. 48500",
+  "diagInstallationOdometerInvalid": "Ingresa un kilometraje válido (0 o mayor).",
+  "diagInstallationInstallCta": "Vincular escáner",
+  "diagInstallationUninstallCta": "Retirar escáner",
+  "diagInstallationChooseDevice": "Elige un escáner activo del taller",
+  "diagInstallationNoActiveDevices": "No hay escáneres activos disponibles para vincular.",
+  "diagBtSection": "Adaptador Bluetooth ELM327",
+  "diagBtPermissionNeeded": "Autoriza el acceso a Bluetooth para ver los adaptadores emparejados en este teléfono.",
+  "diagBtPermissionCta": "Permitir Bluetooth",
+  "diagBtDisabled": "El Bluetooth está apagado. Enciéndelo para conectar el adaptador ELM327.",
+  "diagBtRefresh": "Buscar emparejados",
+  "diagBtEmpty": "No hay adaptadores emparejados en los ajustes de Bluetooth del teléfono.",
+  "diagBtMatchedWorkshop": "Registrado en taller",
+  "diagBtConnect": "Conectar adaptador",
+  "diagBtDisconnect": "Desconectar",
+  "diagBtConnectedProtocol": "Protocolo: {p1}",
+  "@diagBtConnectedProtocol": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "diagBtConnectedVin": "VIN: {p1}",
+  "@diagBtConnectedVin": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "diagBtStatusDisconnected": "Desconectado",
+  "diagBtStatusConnecting": "Conectando…",
+  "diagBtStatusConnected": "Conectado",
+  "diagBtStatusStreaming": "En vivo",
+  "diagBtStatusReconnecting": "Reconectando…",
+  "diagBtStatusLost": "Señal perdida",
+  "diagBtStatusRemote": "Lectura remota",
+  "diagErrAdapterUnreachable": "No se pudo abrir el enlace con el adaptador. Verifica que esté alimentado y dentro del alcance.",
+  "diagErrEcuNoResponse": "El adaptador respondió, pero la computadora del vehículo no. Revisa el contacto en ON y la tensión del conector.",
+  "diagErrConnectionLost": "Se perdió la señal Bluetooth. Las lecturas guardadas no se pierden.",
+  "diagErrNotConnected": "Conecta primero un adaptador OBD-II en el escáner.",
+  "diagActionsSection": "Herramientas del vehículo",
+  "diagActionLiveTitle": "Telemetría en vivo",
+  "diagActionLiveSubBt": "Lectura de PIDs en tiempo real y captura en fosa",
+  "diagActionLiveSubRemote": "Última lectura registrada y serie histórica",
+  "diagActionFaultsTitle": "Códigos de falla (DTC)",
+  "diagActionFaultsSub": "Escanear modo 03, revisar severidad y borrar tras reparar",
+  "diagActionAiTitle": "Informe de salud con IA",
+  "diagActionAiSub": "Dictamen predictivo por subsistema y descarga PDF",
+  "diagActionAiLockedSub": "Disponible desde el plan Max",
+  "diagActionFindingTitle": "Reportar hallazgo en orden",
+  "diagActionFindingSub": "Propuesta con foto en la orden activa",
+  "diagAlertsScopeTenant": "Todo el taller",
+  "diagAlertsScopeVehicle": "Este vehículo",
+  "diagAlertsEmpty": "Sin alertas predictivas activas.",
+  "diagAlertsConfidence": "Confianza: {p1}%",
+  "@diagAlertsConfidence": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagAlertsAck": "Confirmar lectura",
+  "diagAlertsAckDone": "Lectura confirmada.",
+  "diagAlertsConvert": "Agendar cita",
+  "diagAlertsConvertTitle": "Agendar cita por alerta",
+  "diagAlertsConvertBody": "Coordina la fecha y hora con el cliente antes de confirmar la cita.",
+  "diagAlertsConvertConfirm": "Agendar cita",
+  "diagAlertsConvertOk": "Cita preventiva agendada ({p1}).",
+  "@diagAlertsConvertOk": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "diagAlertsConvertDateLabel": "Fecha (AAAA-MM-DD)",
+  "diagAlertsConvertTimeLabel": "Hora (HH:MM)",
+  "diagAlertsConvertDurationLabel": "Duración estimada (min)",
+  "diagAlertsConvertReasonLabel": "Motivo de la cita",
+  "diagAlertsConvertToday": "Hoy",
+  "diagAlertsConvertTomorrow": "Mañana",
+  "diagAlertsConvertIn2Days": "+2 días",
+  "diagAlertsConvertInvalidDatetime": "Ingresa una fecha (AAAA-MM-DD) y hora (HH:MM) válidas y futuras.",
+  "diagAlertsConvertInvalidDuration": "La duración mínima es de 15 minutos.",
+  "diagAlertStatusDispatched": "Pendiente",
+  "diagAlertStatusAcknowledged": "Revisada",
+  "diagAlertStatusResolved": "Resuelta",
+  "diagAlertStatusDismissed": "Desestimada",
+  "diagAlertTypeOverheating": "Riesgo de sobrecalentamiento",
+  "diagAlertTypeBattery": "Riesgo en batería",
+  "diagAlertTypeCatalytic": "Degradación del catalizador",
+  "diagAlertTypeMisfire": "Falla de encendido en cilindro",
+  "diagAlertTypeBrake": "Desgaste de frenos",
+  "diagAlertTypeOil": "Agotamiento de aceite",
+  "diagAlertTypeEmissions": "Falla de emisiones",
+  "diagAlertTypeGeneric": "Alerta predictiva",
+  "diagLiveTitle": "Telemetría",
+  "diagLiveNoPermission": "Tu perfil no tiene permiso para leer ni capturar telemetría.",
+  "diagLiveSyncPending": "{p1} lecturas pendientes de sincronizar",
+  "@diagLiveSyncPending": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagLiveSyncOk": "Lecturas sincronizadas",
+  "diagLiveRemoteBanner": "Modo lectura remota: se muestra la última telemetría enviada al servidor.",
+  "diagLiveRemoteEmpty": "Aún no hay lecturas remotas registradas para este vehículo.",
+  "diagLiveMissingPid0105": "Sin PID 0105 (temperatura del refrigerante): la lectura se muestra en vivo, pero no se guarda ni se envía al servidor.",
+  "diagLiveLastSample": "Última muestra: {p1}",
+  "@diagLiveLastSample": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "diagLiveWaitingSample": "Esperando primera lectura del adaptador…",
+  "diagLiveStart": "Iniciar muestreo",
+  "diagLiveStop": "Detener",
+  "diagLiveFreeze": "Congelar muestra",
+  "diagLiveFaults": "Códigos DTC",
+  "diagLiveRefresh": "Actualizar",
+  "diagLiveFrozenTitle": "Muestra congelada",
+  "diagLiveFrozenSaved": "La muestra ya quedó guardada localmente y viajará en el próximo lote.",
+  "diagLiveHistoryHeader": "Historial reciente",
+  "diagLiveHistorySamples": "{p1} muestras",
+  "@diagLiveHistorySamples": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagPidRpm": "RPM motor",
+  "diagPidCoolant": "Temp. motor",
+  "diagPidVoltage": "Voltaje batería",
+  "diagPidLoad": "Carga motor",
+  "diagPidSpeed": "Velocidad",
+  "diagPidThrottle": "Acelerador",
+  "diagPidFuel": "Combustible",
+  "diagPidUnitRpm": "rpm",
+  "diagPidUnitCelsius": "°C",
+  "diagPidUnitVolts": "V",
+  "diagPidUnitPercent": "%",
+  "diagPidUnitKmh": "km/h",
+  "diagPidStatusNormal": "En rango",
+  "diagPidStatusOverheat": "Sobrecalentamiento",
+  "diagPidStatusTempHigh": "Temperatura elevada",
+  "diagPidStatusLowVolt": "Voltaje bajo",
+  "diagPidStatusHighVolt": "Sobretensión",
+  "diagPidStatusHighRpm": "RPM elevadas",
+  "diagPidStatusHighLoad": "Carga alta",
+  "diagPidStatusLowFuel": "Nivel bajo",
+  "diagFaultsTitle": "Códigos de falla (DTC)",
+  "diagFaultsNoPermission": "Tu perfil no tiene permiso para consultar fallas electrónicas.",
+  "diagFaultsCount": "{p1} fallas activas",
+  "@diagFaultsCount": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagFaultsPendingSync": "{p1} por sincronizar",
+  "@diagFaultsPendingSync": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagFaultsScan": "Escanear DTC",
+  "diagFaultsClear": "Borrar códigos",
+  "diagFaultsEmpty": "Sin códigos de falla activos.",
+  "diagFaultsScanClean": "Escaneo limpio: la ECU no reportó códigos de falla.",
+  "diagFaultsPendingBadge": "Pendiente",
+  "diagFaultsSeverityCritical": "Crítica",
+  "diagFaultsSeverityMedium": "Media",
+  "diagFaultsSeverityLow": "Baja",
+  "diagFaultsFreezeHeader": "Cuadro congelado (Modo 02)",
+  "diagFaultsClearTitle": "Borrar códigos de falla",
+  "diagFaultsClearBody": "Se enviará el comando Modo 04 a la computadora y luego se re-leerán los códigos activos. Si la avería física persiste, el código volverá a aparecer.",
+  "diagFaultsClearConfirm": "Confirmar borrado",
+  "diagFaultsClearResultClean": "Se borraron {p1} códigos y no quedaron fallas activas.",
+  "@diagFaultsClearResultClean": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagFaultsClearResultPersistent": "Se borraron {p1} códigos, pero {p2} persisten. Revisa el circuito antes de cerrar la tarea.",
+  "@diagFaultsClearResultPersistent": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "diagFaultsNeedBt": "Conecta el adaptador Bluetooth en Escáner para leer o borrar códigos de la ECU.",
+  "diagReportTitle": "Informe de salud IA",
+  "diagReportPlanLocked": "Los informes de salud con IA están disponibles desde el plan Max.",
+  "diagReportNoPermission": "Tu perfil no tiene permiso para consultar ni generar informes de salud.",
+  "diagReportScoreLabel": "Puntaje de salud",
+  "diagReportEmpty": "Este vehículo aún no tiene un informe de salud emitido.",
+  "diagReportGenerate": "Generar informe IA",
+  "diagReportGenerateSheetTitle": "Generar informe de salud",
+  "diagReportDaysLabel": "Ventana de análisis",
+  "diagReportDaysOption": "{p1} días",
+  "@diagReportDaysOption": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "diagReportIncludeResolved": "Incluir historial de DTC ya resueltos",
+  "diagReportGenerating": "Analizando telemetría y fallas…",
+  "diagReportDownloadPdf": "Descargar PDF",
+  "diagReportSummarySection": "Resumen ejecutivo",
+  "diagReportSubsystemsSection": "Subsistemas evaluados",
+  "diagReportRisksSection": "Riesgos predictivos",
+  "diagReportActionsSection": "Acciones recomendadas",
+  "diagReportCorrelationsSection": "Correlación DTC y sensores",
+  "diagReportRiskDetail": "Probabilidad: {p1}% · Horizonte: {p2} días",
+  "@diagReportRiskDetail": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "diagReportDaysAnalyzed": "Analizado sobre {p1} días · {p2}",
+  "@diagReportDaysAnalyzed": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "diagReportInsufficientTelemetry": "Telemetría insuficiente: {p1} Prueba ampliar los días o escanear el vehículo en bahía.",
+  "@diagReportInsufficientTelemetry": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "diagReportOpenPdf": "Abrir PDF",
+  "diagReportSharePdf": "Compartir PDF",
+  "diagDeviceInvalidConnectionType": "Elige un tipo de conexión válido (Bluetooth, BLE, Wi-Fi o USB).",
+  "diagDeviceIdentifierRequired": "Ingresa el identificador o dirección MAC del escáner.",
+  "diagLiveReconnect": "Reconectar escáner",
+  "diagLiveOtherVehicleWarning": "El escáner está conectado a otro vehículo. Conéctalo a esta unidad en Escáner.",
+  "diagPidIntakePressure": "Presión admisión",
+  "diagPidUnitKpa": "kPa",
+  "obdConnBluetoothBle": "Bluetooth BLE",
+  "floorHubShiftActive": "En turno",
+  "floorHubShiftPending": "Ingreso pendiente",
+  "floorHubShiftClosed": "Jornada cerrada",
+  "floorHubShiftIdle": "Sin marcar",
+  "floorHubClockInCta": "Marcar ingreso",
+  "floorHubClockOutCta": "Marcar salida",
+  "floorHubAttendanceDetail": "Ver turno y descargos",
+  "floorHubActiveTaskSection": "Tarea en curso",
+  "floorHubOpenTask": "Abrir tarea",
+  "floorHubNoActiveTask": "Sin tarea iniciada. Elige una de tu lista.",
+  "floorHubTasksQueueSection": "Mis tareas de hoy",
+  "floorHubTasksEmpty": "No tienes tareas asignadas por ahora.",
+  "floorHubTasksLegendActive": "En fosa",
+  "floorHubTasksCaptionFormat": "{p1} pendientes · {p2} cerradas",
+  "@floorHubTasksCaptionFormat": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "floorHubFigurePending": "pendientes",
+  "floorHubFigureInProgress": "en curso",
+  "floorHubFigureObd": "OBD activos",
+  "floorHubQuickSection": "Accesos de piso",
+  "floorHubQuickObd": "Diagnóstico OBD-II",
+  "floorHubQuickObdSub": "Telemetría en vivo, DTC e informe IA",
+  "floorHubQuickFinding": "Reportar hallazgo",
+  "floorHubQuickFindingSub": "Propuesta con foto en la orden activa",
+  "floorHubQuickParts": "Consultar repuestos",
+  "floorHubQuickPartsSub": "Stock disponible por nombre o SKU",
+  "floorHubQuickBays": "Tablero de bahías",
+  "floorHubQuickBaysSub": "Vehículos asignados por elevador",
+  "floorHubCounterCaption": "citas agendadas hoy",
+  "floorHubCounterSection": "Agenda de hoy",
+  "floorHubCounterEmpty": "Sin citas agendadas para hoy.",
+  "floorHubCounterOpenReception": "Buscar placa o cliente",
+  "floorHubCounterNewCustomer": "Registrar cliente",
+  "floorHubFigureArrived": "llegaron",
+  "floorHubFigureWaiting": "por llegar",
+  "floorHubFigureOrders": "órdenes hoy",
+  "floorHubStockCaption": "alertas de stock mínimo",
+  "floorHubStockDecisions": "Requieren reposición",
+  "floorHubStockEmpty": "Todo el catálogo está sobre el mínimo.",
+  "floorHubStockPosSection": "Órdenes de compra emitidas",
+  "floorHubStockPosEmpty": "Sin órdenes de compra pendientes de recibir.",
+  "floorHubStockOpenCatalog": "Abrir catálogo",
+  "floorHubFigureOutOfStock": "agotados",
+  "floorHubFigureOpenPos": "OC emitidas",
+  "floorHubFigureCatalog": "repuestos",
+  "floorHubCashCaption": "órdenes listas para cobrar",
+  "floorHubCashDecisions": "Listas para cobrar",
+  "floorHubCashEmpty": "No hay órdenes terminadas esperando cobro.",
+  "floorHubCashOpenDaily": "Ver caja del día",
+  "floorHubFigureCollected": "cobrado hoy",
+  "floorHubFigurePayments": "cobros hoy",
+  "dashboardMyShiftTitle": "Mi jornada",
+  "dashboardMyShiftClockedIn": "En turno hoy · toca para ver horario o marcar salida",
+  "dashboardMyShiftNotClockedIn": "Sin ingreso marcado · toca para marcar asistencia",
+  "dashboardMyShiftQueued": "Marcación pendiente de sincronizar",
+  "dashboardMyShiftCompleted": "Jornada del día completada",
+  "dashboardMyTasksTitle": "Mis tareas asignadas",
+  "dashboardMyTasksSub": "{p1} activas · toca para abrir tu bandeja",
+  "@dashboardMyTasksSub": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceGeofenceInside": "Dentro de geocerca ({p1} m)",
+  "@attendanceGeofenceInside": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceGeofenceOutside": "Fuera de geocerca ({p1} m / máx. {p2} m)",
+  "@attendanceGeofenceOutside": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceGeofenceMock": "Ubicación simulada detectada",
+  "attendanceGeofencePending": "Sin lectura GPS todavía",
+  "attendanceScheduleSection": "Mi turno semanal",
+  "attendanceScheduleTolerance": "Tolerancia de ingreso: {p1} min",
+  "@attendanceScheduleTolerance": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceScheduleWorkday": "Laborable",
+  "attendanceScheduleRestday": "Descanso",
+  "attendanceHistorySection": "Historial de los últimos 30 días",
+  "attendanceWorkedSummary": "{p1}h {p2}m trabajados",
+  "@attendanceWorkedSummary": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceOvertimeSummary": " · +{p1}m extra",
+  "@attendanceOvertimeSummary": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceJustificationSheetTitle": "Enviar descargo",
+  "attendanceJustificationFieldLabel": "Motivo del descargo",
+  "attendanceJustificationFieldHint": "Explica brevemente la tardanza o ausencia (máx. 500 caracteres)",
+  "attendanceClockOutSheetTitle": "¿Cerrar jornada de hoy?",
+  "attendanceClockOutSheetBody": "Se registrará tu hora de salida y se calcularán tus horas efectivas del turno.",
+  "attendanceClockOutConfirm": "Sí, marcar salida",
+  "attendanceNoBranchAssigned": "Aún no tienes sede ni turno asignados. Pide al administrador que configure tu perfil laboral.",
+  "inventoryPartSubtitle": "SKU {p1} · Stock: {p2}",
+  "@inventoryPartSubtitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryDetailStockSection": "Existencias",
+  "inventoryDetailStock": "Stock",
+  "inventoryDetailMinimum": "Stock mínimo",
+  "inventoryDetailPrice": "Precio de venta sin IGV",
+  "inventoryDetailCategory": "Categoría",
+  "inventoryAlertsTitle": "Alertas de stock",
+  "inventoryAlertsHeader": "Por reponer",
+  "inventoryAlertsEmpty": "Ningún repuesto está en su mínimo.",
+  "inventoryAlertsNoPermission": "Tu perfil no tiene permiso para ver las alertas de stock.",
+  "inventoryAlertsOffline": "Sin conexión: alertas calculadas con el catálogo guardado.",
+  "inventoryAlertSubtitle": "SKU {p1} · Stock {p2} de {p3}",
+  "@inventoryAlertSubtitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      },
+      "p3": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryAlertMissing": "Faltan {p1}",
+  "@inventoryAlertMissing": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryPoTitle": "Compras",
+  "inventoryPoDetailTitle": "Orden de compra",
+  "inventoryPoNoPermission": "Tu perfil no tiene permiso para ver las órdenes de compra.",
+  "inventoryPoEmpty": "No hay órdenes de compra en este estado.",
+  "inventoryPoFilterIssued": "Por recibir",
+  "inventoryPoFilterReceived": "Recibidas",
+  "inventoryPoFilterAll": "Todas",
+  "inventoryPoNumber": "Orden {p1}",
+  "@inventoryPoNumber": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryPoNoNumber": "Orden sin número",
+  "inventoryPoReceivedOn": "Recibida el {p1}",
+  "@inventoryPoReceivedOn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryPoStatusDraft": "Borrador",
+  "inventoryPoStatusIssued": "Por recibir",
+  "inventoryPoStatusReceived": "Recibida",
+  "inventoryPoStatusCanceled": "Anulada",
+  "inventoryPoStatusUnknown": "Sin estado",
+  "inventoryPoLinesHeader": "Repuestos pedidos",
+  "inventoryPoLineUnknown": "Repuesto",
+  "inventoryPoLineSubtitle": "{p1} × {p2}",
+  "@inventoryPoLineSubtitle": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryPoLineQuantity": "Cantidad: {p1}",
+  "@inventoryPoLineQuantity": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryPoReceiptHeader": "Comprobante",
+  "inventoryPoReceiptNumber": "Número de comprobante",
+  "inventoryPoReceiptDate": "Fecha de recepción",
+  "inventoryPoReceive": "Recibir orden",
+  "inventoryPoReceiveTitle": "Recibir la orden",
+  "inventoryPoReceiveBody": "Cada línea entra al stock como un lote nuevo. Anota el número del comprobante y toma una foto.",
+  "inventoryPoReceiveConfirm": "Confirmar recepción",
+  "inventoryPoPhotoTake": "Tomar foto del comprobante",
+  "inventoryPoPhotoRetake": "Volver a tomar la foto",
+  "inventoryPoPhotoAttached": "Foto del comprobante lista",
+  "inventoryPoReceivedOk": "Orden recibida. El stock ya subió.",
+  "inventoryPoLines": "{count, plural, one{{count} línea} other{{count} líneas}}",
+  "@inventoryPoLines": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inventoryValuationTitle": "Valorización",
+  "inventoryValuationContext": "Inventario",
+  "inventoryValuationCaption": "Valor de los lotes con saldo, al costo",
+  "inventoryValuationNoPermission": "Tu perfil no tiene permiso para ver la valorización.",
+  "inventoryValuationWithStock": "con stock",
+  "inventoryValuationLow": "en el mínimo",
+  "inventoryValuationOut": "agotados",
+  "inventoryValuationByCategory": "Existencias por categoría",
+  "inventoryValuationEmpty": "No hay repuestos con stock.",
+  "inventoryValuationUncategorized": "Sin categoría",
+  "inventoryValuationUnits": "{p1} u.",
+  "@inventoryValuationUnits": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "inventoryValuationParts": "{count, plural, one{{count} repuesto} other{{count} repuestos}}",
+  "@inventoryValuationParts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invSeg2ScannerTitle": "Escanear SKU",
+  "invSeg2ScannerOpenDesc": "Escanear código de barras o QR",
+  "invSeg2ScannerHint": "Apunta la cámara al código de barras o QR del repuesto.",
+  "invSeg2ScannerPermissionTitle": "Permiso de cámara",
+  "invSeg2ScannerPermissionBody": "Necesitamos acceso a la cámara para leer códigos de barras. También puedes escribir el SKU abajo.",
+  "invSeg2ScannerPermissionGrant": "Permitir cámara",
+  "invSeg2ScannerManualLabel": "Ingreso manual de SKU",
+  "invSeg2ScannerManualHint": "Ej. BRK-001",
+  "invSeg2ScannerSearchBtn": "Buscar SKU",
+  "invSeg2ScannerNotFound": "No se encontró ningún repuesto con el SKU {p1}.",
+  "@invSeg2ScannerNotFound": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2ScannerInvalidSku": "El código {p1} no tiene formato válido de SKU (3 a 50 caracteres: A-Z, 0-9, - o _).",
+  "@invSeg2ScannerInvalidSku": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2ScannerRetry": "Escanear otro código",
+  "invSeg2ScannerNoPermission": "Tu perfil no tiene permiso para consultar el catálogo de repuestos.",
+  "invSeg2SuppliersTitle": "Proveedores",
+  "invSeg2SuppliersNoPermission": "Tu perfil no tiene permiso para gestionar proveedores.",
+  "invSeg2SuppliersSearchLabel": "Buscar proveedor",
+  "invSeg2SuppliersSearchHint": "Razón social o RUC",
+  "invSeg2SuppliersEmpty": "Todavía no hay proveedores registrados.",
+  "invSeg2SuppliersEmptyFiltered": "Ningún proveedor coincide con la búsqueda.",
+  "invSeg2SuppliersNewFab": "Nuevo proveedor",
+  "invSeg2SuppliersCreateTitle": "Nuevo proveedor",
+  "invSeg2SuppliersEditTitle": "Editar proveedor",
+  "invSeg2SuppliersTaxIdLine": "RUC {p1}",
+  "@invSeg2SuppliersTaxIdLine": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2SuppliersActive": "Activo",
+  "invSeg2SuppliersInactive": "Inactivo",
+  "invSeg2SupplierBusinessName": "Razón social",
+  "invSeg2SupplierTaxId": "RUC o documento",
+  "invSeg2SupplierContact": "Persona de contacto (opcional)",
+  "invSeg2SupplierPhone": "Teléfono (opcional)",
+  "invSeg2SupplierEmail": "Correo electrónico (opcional)",
+  "invSeg2SupplierAddress": "Dirección fiscal (opcional)",
+  "invSeg2SupplierActiveToggle": "Proveedor activo",
+  "invSeg2SupplierErrName": "Ingresa la razón social del proveedor.",
+  "invSeg2SupplierErrTaxId": "Ingresa un RUC o documento de 8 a 20 dígitos.",
+  "invSeg2SupplierErrEmail": "El formato del correo electrónico no es válido.",
+  "invSeg2SupplierSaved": "Proveedor guardado.",
+  "invSeg2PartNewFab": "Nuevo repuesto",
+  "invSeg2PartCreateTitle": "Nuevo repuesto",
+  "invSeg2PartEditTitle": "Editar repuesto",
+  "invSeg2PartEditBtn": "Editar",
+  "invSeg2PartName": "Nombre del repuesto",
+  "invSeg2PartSku": "Código SKU",
+  "invSeg2PartCategory": "Categoría",
+  "invSeg2PartBasePrice": "Precio base sin IGV (S/)",
+  "invSeg2PartMinStock": "Stock mínimo",
+  "invSeg2PartStatus": "Estado en catálogo",
+  "invSeg2PartStatusActive": "Activo",
+  "invSeg2PartStatusInactive": "Inactivo",
+  "invSeg2PartStatusDiscontinued": "Descontinuado",
+  "invSeg2PartErrName": "Ingresa el nombre del repuesto.",
+  "invSeg2PartErrSku": "Usa de 3 a 50 caracteres (A-Z, 0-9, guion o guion bajo).",
+  "invSeg2PartErrPrice": "Ingresa un precio base igual o mayor a 0.",
+  "invSeg2PartErrMinStock": "Ingresa un stock mínimo igual o mayor a 0.",
+  "invSeg2PartSaved": "Repuesto guardado.",
+  "invSeg2BatchActionsHeader": "Movimientos de lote FIFO",
+  "invSeg2BatchReceiveBtn": "Ingresar lote directo",
+  "invSeg2BatchDispatchBtn": "Despachar FIFO",
+  "invSeg2BatchRestoreBtn": "Reintegrar lote",
+  "invSeg2BatchReceiveTitle": "Ingreso directo de lote",
+  "invSeg2BatchDispatchTitle": "Despacho FIFO",
+  "invSeg2BatchRestoreTitle": "Reintegrar lote",
+  "invSeg2BatchNumberLabel": "Número de lote",
+  "invSeg2BatchQuantityLabel": "Cantidad",
+  "invSeg2BatchUnitCostLabel": "Costo unitario (S/)",
+  "invSeg2BatchReasonLabel": "Motivo del reintegro (opcional)",
+  "invSeg2BatchSelectLabel": "Lote de origen",
+  "invSeg2BatchSelectAuto": "Automático (último lote)",
+  "invSeg2BatchErrNumber": "Ingresa el número de lote.",
+  "invSeg2BatchErrQty": "La cantidad debe ser al menos 0.01.",
+  "invSeg2BatchErrCost": "El costo unitario debe ser igual o mayor a 0.",
+  "invSeg2BatchReceivedOk": "Lote ingresado al inventario.",
+  "invSeg2BatchDispatchedOk": "Despacho FIFO realizado ({p1} u.).",
+  "@invSeg2BatchDispatchedOk": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2BatchRestoredOk": "Stock reintegrado ({p1} u.).",
+  "@invSeg2BatchRestoredOk": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2AlertsCreatePoFab": "Crear orden de compra",
+  "invSeg2PartLowStockBanner": "Existencias bajo el stock mínimo ({p1} / mín. {p2}). Programa una orden de compra o ingresa un lote.",
+  "@invSeg2PartLowStockBanner": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2PartOpenPoBtn": "Ir a órdenes de compra",
+  "invSeg2PoFilterDraft": "Borradores",
+  "invSeg2PoFilterCanceled": "Anuladas",
+  "invSeg2PoNewFab": "Nueva orden",
+  "invSeg2PoCreateTitle": "Nueva orden de compra",
+  "invSeg2PoSelectSupplier": "Elige un proveedor",
+  "invSeg2PoNoSuppliers": "No hay proveedores activos. Registra uno antes de crear una orden.",
+  "invSeg2PoNumberOptional": "Número de orden (opcional)",
+  "invSeg2PoNotesOptional": "Notas internas (opcional)",
+  "invSeg2PoCreateConfirm": "Crear borrador",
+  "invSeg2PoAddLineBtn": "Agregar repuesto",
+  "invSeg2PoAddLineTitle": "Agregar línea a la orden",
+  "invSeg2PoSelectPart": "Selecciona un repuesto",
+  "invSeg2PoPartSearchHint": "Buscar por nombre o SKU",
+  "invSeg2PoIssueBtn": "Emitir orden",
+  "invSeg2PoIssueHint": "Agrega al menos un repuesto para poder emitir la orden al proveedor.",
+  "invSeg2PoCancelBtn": "Anular orden",
+  "invSeg2PoCancelTitle": "Anular orden de compra",
+  "invSeg2PoCancelBody": "La orden quedará anulada y no podrá recibirse.",
+  "invSeg2PoCancelReason": "Motivo de anulación (opcional)",
+  "invSeg2PoCancelConfirm": "Confirmar anulación",
+  "invSeg2PoIssuedOk": "Orden emitida. Ya está lista para recibir.",
+  "invSeg2PoCanceledOk": "Orden de compra anulada.",
+  "invSeg2PoLineAddedOk": "Repuesto agregado a la orden.",
+  "invSeg2PoMissingBranch": "Tu sesión no tiene sede asignada para crear órdenes.",
+  "invSeg2PoInitialLineTitle": "Primer repuesto de la orden",
+  "invSeg2PoNoParts": "No hay repuestos en el catálogo. Registra un repuesto antes de crear la orden de compra.",
+  "invSeg2PoLowStockOnly": "Solo stock mínimo ({p1})",
+  "@invSeg2PoLowStockOnly": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "invSeg2PoLowStockEmpty": "No hay repuestos con stock mínimo que coincidan.",
+  "invSeg2PoGenerateLowStockBtn": "Generar borrador con stock mínimo ({p1})",
+  "@invSeg2PoGenerateLowStockBtn": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "invSeg2PoGenerateLowStockHint": "Agrega todos los repuestos en o debajo del mínimo con cantidad sugerida.",
+  "invSeg2PoPartChipLowStock": "{p1} ({p2}) · Stock {p3}/{p4}",
+  "@invSeg2PoPartChipLowStock": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      },
+      "p3": {
+        "type": "String"
+      },
+      "p4": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2PoPartChipOutOfStock": "{p1} ({p2}) · Sin stock (mín. {p3})",
+  "@invSeg2PoPartChipOutOfStock": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      },
+      "p3": {
+        "type": "String"
+      }
+    }
+  },
+  "invSeg2Save": "Guardar",
+  "invSeg2Confirm": "Confirmar",
+  "invSeg2Clear": "Limpiar",
+  "moreHTitle": "Más",
+  "moreHGroupWorkshop": "Taller",
+  "moreHGroupCashier": "Caja y reportes",
+  "moreHGroupStock": "Repuestos",
+  "moreHGroupAccount": "Cuenta",
+  "moreHBranch": "Cambiar de sede",
+  "moreHBranchSub": "Elige la sede con la que trabajas",
+  "moreHMyAttendance": "Mi asistencia",
+  "moreHMyAttendanceSub": "Marcación GPS, turno y descargos",
+  "moreHMyTasks": "Mis tareas",
+  "moreHMyTasksSub": "Cronómetro, evidencias y repuestos",
+  "moreHWorkshopTasks": "Tareas del taller",
+  "moreHWorkshopTasksSub": "Faenas activas y suspensiones de la sede",
+  "moreHOrders": "Órdenes de trabajo",
+  "moreHOrdersSub": "Órdenes abiertas y proformas de la sede",
+  "moreHReception": "Recibir vehículo",
+  "moreHReceptionSub": "Busca por placa y abre la orden",
+  "moreHBays": "Bahías",
+  "moreHBaysSub": "Qué auto ocupa cada bahía",
+  "moreHServices": "Servicios",
+  "moreHServicesSub": "Catálogo de mano de obra y tarifas",
+  "moreHObd": "Escáneres OBD-II",
+  "moreHObdSub": "Equipos de diagnóstico del taller",
+  "moreHDailyCash": "Caja del día",
+  "moreHDailyCashSub": "Lo cobrado hoy en la sede",
+  "moreHVouchers": "Comprobantes SUNAT",
+  "moreHVouchersSub": "Boletas, facturas, notas de crédito",
+  "moreHReports": "Reportes",
+  "moreHReportsSub": "Flujo de caja y salud de flota en PDF",
+  "moreHSeries": "Series de comprobantes",
+  "moreHSeriesSub": "Boletas y facturas SUNAT de la sede",
+  "moreHParts": "Catálogo de repuestos",
+  "moreHPartsSub": "Stock, precios y lotes",
+  "moreHAlerts": "Alertas de stock",
+  "moreHAlertsSub": "Repuestos por reponer o agotados",
+  "moreHPurchases": "Órdenes de compra",
+  "moreHPurchasesSub": "Pedidos a proveedores y su recepción",
+  "moreHSuppliers": "Proveedores",
+  "moreHSuppliersSub": "Directorio comercial de suministros",
+  "moreHValuation": "Valorización",
+  "moreHValuationSub": "Cuánto vale el inventario",
+  "moreHNotifications": "Notificaciones",
+  "moreHNotificationsSub": "Avisos y alertas del taller",
+  "moreHSync": "Pendientes de sincronizar",
+  "moreHSyncSub": "Fotos y propuestas guardadas sin red",
+  "moreHProfile": "Mi cuenta",
+  "moreHProfileSub": "Perfil, sede y cerrar sesión",
+  "mainTabModules": "Módulos",
+  "mainTabShift": "Turno",
+  "mainTabPurchases": "Compras",
+  "mainTabCash": "Caja",
+  "mainTabBays": "Bahías",
+  "barActionReceive": "Recibir",
+  "barActionAppointment": "Cita",
+  "barActionAppointmentDesc": "Gestionar citas y recepción",
+  "barActionCollect": "Cobrar",
+  "barActionCollectDesc": "Ver órdenes listas para cobrar",
+  "barActionScan": "SKU",
+  "barActionScanDesc": "Buscar o escanear repuesto por SKU",
+  "barActionTasks": "Tareas",
+  "barActionTasksDesc": "Ir a mis tareas activas",
+  "modulesTitle": "Todos los módulos",
+  "ordersListTitle": "Órdenes",
+  "ordersReceiveVehicle": "Recibir vehículo",
+  "ordersSearchLabel": "Buscar por placa",
+  "ordersSearchClear": "Borrar búsqueda",
+  "ordersFilterAll": "Todas",
+  "ordersEmptyFiltered": "Ninguna orden coincide con lo que buscas.",
+  "ordersOrderNumber": "Orden #{p1}",
+  "@ordersOrderNumber": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "ordersUpdatedNow": "Actualizado ahora",
+  "ordersUpdatedAgo": "{count, plural, one{Actualizado hace {count} min} other{Actualizado hace {count} min}}",
+  "@ordersUpdatedAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ordersSectionDecisions": "Esperan tu decisión",
+  "ordersSectionData": "Datos de la orden",
+  "ordersSectionProposals": "Propuestas por hallazgo",
+  "ordersSectionPhotos": "Fotos de recepción",
+  "ordersSectionQuotation": "Proforma",
+  "ordersSectionCosts": "Costos y repuestos",
+  "ordersSeeAll": "Ver todas",
+  "ordersBayLabel": "Bahía de trabajo",
+  "ordersBayNone": "Sin bahía asignada",
+  "ordersBayChange": "Cambiar",
+  "ordersBayAssign": "Asignar",
+  "ordersMileageLabel": "Kilometraje al ingreso",
+  "ordersDiagnosticLabel": "Motivo de ingreso",
+  "ordersPhotosCount": "{count, plural, one{{count} foto} other{{count} fotos}}",
+  "@ordersPhotosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ordersCheckout": "Cobrar y entregar",
+  "ordersActionStart": "Iniciar orden",
+  "ordersActionComplete": "Completar orden",
+  "ordersActionCancel": "Cancelar orden",
+  "ordersStartedNotice": "Orden iniciada. Los técnicos ya pueden empezar.",
+  "ordersCompletedNotice": "Orden completada. Ya se puede cobrar y entregar.",
+  "ordersCanceledNotice": "Orden cancelada. Los repuestos reservados volvieron al inventario.",
+  "ordersCancelTitle": "¿Cancelar la orden?",
+  "ordersCancelBody": "Se libera la bahía y los repuestos reservados vuelven al inventario. No se puede deshacer.",
+  "ordersCancelReasonLabel": "Motivo de la cancelación",
+  "ordersCancelReasonHint": "El cliente decidió no repararlo",
+  "ordersCancelFieldError": "Escribe el motivo de la cancelación (máximo 1000 caracteres).",
+  "ordersCancelConfirm": "Sí, cancelar orden",
+  "ordersDecisionSuspension": "Suspensión: {p1}",
+  "@ordersDecisionSuspension": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "ordersDecisionProposal": "Propuesta: {p1}",
+  "@ordersDecisionProposal": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "ordersQuotationDecisionTitle": "Proforma sin respuesta",
+  "ordersQuotationDecisionRowHint": "Registra lo que respondió el cliente",
+  "ordersQuotationSendShort": "Enviar por correo",
+  "ordersSuspensionTitle": "Suspensión por validar",
+  "ordersSuspensionNoReason": "El mecánico no indicó el motivo.",
+  "ordersSuspensionMissingItem": "Falta: {p1}",
+  "@ordersSuspensionMissingItem": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "ordersSuspensionApprove": "Aprobar suspensión",
+  "ordersSuspensionReject": "Rechazar suspensión",
+  "ordersSuspensionApprovedNotice": "Suspensión aprobada. La tarea queda detenida hasta que llegue el repuesto.",
+  "ordersSuspensionRejectedNotice": "Suspensión rechazada. El mecánico sigue con la tarea.",
+  "ordersResumeTask": "Reanudar tarea",
+  "ordersTaskResumedNotice": "Tarea reanudada. Se avisó al mecánico.",
+  "ordersProposalsResolved": "Ya resueltas",
+  "ordersProposalSheetTitle": "Propuesta de hallazgo",
+  "ordersProfitabilityTitle": "Rentabilidad",
+  "ordersProfitabilityHint": "Ingreso de repuestos contra su costo",
+  "ordersProfitLaborRevenue": "Ingreso por mano de obra",
+  "ordersProfitPartsRevenue": "Ingreso por repuestos",
+  "ordersProfitCostOfSales": "Costo de los repuestos",
+  "ordersProfitPartsGross": "Ganancia de repuestos",
+  "ordersProfitSubtotal": "Subtotal sin IGV",
+  "ordersProfitLines": "Por repuesto",
+  "ordersProfitLineDetail": "{p1} unid. · costo {p2}",
+  "@ordersProfitLineDetail": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "ordersMovementsTitle": "Movimientos de repuestos",
+  "ordersMovementsHint": "De qué lote salió cada repuesto y cuánto volvió",
+  "ordersMovementsEmpty": "Esta orden aún no tiene repuestos imputados.",
+  "ordersMovementDetail": "Salió {p1} · volvió {p2}",
+  "@ordersMovementDetail": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumSearchModePlate": "Placa",
+  "premiumSearchModeDocument": "DNI / RUC",
+  "premiumPartStockLevel": "Nivel de stock",
+  "premiumPartStockRatio": "{p1} / mín. {p2}",
+  "@premiumPartStockRatio": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPartStockHealthy": "Sobre el mínimo",
+  "premiumPartStockLow": "En el mínimo o debajo",
+  "premiumPartStockOut": "Sin existencias",
+  "premiumValuationHealthTitle": "Salud del inventario",
+  "premiumValuationHealthSummary": "{p1} con stock · {p2} en mínimo · {p3} agotados",
+  "@premiumValuationHealthSummary": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      },
+      "p3": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumValuationCategoryMin": "Mínimo {p1} u.",
+  "@premiumValuationCategoryMin": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCheckoutRailVoucher": "Comprobante",
+  "premiumCheckoutRailPayment": "Cobro",
+  "premiumCheckoutRailPass": "Pase",
+  "premiumCheckoutRailDelivery": "Entrega",
+  "premiumCheckoutRailDone": "Flujo completado",
+  "premiumCheckoutRailStepOf": "Etapa {p1} de 4",
+  "@premiumCheckoutRailStepOf": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumDailyMethodShare": "{p1} %",
+  "@premiumDailyMethodShare": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "pitGeofenceLocating": "Calibrando señal GPS…",
+  "pitTaskProgressLabel": "Avance estimado",
+  "pitTaskElapsedVsEst": "{p1}h {p2}m / {p3} h",
+  "@pitTaskElapsedVsEst": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      },
+      "p3": {
+        "type": "String"
+      }
+    }
+  },
+  "pitDockRunning": "Labor en curso",
+  "pitDockPaused": "Labor en pausa",
+  "pitDockReady": "Lista para iniciar",
+  "pitReportScoreMax": "/ 100",
+  "pitReportScoreCd": "Puntaje de salud vehicular: {p1} de 100",
+  "@pitReportScoreCd": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      }
+    }
+  },
+  "todayCarsEmpty": "Sin autos",
+  "todayFigureReadyShort": "listos",
+  "todayLiveBayBadge": "En vivo",
+  "baysFilterAllShort": "Todas",
+  "baysFilterAvailableShort": "Libres",
+  "baysFilterOccupiedShort": "Ocupadas",
+  "baysFilterMaintenanceShort": "Mant.",
+  "baysOccupancyTitle": "Ocupación de bahías",
+  "baysOccupancyFraction": "{p1}/{p2}",
+  "@baysOccupancyFraction": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "baysOccupancyBreakdown": "{p1} libres · {p2} en mantenimiento",
+  "@baysOccupancyBreakdown": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "syncSummaryTitle": "Estado de la cola",
+  "syncSummaryCounts": "{p1} en cola · {p2} enviando · {p3} con error",
+  "@syncSummaryCounts": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      },
+      "p3": {
+        "type": "int"
+      }
+    }
+  },
+  "notifSummaryTitle": "Requieren atención",
+  "notifSummaryBody": "Revisa alertas de stock, descargos y aprobaciones pendientes.",
+  "profileAccountSummary": "Resumen de cuenta",
+  "receptionSearchTitle": "Recibir vehículo",
+  "receptionSearchPlatePlaceholder": "ABC-123",
+  "receptionSearchByDocument": "Buscar por DNI o RUC",
+  "receptionSearchByPlate": "Buscar por placa",
+  "receptionSearchOfflineCache": "Sin conexión. Buscas entre los datos guardados en este teléfono.",
+  "receptionSearchNoAccess": "Tu perfil no tiene acceso a Recepción.",
+  "receptionSearchNoSearchPermission": "Tu perfil no puede buscar vehículos ni clientes.",
+  "receptionPlateNotFound": "No hay un vehículo con la placa {p1}.",
+  "@receptionPlateNotFound": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "receptionOpenOrder": "Abrir orden",
+  "receptionAddVehicle": "Agregar vehículo",
+  "receptionSelected": "Elegido",
+  "receptionAppointmentNoCustomer": "Cliente sin cargar",
+  "receptionArriveTitle": "Registrar llegada",
+  "receptionArriveConfirm": "Registrar llegada",
+  "receptionArriveTime": "Hora de la cita: {p1}",
+  "@receptionArriveTime": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "receptionFormVehicleTitle": "Agregar vehículo",
+  "teamTitle": "Equipo",
+  "teamNoPermission": "Tu cuenta no puede ver la asistencia del equipo.",
+  "teamTabTeam": "Equipo",
+  "teamTabMine": "Mi asistencia",
+  "teamOffline": "Sin conexión. La asistencia del equipo necesita red para actualizarse.",
+  "teamLegend": "{p1} de {p2}",
+  "@teamLegend": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "teamCaption": "en turno ahora",
+  "teamFigureOnTime": "puntuales",
+  "teamFigureLate": "tardanzas",
+  "teamFigureAbsent": "faltas",
+  "teamToday": "Asistencia de hoy",
+  "teamEmpty": "Nadie ha marcado asistencia hoy en esta sede.",
+  "teamNoClockIn": "Sin entrada registrada",
+  "teamClockRange": "Entró {p1} · salió {p2}",
+  "@teamClockRange": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "teamClockInOpen": "Entró {p1} · en turno",
+  "@teamClockInOpen": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatusOnTime": "Puntual",
+  "teamStatusLate": "Tarde",
+  "teamStatusAbsent": "Falta",
+  "teamStatusExcused": "Justificada",
+  "baysOffline": "Sin conexión. Ves el último tablero guardado; reasignar y crear bahías necesita red.",
+  "baysLabor": "Mano de obra {p1}",
+  "@baysLabor": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "baysTapToAssign": "Toca para ingresar una orden",
+  "baysMechanicsSection": "Mecánicos y faenas en bahía",
+  "notifTitle": "Notificaciones",
+  "notifSectionAttention": "Piden tu atención",
+  "notifSectionReceived": "Avisos de esta sesión",
+  "notifEmpty": "Aquí verás los avisos de tareas, stock y asistencia cuando lleguen.",
+  "notifUnread": "Nuevo",
+  "notifDraftChip": "Sin iniciar",
+  "notifSyncPendingBody": "Toca para revisarlos o reenviarlos.",
+  "notifSyncPending": "{count, plural, one{{count} registro sin enviar} other{{count} registros sin enviar}}",
+  "@notifSyncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncEmptyLine": "Todo sincronizado. No hay nada pendiente de envío.",
+  "syncDiscardWarning": "Si lo descartas, este registro se borra del teléfono y no llega al servidor.",
+  "profileSectionWorkshop": "Mi taller",
+  "profileLabelWorkshop": "Taller",
+  "profileLabelBranch": "Sede actual",
+  "profileBranchChange": "Sede actual · Cambiar sede",
+  "profileBranchUnknown": "Sin sede elegida",
+  "profileModuleObd": "Escáneres OBD-II",
+  "profileModuleAi": "Diagnóstico con IA",
+  "profileModuleNone": "Módulos básicos",
+  "profileNoUnread": "Sin avisos nuevos",
+  "profileUnreadCount": "{count, plural, one{{count} aviso sin leer} other{{count} avisos sin leer}}",
+  "@profileUnreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileSignOutSub": "Salir de Atelier en este teléfono",
+  "profileSignOutPlain": "Vas a salir de Atelier en este teléfono. Para volver a entrar necesitarás tu correo y tu contraseña.",
+  "obdPlanLocked": "Los escáneres OBD-II no están incluidos en el plan de este taller.",
+  "obdNoPermission": "Tu cuenta no puede ver los escáneres del taller.",
+  "obdOffline": "Sin conexión. Registrar, vincular y cambiar el estado de un escáner necesita red.",
+  "obdNoVehicles": "No hay vehículos del taller guardados en este teléfono.",
+  "obdVehicleHasScanner": "Ya tiene un escáner vinculado",
+  "obdFirmwareFormat": "FW {p1}",
+  "@obdFirmwareFormat": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "obdHintIdentifier": "Ej. AA:BB:CC:11:22:33",
+  "obdHintModel": "Ej. ELM327 v1.5 u OBDLink MX+",
+  "obdHintFirmware": "Ej. 2.1",
+  "obdConnBluetooth": "Bluetooth",
+  "obdConnWifi": "Wi-Fi",
+  "obdConnUsb": "USB",
+  "tasksWorkshopTitle": "Tareas del taller",
+  "tasksWorkshopPanelCaption": "activas en la sede",
+  "tasksWorkshopEmpty": "No hay tareas activas en las órdenes de la sede.",
+  "tasksSeg2PanelContext": "Bandeja de bahía",
+  "tasksSeg2PanelCaption": "asignadas en tu turno",
+  "tasksSeg2LegendCount": "{count, plural, one{{count} tarea} other{{count} tareas}}",
+  "@tasksSeg2LegendCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSeg2FigurePending": "pendientes",
+  "tasksSeg2FigureInProgress": "en curso",
+  "tasksSeg2FigurePaused": "en pausa",
+  "tasksSeg2FilterAssigned": "Asignadas",
+  "tasksSeg2FilterSuspended": "Suspendidas",
+  "tasksSeg2EmptyFiltered": "Ninguna tarea coincide con este filtro.",
+  "tasksSeg2MetaNoPlate": "Sin placa",
+  "tasksSeg2QuickActions": "Accesos rápidos",
+  "tasksSeg2ActionObd": "Escáner OBD-II",
+  "tasksSeg2ActionFinding": "Reportar hallazgo",
+  "tasksSeg2ControlsSection": "Control de labor",
+  "tasksSeg2DescriptionSection": "Detalle técnico",
+  "tasksSeg2TimerEstimated": "Est. {p1} h",
+  "@tasksSeg2TimerEstimated": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSeg2EvidenceSection": "Evidencias fotográficas",
+  "tasksSeg2EvidenceKindLabel": "Momento de la foto",
+  "tasksSeg2EvidenceDisassembly": "Desmontaje",
+  "tasksSeg2EvidenceAssembly": "Montaje",
+  "tasksSeg2EvidenceNoteLabel": "Nota de evidencia (opcional)",
+  "tasksSeg2EvidenceNoteHint": "Ej. pastilla desgastada al 10 %",
+  "tasksSeg2EvidenceTakePhoto": "Tomar foto",
+  "tasksSeg2EvidenceEmpty": "Aún no hay fotos de desmontaje o montaje.",
+  "tasksSeg2EvidenceQueued": "Foto guardada. Se subirá al recuperar señal.",
+  "tasksSeg2EvidenceFieldError": "La nota supera los 500 caracteres.",
+  "tasksSeg2SuspensionSection": "Suspensión de tarea",
+  "tasksSeg2SuspensionRequestBtn": "Solicitar suspensión",
+  "tasksSeg2SuspensionRequestTitle": "Solicitar suspensión",
+  "tasksSeg2SuspensionRequestBody": "Indica el repuesto faltante o defectuoso para que el supervisor valide la pausa.",
+  "tasksSeg2SuspensionItemLabel": "Descripción de la pieza o motivo",
+  "tasksSeg2SuspensionItemHint": "Ej. Retén de cigüeñal con fuga",
+  "tasksSeg2SuspensionItemError": "Describe el ítem faltante o defectuoso (máx. 500 caracteres).",
+  "tasksSeg2SuspensionPartOptional": "Repuesto del catálogo (opcional)",
+  "tasksSeg2SuspensionPartClear": "Quitar repuesto seleccionado",
+  "tasksSeg2SuspensionRequestConfirm": "Enviar solicitud",
+  "tasksSeg2SuspensionRequestedNotice": "Solicitud enviada. Espera la validación del supervisor.",
+  "tasksSeg2SuspensionPendingTitle": "Suspensión solicitada.",
+  "tasksSeg2SuspensionPendingBody": "Esperando aprobación del supervisor.",
+  "tasksSeg2SuspensionReviewHint": "Toca para aprobar o rechazar la solicitud",
+  "tasksSeg2SuspensionResumeRowTitle": "Suspensión activa por repuesto",
+  "tasksSeg2SuspensionResumeRowHint": "Toca para reanudar la tarea cuando llegue el repuesto",
+  "tasksSeg2SuspensionResumeSheetTitle": "Levantar suspensión",
+  "tasksSeg2SuspensionResumeSheetBody": "Confirma que el repuesto ya está conforme para que el mecánico reanude la labor.",
+  "tasksSeg2SuspensionRequestedAt": "Solicitada: {p1}",
+  "@tasksSeg2SuspensionRequestedAt": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSeg2ReopenBtn": "Reabrir tarea",
+  "tasksSeg2ReopenTitle": "¿Reabrir tarea cerrada?",
+  "tasksSeg2ReopenBody": "La tarea volverá a estado abierto para retrabajo de calidad.",
+  "tasksSeg2ReopenReasonLabel": "Motivo de reapertura (opcional)",
+  "tasksSeg2ReopenReasonHint": "Ej. Verificar ajuste de torque",
+  "tasksSeg2ReopenConfirm": "Confirmar reapertura",
+  "tasksSeg2ReopenedNotice": "Tarea reabierta para retrabajo.",
+  "tasksSeg2EvidenceNoteCounter": "{p1} / {p2} caracteres disponibles",
+  "@tasksSeg2EvidenceNoteCounter": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSeg2EvidenceFailedSheetTitle": "Foto con error de envío",
+  "tasksSeg2EvidenceFailedRetryNotice": "Reintento de subida encolado.",
+  "tasksSeg2EvidenceFailedDiscardNotice": "Foto descartada de la cola.",
+  "tasksSeg2CompleteMissingAssemblyWarning": "Sube al menos una foto de Montaje antes de completar esta tarea.",
+  "tasksSeg2UnsavedExitTitle": "¿Salir con nota sin guardar?",
+  "tasksSeg2UnsavedExitBody": "Tienes una nota de evidencia escrita que aún no has adjuntado con una foto.",
+  "tasksSeg2UnsavedExitConfirm": "Salir sin guardar",
+  "atelierPhotoSynced": "Guardada",
+  "atelierPhotoPending": "Pendiente",
+  "atelierPhotoFailed": "Falló",
+  "pushDefaultTitleTaskDetail": "Actualización de tarea",
+  "pushDefaultTitleTaskSuspensionReview": "Pausa de tarea por revisar",
+  "pushDefaultTitleTaskProducts": "Repuesto imputado a tarea",
+  "pushDefaultTitleWorkOrderDetail": "Orden de trabajo actualizada",
+  "pushDefaultTitleLowStock": "Alerta de stock mínimo",
+  "pushDefaultTitleCollaboratorAttendance": "Novedad de asistencia en sede",
+  "pushDefaultTitleMyAttendance": "Justificación revisada",
+  "pushDefaultTitleClockIn": "Recordatorio de turno",
+  "teamCollaboratorWithId": "Colaborador · {p1}",
+  "@teamCollaboratorWithId": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceHistoryExit": "Salida {p1}",
+  "@attendanceHistoryExit": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceHistoryJustificationPending": "Descargo pendiente",
+  "attendanceHistoryJustificationApproved": "Descargo aprobado",
+  "attendanceHistoryJustificationRejected": "Descargo rechazado",
+  "attendanceHistoryStatusOnTime": "A tiempo",
+  "attendanceHistoryStatusLate": "Tardanza",
+  "attendanceHistoryStatusAbsent": "Ausente",
+  "attendanceHistoryStatusExcused": "Justificado",
+  "attendanceHistoryStatusRegistered": "Registrado",
+  "floorHubApptConfirmed": "Confirmada",
+  "floorHubApptArrived": "Llegó",
+  "floorHubApptCanceled": "Cancelada",
+  "floorHubApptPending": "Pendiente",
+  "floorHubTaskEstimated": "Est. {p1} h",
+  "@floorHubTaskEstimated": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "floorHubPoFallback": "OC {p1}",
+  "@floorHubPoFallback": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "floorHubPoSummary": "{p1} ítems · {p2}",
+  "@floorHubPoSummary": {
+    "placeholders": {
+      "p1": {
+        "type": "int"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "floorHubPoIssued": "Emitida",
+  "floorHubCashReadySubtitle": "Lista para comprobante y cobro",
+  "floorHubCashOrderNumber": "Orden #{p1}",
+  "@floorHubCashOrderNumber": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "floorHubStockPosCaption": "órdenes de compra emitidas",
+  "floorHubQuickObdSubNoLive": "Fallas DTC e informe IA"
 }

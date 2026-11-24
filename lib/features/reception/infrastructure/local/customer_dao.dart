@@ -14,6 +14,24 @@ class CustomerDao extends DatabaseAccessor<AppDatabase>
     return into(customers).insertOnConflictUpdate(customer.toCompanion(false));
   }
 
+  Future<void> upsertAll(List<CustomerEntity> rows) {
+    return batch((b) {
+      b.insertAllOnConflictUpdate(
+        customers,
+        rows.map((row) => row.toCompanion(false)).toList(),
+      );
+    });
+  }
+
+  /// Cartera completa guardada, ordenada por nombre sin distinguir mayúsculas.
+  Stream<List<CustomerEntity>> watchAll() {
+    return (select(customers)
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.displayName.collate(Collate.noCase)),
+          ]))
+        .watch();
+  }
+
   Future<CustomerEntity?> findById(String id) {
     return (select(customers)..where((t) => t.id.equals(id))).getSingleOrNull();
   }

@@ -11,18 +11,22 @@ import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_qu
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/clock_in_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/clock_out_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/application/get_current_location_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/application/is_location_permission_granted_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/observe_attendance_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/observe_today_attendance_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/observe_weekly_schedule_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/refresh_attendance_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/submit_justification_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/attendance_repository.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/domain/location_permission_checker.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/location_provider.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/attendance_cache.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/attendance_repository_impl.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/attendance_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/branch_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/local/shift_dao.dart';
+import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/location/geolocator_location_permission_checker.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/location/geolocator_location_provider.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/remote/attendance_api.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/sync/clock_in_handler.dart';
@@ -76,6 +80,9 @@ void setupAttendanceDependencies() {
   getIt.registerLazySingleton<LocationProvider>(
     () => const GeolocatorLocationProvider(),
   );
+  getIt.registerLazySingleton<LocationPermissionChecker>(
+    () => const GeolocatorLocationPermissionChecker(),
+  );
   getIt.registerLazySingleton<AttendanceRepository>(
     () => AttendanceRepositoryImpl(
       api: getIt<AttendanceApi>(),
@@ -122,5 +129,11 @@ void setupAttendanceDependencies() {
   );
   getIt.registerLazySingleton<SubmitJustificationUseCase>(
     () => SubmitJustificationUseCase(repository: getIt<AttendanceRepository>()),
+  );
+  getIt.registerLazySingleton<GetCurrentLocationUseCase>(
+    () => GetCurrentLocationUseCase(locationProvider: getIt<LocationProvider>()),
+  );
+  getIt.registerLazySingleton<IsLocationPermissionGrantedUseCase>(
+    () => IsLocationPermissionGrantedUseCase(checker: getIt<LocationPermissionChecker>()),
   );
 }

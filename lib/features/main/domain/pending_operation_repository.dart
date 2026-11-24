@@ -13,4 +13,7 @@ abstract class PendingOperationRepository {
   /// Borra la operación con sus dependientes y, si era una foto, su subida. `false` si no aplicaba
   /// o si algo de la cadena se está enviando.
   Future<bool> discard(String id);
+
+  /// "Sincronizar ahora": pide enviar la cola ya, sin esperar al worker.
+  Future<void> syncNow();
 }

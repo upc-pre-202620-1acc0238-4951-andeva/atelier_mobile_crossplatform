@@ -61,8 +61,8 @@ void main() {
             .where((file) => file.path.endsWith('_use_case.dart'))
             .length;
 
-    expect(count('lib/features/reception/application'), 13);
-    expect(count('lib/features/workorders/application'), 27);
+    expect(count('lib/features/reception/application'), 22);
+    expect(count('lib/features/workorders/application'), 32);
 
     int registered(String path) =>
         RegExp(r'registerLazySingleton<\w+UseCase>')
@@ -73,13 +73,13 @@ void main() {
       registered(
         'lib/features/reception/infrastructure/di/reception_dependencies.dart',
       ),
-      13,
+      22,
     );
     expect(
       registered(
         'lib/features/workorders/infrastructure/di/workorders_dependencies.dart',
       ),
-      27,
+      32,
     );
   });
 

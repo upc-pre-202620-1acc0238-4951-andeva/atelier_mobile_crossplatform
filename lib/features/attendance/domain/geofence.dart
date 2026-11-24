@@ -3,12 +3,17 @@ import 'dart:math';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/branch.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/device_location.dart';
 
-/// Solo es un aviso: la validación real la hace el backend (422).
+/// Resultado local de Haversine. El backend repite la validación como autoridad final (422).
 class GeofenceCheck {
   final double distanceMeters;
   final bool isInside;
+  final bool isMock;
 
-  const GeofenceCheck({required this.distanceMeters, required this.isInside});
+  const GeofenceCheck({
+    required this.distanceMeters,
+    required this.isInside,
+    required this.isMock,
+  });
 }
 
 class Geofence {
@@ -39,6 +44,7 @@ class Geofence {
     return GeofenceCheck(
       distanceMeters: distance,
       isInside: distance <= branch.geofenceRadiusMeters,
+      isMock: location.isMock,
     );
   }
 

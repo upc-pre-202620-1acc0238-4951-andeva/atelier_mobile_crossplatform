@@ -10,6 +10,22 @@ import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remot
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_image_dto.dart';
 import 'package:decimal/decimal.dart';
 
+/// Nombre que el backend pone a una tarea sin servicio del catálogo: no es un nombre real.
+const genericServiceName = 'Standard Service';
+
+/// El backend rellena el nombre de un repuesto desconocido con `Product <uuid>`.
+final _productUuidPlaceholder = RegExp(
+  r'^Product\s+[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+/// `null` si el nombre viene vacío o es el genérico del backend.
+String? cleanServiceName(String? name) {
+  if (name == null || name.trim().isEmpty || name == genericServiceName) {
+    return null;
+  }
+  return name;
+}
+
 /// Lo usan `tasks` y el detalle de la orden, que trae las mismas tareas (H5).
 extension WorkOrderTaskDtoMapper on WorkOrderTaskDto {
   TaskDetail toDomain() {
@@ -17,7 +33,7 @@ extension WorkOrderTaskDtoMapper on WorkOrderTaskDto {
       id: TaskId(id),
       workOrderId: workOrderId,
       serviceId: serviceId,
-      serviceName: serviceName,
+      serviceName: cleanServiceName(serviceName),
       mechanicId: mechanicId,
       mechanicName: mechanicName,
       status: TaskStatus.fromString(status),
@@ -44,7 +60,10 @@ extension TaskProductDtoMapper on TaskProductDto {
     return TaskProduct(
       id: id,
       productId: productId,
-      productName: productName,
+      productName: productName != null &&
+              _productUuidPlaceholder.hasMatch(productName!.trim())
+          ? null
+          : productName,
       quantity: quantity ?? Decimal.zero,
       unitPrice: Money.orNull(unitPrice, currency),
       totalAmount: Money.orNull(totalAmount, currency),

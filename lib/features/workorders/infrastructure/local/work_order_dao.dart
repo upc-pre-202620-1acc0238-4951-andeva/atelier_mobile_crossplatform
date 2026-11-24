@@ -90,9 +90,27 @@ class WorkOrderDao extends DatabaseAccessor<AppDatabase>
     return into(workOrders).insertOnConflictUpdate(row.toCompanion(false));
   }
 
+  static const _appointmentStubPrefix = 'Ingreso por cita programada';
+
+  int? _positive(int? value) => value != null && value > 0 ? value : null;
+
+  String? _realDiagnostic(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return value.startsWith(_appointmentStubPrefix) ? null : value;
+  }
+
   WorkOrderEntity _keepDetail(WorkOrderEntity row, WorkOrderEntity? previous) {
     if (previous == null) return row;
     final sameTotal = row.totalAmount == previous.totalAmount;
+    // El kilometraje 0 y el diagnóstico de relleno de la orden creada desde una cita (H10) no
+    // pisan el valor real que ya se guardó.
+    final mileage = _positive(row.mileageIn) ??
+        _positive(previous.mileageIn) ??
+        row.mileageIn;
+    final diagnostic = _realDiagnostic(row.diagnosticSummary) ??
+        _realDiagnostic(previous.diagnosticSummary) ??
+        row.diagnosticSummary ??
+        previous.diagnosticSummary;
     return row.copyWith(
       internalNumber: Value(row.internalNumber ?? previous.internalNumber),
       bayName: Value(
@@ -101,10 +119,8 @@ class WorkOrderDao extends DatabaseAccessor<AppDatabase>
                 ? previous.bayName
                 : null),
       ),
-      diagnosticSummary: Value(
-        row.diagnosticSummary ?? previous.diagnosticSummary,
-      ),
-      mileageIn: Value(row.mileageIn ?? previous.mileageIn),
+      diagnosticSummary: Value(diagnostic),
+      mileageIn: Value(mileage),
       // Con otro total, el subtotal y el IGV guardados ya no le corresponden.
       subtotal: Value(row.subtotal ?? (sameTotal ? previous.subtotal : null)),
       taxAmount: Value(

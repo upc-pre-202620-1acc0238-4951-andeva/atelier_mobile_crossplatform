@@ -15,6 +15,7 @@ import 'package:atelier_mobile_crossplatform/features/auth/application/forgot_pa
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/google_sign_in_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/is_notification_permission_granted_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/request_notification_permission_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/resend_verification_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/reset_password_use_case.dart';
@@ -110,6 +111,11 @@ void setupAuthDependencies() {
   );
   getIt.registerLazySingleton<SkipBranchChoiceUseCase>(
     () => SkipBranchChoiceUseCase(repository: getIt<BranchChoiceRepository>()),
+  );
+  getIt.registerLazySingleton<IsNotificationPermissionGrantedUseCase>(
+    () => IsNotificationPermissionGrantedUseCase(
+      gateway: getIt<NotificationPermissionGateway>(),
+    ),
   );
   getIt.registerLazySingleton<RequestNotificationPermissionUseCase>(
     () => RequestNotificationPermissionUseCase(

@@ -1,3 +1,6 @@
+/// Canal de notificación al que pertenece un push.
+enum PushChannel { tasks, attendance, inventory }
+
 /// Pantalla que abre cada push (docs/04-mobile-integration.md §2). Las features la convierten en
 /// su ruta.
 sealed class PushDestination {

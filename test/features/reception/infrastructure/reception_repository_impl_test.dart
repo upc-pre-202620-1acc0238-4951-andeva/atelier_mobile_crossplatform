@@ -147,6 +147,8 @@ void main() {
         'model': 'Corolla',
         'engineType': 'HYBRID',
         'customerId': 'c1',
+        // Sin año se envía el año de Lima (paridad con Android).
+        'year': 2026,
       });
     });
 
@@ -167,6 +169,8 @@ void main() {
         'firstName': 'Ana',
         'lastName': 'Pérez',
         'taxId': '12345678',
+        // Sin correo ni teléfono se envía el teléfono de relleno (paridad con Android).
+        'phone': '900000000',
       });
       expect(await env.db.customerDao.findById('c1'), isNotNull);
     });

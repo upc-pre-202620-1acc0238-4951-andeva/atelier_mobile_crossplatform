@@ -4,22 +4,26 @@ import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_metadata_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/missing_branch_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/media/storage_paths.dart';
 import 'package:atelier_mobile_crossplatform/core/media/supabase_uploader.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/batch_allocation.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/inventory_errors.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/inventory_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/inventory_validation.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/supplier.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/inventory_cache_policy.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/batch_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/inventory_mappers.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/local/part_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_api.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_dtos.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/inventory_request_dtos.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/infrastructure/remote/part_item_dto.dart';
 import 'package:decimal/decimal.dart';
 import 'package:drift/drift.dart';
@@ -72,7 +76,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
     final timestamp = _timestamp();
     final rows = byId.values.map((dto) => dto.toEntity(timestamp)).toList();
     await partDao.replaceAll(rows);
-    await _markSynced(InventoryCachePolicy.catalogScope, timestamp, rows.length);
+    await _markSynced(
+      InventoryCachePolicy.catalogScope,
+      timestamp,
+      rows.length,
+    );
   }
 
   @override
@@ -159,10 +167,119 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
+  Future<Part> createPart({
+    required String name,
+    required String sku,
+    required ItemCategory category,
+    required Decimal basePrice,
+    required Decimal minimumStock,
+    String? unitOfMeasure = 'UNIT',
+  }) async {
+    final dto = await api.createItem(
+      CreatePartRequestDto(
+        name: name.trim(),
+        sku: InventoryValidation.normalizeSku(sku),
+        category: category.value,
+        basePrice: basePrice,
+        minimumStock: minimumStock,
+        unitOfMeasure: _blankToNull(unitOfMeasure) ?? 'UNIT',
+      ),
+    );
+    return (await _saveParts([dto])).single;
+  }
+
+  @override
+  Future<Part> updatePart(
+    String id, {
+    required String name,
+    required ItemCategory category,
+    required Decimal basePrice,
+    required Decimal minimumStock,
+    PartStatus? status,
+    String? unitOfMeasure,
+  }) async {
+    final dto = await api.updateItem(
+      id,
+      UpdatePartRequestDto(
+        name: name.trim(),
+        category: category.value,
+        basePrice: basePrice,
+        minimumStock: minimumStock,
+        status: status?.value,
+        unitOfMeasure: _blankToNull(unitOfMeasure),
+      ),
+    );
+    return (await _saveParts([dto])).single;
+  }
+
+  @override
   Stream<List<PartBatch>> observeBatches(String itemId) {
     return batchDao
         .watchForItem(itemId)
         .map((rows) => rows.map((row) => row.toDomain()).toList());
+  }
+
+  @override
+  Future<PartBatch> receiveDirectBatch(
+    String itemId, {
+    required String batchNumber,
+    required Decimal quantity,
+    required Decimal unitCost,
+    DateTime? arrivalDate,
+    String? supplierId,
+  }) async {
+    final dto = await api.receiveBatch(
+      ReceiveBatchRequestDto(
+        itemId: itemId,
+        batchNumber: batchNumber.trim(),
+        quantity: quantity,
+        unitCost: unitCost,
+        arrivalDate: arrivalDate,
+        supplierId: _blankToNull(supplierId),
+      ),
+    );
+    await _bestEffort(() => _syncPartAndBatches(itemId));
+    return dto.toDomain(itemId);
+  }
+
+  @override
+  Future<StockAllocation> dispatchFifoBatch(
+    String itemId, {
+    required Decimal quantity,
+    String? workOrderId,
+    String? taskId,
+  }) async {
+    final dto = await api.dispatchBatchFifo(
+      DispatchBatchFifoRequestDto(
+        itemId: itemId,
+        quantity: quantity,
+        taskId: _blankToNull(taskId),
+        workOrderId: _blankToNull(workOrderId),
+      ),
+    );
+    await _bestEffort(() => _syncPartAndBatches(itemId));
+    return dto.toDomain();
+  }
+
+  @override
+  Future<BatchRestoreResult> restoreBatch(
+    String itemId, {
+    required Decimal quantity,
+    String? batchId,
+    String? reason,
+    String? workOrderId,
+  }) async {
+    final dto = await api.restoreBatch(
+      RestoreBatchRequestDto(
+        itemId: itemId,
+        quantity: quantity,
+        batchId: _blankToNull(batchId),
+        reason: _blankToNull(reason),
+        workOrderId: _blankToNull(workOrderId),
+      ),
+    );
+    await _bestEffort(() => _syncPartAndBatches(itemId));
+    return dto.toDomain();
   }
 
   @override
@@ -192,6 +309,61 @@ class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @override
+  Future<List<Supplier>> getSuppliers({String? search, String? status}) async {
+    final dtos = await api.getSuppliers(
+      search: _blankToNull(search),
+      status: _blankToNull(status),
+    );
+    return dtos.map((dto) => dto.toDomain()).toList();
+  }
+
+  @override
+  Future<Supplier> createSupplier({
+    required String businessName,
+    required String taxId,
+    String? contactName,
+    String? phone,
+    String? email,
+    String? address,
+  }) async {
+    final dto = await api.createSupplier(
+      RegisterSupplierRequestDto(
+        businessName: businessName.trim(),
+        taxId: InventoryValidation.normalizeTaxId(taxId),
+        contactName: _blankToNull(contactName),
+        phone: _blankToNull(phone),
+        email: _blankToNull(email),
+        address: _blankToNull(address),
+      ),
+    );
+    return dto.toDomain();
+  }
+
+  @override
+  Future<Supplier> updateSupplier(
+    String id, {
+    String? businessName,
+    String? contactName,
+    String? phone,
+    String? email,
+    String? address,
+    bool? active,
+  }) async {
+    final dto = await api.updateSupplier(
+      id,
+      UpdateSupplierRequestDto(
+        businessName: _blankToNull(businessName),
+        contactName: _blankToNull(contactName),
+        phone: _blankToNull(phone),
+        email: _blankToNull(email),
+        address: _blankToNull(address),
+        active: active,
+      ),
+    );
+    return dto.toDomain();
+  }
+
+  @override
   Future<List<PurchaseOrder>> getPurchaseOrders({
     PurchaseOrderStatus? status,
   }) async {
@@ -202,6 +374,71 @@ class InventoryRepositoryImpl implements InventoryRepository {
   @override
   Future<PurchaseOrder> getPurchaseOrder(String id) async {
     return (await api.getPurchaseOrder(id)).toDomain();
+  }
+
+  @override
+  Future<PurchaseOrder> createPurchaseOrder(
+    String supplierId, {
+    List<PurchaseOrderLineInput> items = const [],
+    String? orderNumber,
+    String? expectedDeliveryDate,
+    String? notes,
+  }) async {
+    final current = await session.getSession();
+    if (current == null) throw StateError('Sin sesión');
+    final branchId = current.branchId;
+    if (branchId == null) throw const MissingBranchException();
+    final dto = await api.createPurchaseOrder(
+      CreatePurchaseOrderRequestDto(
+        branchId: branchId,
+        supplierId: supplierId,
+        items: items
+            .map(
+              (line) => CreatePurchaseOrderItemRequestDto(
+                itemId: line.itemId,
+                quantity: line.quantity,
+                unitCost: line.unitCost,
+              ),
+            )
+            .toList(),
+        orderNumber: _blankToNull(orderNumber),
+        expectedDeliveryDate: _blankToNull(expectedDeliveryDate),
+        notes: _blankToNull(notes),
+      ),
+    );
+    return dto.toDomain();
+  }
+
+  @override
+  Future<PurchaseOrder> addPurchaseOrderItem(
+    String purchaseOrderId, {
+    required String itemId,
+    required Decimal quantity,
+    required Decimal unitCost,
+  }) async {
+    final dto = await api.addPurchaseOrderItem(
+      purchaseOrderId,
+      CreatePurchaseOrderItemRequestDto(
+        itemId: itemId,
+        quantity: quantity,
+        unitCost: unitCost,
+      ),
+    );
+    return dto.toDomain();
+  }
+
+  @override
+  Future<PurchaseOrder> issuePurchaseOrder(String id) async {
+    return (await api.issuePurchaseOrder(id)).toDomain();
+  }
+
+  @override
+  Future<PurchaseOrder> cancelPurchaseOrder(String id, {String? reason}) async {
+    final dto = await api.cancelPurchaseOrder(
+      id,
+      CancelPurchaseOrderRequestDto(reason: _blankToNull(reason)),
+    );
+    return dto.toDomain();
   }
 
   /// H15: el backend responde 400 a todo y no es idempotente. Se lee la orden antes de subir la foto
@@ -243,7 +480,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
     final photoId = StoragePaths.newId();
     final directory = await cacheDirectory();
     final local = File('${directory.path}/receipts/$photoId.jpg');
-    final storagePath = StoragePaths.purchaseReceipt(tenantId, orderId, photoId);
+    final storagePath = StoragePaths.purchaseReceipt(
+      tenantId,
+      orderId,
+      photoId,
+    );
     try {
       await uploader.upload(
         await uploader.compress(photo.path, local),
@@ -293,6 +534,16 @@ class InventoryRepositoryImpl implements InventoryRepository {
     for (final itemId in itemIds) {
       await _bestEffort(() => refreshBatches(itemId, force: true));
     }
+  }
+
+  /// Tras mover stock a mano: la ficha del repuesto y sus lotes, desde el servidor.
+  Future<void> _syncPartAndBatches(String itemId) async {
+    await getPartDetail(itemId);
+  }
+
+  static String? _blankToNull(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   Future<void> _bestEffort(Future<void> Function() reload) async {

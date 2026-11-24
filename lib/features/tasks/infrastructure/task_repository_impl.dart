@@ -42,6 +42,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remot
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remote/work_order_task_mapper.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/repository/task_evidence_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/sync/attach_task_evidence_handler.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_api.dart';
 import 'package:decimal/decimal.dart';
 import 'package:drift/drift.dart';
 
@@ -49,6 +50,10 @@ class TaskRepositoryImpl implements TaskRepository {
   static const scopeMyTasks = 'tasks:my';
   static const baysTtlMillis = 30 * 1000; // 30s
   static const vehiclesTtlMillis = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  /// Tope de órdenes que se leen una a una al armar la vista de supervisión del taller.
+  static const workshopOrdersLimit = 15;
+  static const _closedOrderStatuses = {'PAID', 'CANCELED', 'COMPLETED'};
 
   final TaskApi taskApi;
   final InventoryApi inventoryApi;
@@ -65,6 +70,12 @@ class TaskRepositoryImpl implements TaskRepository {
   final Future<Directory> Function() supportDirectory;
   final DateTime Function() now;
 
+  /// Solo para la vista de supervisión del taller (Dueño, Administrador, Asesor). Sin él, solo `tasks/my`.
+  final WorkOrderApi? workOrderApi;
+
+  /// Nombres de repuestos del catálogo por taller, mientras viva el proceso.
+  (String, Map<String, String>)? _cachedPartNames;
+
   TaskRepositoryImpl({
     required this.taskApi,
     required this.inventoryApi,
@@ -80,6 +91,7 @@ class TaskRepositoryImpl implements TaskRepository {
     required this.session,
     required this.supportDirectory,
     this.now = DateTime.now,
+    this.workOrderApi,
   });
 
   @override
@@ -94,14 +106,47 @@ class TaskRepositoryImpl implements TaskRepository {
         );
   }
 
+  /// Recarga `tasks:my` (al abrir y al tocar `TASK_ASSIGNED`), o todas las tareas activas de las
+  /// órdenes de la sede cuando la sesión es de supervisión del taller (Dueño, Administrador,
+  /// Asesor) y no ejecuta cronómetro propio.
   @override
   Future<void> refreshMyTasks() async {
     final currentSession = await session.getSession();
     if (currentSession == null) throw StateError('Sin sesión');
     if (!currentSession.has(Permission.tasksRead)) return;
     final timestamp = now().millisecondsSinceEpoch;
+    final branchId = currentSession.branchId;
+    final canReadOrders =
+        workOrderApi != null &&
+        currentSession.has(Permission.workOrdersRead) &&
+        branchId != null &&
+        branchId.isNotEmpty;
+    final isWorkshopSupervisor =
+        !currentSession.has(Permission.tasksTrackTime) &&
+        (currentSession.has(Permission.workOrdersUpdate) ||
+            currentSession.has(Permission.tasksHoldValidate) ||
+            currentSession.has(Permission.baysReassign));
+
+    if (isWorkshopSupervisor && canReadOrders) {
+      final rows = await _loadWorkshopTasks(branchId, timestamp);
+      await _replaceMine(rows, timestamp);
+      await _enrich(rows, currentSession, timestamp);
+      return;
+    }
+
     final dtos = await taskApi.getMyTasks();
-    final rows = dtos.map((dto) => _toTasksCompanion(dto, timestamp)).toList();
+    var rows = dtos.map((dto) => _toTasksCompanion(dto, timestamp)).toList();
+    if (rows.isEmpty &&
+        canReadOrders &&
+        currentSession.has(Permission.tasksHoldValidate)) {
+      final fallback = await _loadWorkshopTasksOrNull(branchId, timestamp);
+      if (fallback != null && fallback.isNotEmpty) rows = fallback;
+    }
+    await _replaceMine(rows, timestamp);
+    await _enrich(rows, currentSession, timestamp);
+  }
+
+  Future<void> _replaceMine(List<TasksCompanion> rows, int timestamp) async {
     await taskDao.replaceMine(rows);
     await cacheMetadataDao.upsert(
       CacheMetadataCompanion(
@@ -110,31 +155,90 @@ class TaskRepositoryImpl implements TaskRepository {
         recordCount: Value(rows.length),
       ),
     );
-    await _enrich(rows, currentSession, timestamp);
+  }
+
+  /// Tareas abiertas de las órdenes activas de la sede (las primeras [workshopOrdersLimit]); el
+  /// detalle de cada orden que falle se omite.
+  Future<List<TasksCompanion>> _loadWorkshopTasks(
+    String branchId,
+    int timestamp,
+  ) async {
+    final api = workOrderApi!;
+    final summaries = await api.getWorkOrders(branchId);
+    final active = summaries
+        .where((order) => !_closedOrderStatuses.contains(order.status))
+        .take(workshopOrdersLimit)
+        .toList();
+    final details = await Future.wait(
+      active.map((summary) async {
+        try {
+          return await api.getWorkOrder(summary.id);
+        } on ApiException {
+          return null;
+        } on NetworkException {
+          return null;
+        }
+      }),
+    );
+    return [
+      for (final order in details.nonNulls)
+        for (final task in order.tasks ?? const <WorkOrderTaskDto>[])
+          if (task.status != TaskStatus.completed.value &&
+              task.status != TaskStatus.cancelled.value)
+            TasksCompanion(
+              id: Value(task.id),
+              workOrderId: Value(order.id),
+              workOrderNumber: Value(order.internalNumber),
+              workOrderStatus: Value(order.status),
+              vehicleId: Value(order.vehicleId),
+              branchId: Value(order.branchId),
+              bayId: Value(order.currentBayId),
+              serviceName: Value(cleanServiceName(task.serviceName)),
+              mechanicId: Value(task.mechanicId),
+              status: Value(task.status ?? ''),
+              description: Value(task.description ?? ''),
+              estimatedHours: const Value(null),
+              holdReason: Value(task.holdReason),
+              missingItemDescription: Value(task.missingItemDescription),
+              pendingSuspensionReason: Value(task.pendingSuspensionReason),
+              pendingSuspensionRequestedAt: Value(
+                _epochMillis(task.pendingSuspensionRequestedAt),
+              ),
+              startedAt: Value(_epochMillis(task.startedAt)),
+              totalPausedSeconds: Value(task.totalPausedSeconds ?? 0),
+              syncedAt: Value(timestamp),
+            ),
+    ];
+  }
+
+  Future<List<TasksCompanion>?> _loadWorkshopTasksOrNull(
+    String branchId,
+    int timestamp,
+  ) async {
+    try {
+      return await _loadWorkshopTasks(branchId, timestamp);
+    } on ApiException {
+      return null;
+    } on NetworkException {
+      return null;
+    }
   }
 
   @override
   Future<TaskDetail> getDetail(TaskId id) async {
-    final dto = await taskApi.getTask(id.value);
-    await _saveIfMine(dto);
-    return dto.toDomain();
+    return _finish(await taskApi.getTask(id.value));
   }
 
   @override
   Future<TaskDetail> start(TaskId id) async {
-    final dto = await taskApi.start(id.value);
-    await _saveIfMine(dto);
-    return dto.toDomain();
+    return _finish(await taskApi.start(id.value));
   }
 
   @override
   Future<TaskDetail> pause(TaskId id, PauseReason reason) async {
-    final dto = await taskApi.pause(
-      id.value,
-      PauseTaskRequestDto(reason: reason.value),
+    return _finish(
+      await taskApi.pause(id.value, PauseTaskRequestDto(reason: reason.value)),
     );
-    await _saveIfMine(dto);
-    return dto.toDomain();
   }
 
   @override
@@ -143,36 +247,30 @@ class TaskRepositoryImpl implements TaskRepository {
     String missingItemDescription, {
     String? inventoryItemId,
   }) async {
-    final dto = await taskApi.requestHold(
-      id.value,
-      HoldTaskRequestDto(
-        missingItemDescription: missingItemDescription,
-        inventoryItemId: inventoryItemId,
+    return _finish(
+      await taskApi.requestHold(
+        id.value,
+        HoldTaskRequestDto(
+          missingItemDescription: missingItemDescription,
+          inventoryItemId: inventoryItemId,
+        ),
       ),
     );
-    await _saveIfMine(dto);
-    return dto.toDomain();
   }
 
   @override
   Future<TaskDetail> approveSuspension(TaskId id) async {
-    final dto = await taskApi.approveHold(id.value);
-    await _saveIfMine(dto);
-    return dto.toDomain();
+    return _finish(await taskApi.approveHold(id.value));
   }
 
   @override
   Future<TaskDetail> rejectSuspension(TaskId id) async {
-    final dto = await taskApi.rejectHold(id.value);
-    await _saveIfMine(dto);
-    return dto.toDomain();
+    return _finish(await taskApi.rejectHold(id.value));
   }
 
   @override
   Future<TaskDetail> resume(TaskId id) async {
-    final dto = await taskApi.resume(id.value);
-    await _saveIfMine(dto);
-    return dto.toDomain();
+    return _finish(await taskApi.resume(id.value));
   }
 
   @override
@@ -181,12 +279,20 @@ class TaskRepositoryImpl implements TaskRepository {
     Decimal actualLaborHours, {
     String? notes,
   }) async {
-    final dto = await taskApi.complete(
-      id.value,
-      CompleteTaskRequestDto(actualLaborHours: actualLaborHours, notes: notes),
+    return _finish(
+      await taskApi.complete(
+        id.value,
+        CompleteTaskRequestDto(
+          actualLaborHours: actualLaborHours,
+          notes: notes,
+        ),
+      ),
     );
-    await _saveIfMine(dto);
-    return dto.toDomain();
+  }
+
+  @override
+  Future<TaskDetail> reopen(TaskId id, {String? reason}) async {
+    return _finish(await taskApi.reopen(id.value, reason: reason));
   }
 
   @override
@@ -291,6 +397,78 @@ class TaskRepositoryImpl implements TaskRepository {
     return taskApi.removeProduct(id.value, productId);
   }
 
+  /// Deja al día `tasks:my` con lo que devolvió el backend y completa el nombre de los repuestos.
+  Future<TaskDetail> _finish(WorkOrderTaskDto dto) async {
+    await _saveIfMine(dto);
+    return _enrichProducts(dto.toDomain());
+  }
+
+  /// El backend no siempre manda el nombre del repuesto: se completa con el catálogo (una lectura por
+  /// taller mientras viva el proceso) si la sesión puede leerlo. Nunca hace fallar la acción.
+  Future<TaskDetail> _enrichProducts(TaskDetail detail) async {
+    final missing = detail.products.any(
+      (p) => p.productName == null || p.productName!.trim().isEmpty,
+    );
+    if (!missing) return detail;
+    final current = await session.getSession();
+    if (current == null || !current.has(Permission.partsRead)) return detail;
+
+    var names = _cachedPartNames?.$1 == current.tenantId
+        ? _cachedPartNames!.$2
+        : null;
+    if (names == null) {
+      try {
+        final items = await inventoryApi.getItems();
+        names = {
+          for (final item in items)
+            if (item.name != null && item.name!.trim().isNotEmpty)
+              item.id: item.name!,
+        };
+        if (names.isNotEmpty) _cachedPartNames = (current.tenantId, names);
+      } on ApiException {
+        return detail;
+      } on NetworkException {
+        return detail;
+      }
+    }
+    if (names.isEmpty) return detail;
+
+    return TaskDetail(
+      id: detail.id,
+      workOrderId: detail.workOrderId,
+      serviceId: detail.serviceId,
+      serviceName: detail.serviceName,
+      mechanicId: detail.mechanicId,
+      mechanicName: detail.mechanicName,
+      status: detail.status,
+      description: detail.description,
+      price: detail.price,
+      currency: detail.currency,
+      holdReason: detail.holdReason,
+      missingItemDescription: detail.missingItemDescription,
+      totalPausedSeconds: detail.totalPausedSeconds,
+      startedAt: detail.startedAt,
+      completedAt: detail.completedAt,
+      pendingSuspensionReason: detail.pendingSuspensionReason,
+      pendingSuspensionRequestedAt: detail.pendingSuspensionRequestedAt,
+      products: [
+        for (final product in detail.products)
+          if (product.productName == null || product.productName!.trim().isEmpty)
+            TaskProduct(
+              id: product.id,
+              productId: product.productId,
+              productName: names[product.productId],
+              quantity: product.quantity,
+              unitPrice: product.unitPrice,
+              totalAmount: product.totalAmount,
+            )
+          else
+            product,
+      ],
+      evidenceImages: detail.evidenceImages,
+    );
+  }
+
   Future<void> _saveIfMine(WorkOrderTaskDto dto) async {
     if (dto.status == 'COMPLETED' || dto.status == 'CANCELLED') {
       await taskDao.deleteById(dto.id);
@@ -305,10 +483,17 @@ class TaskRepositoryImpl implements TaskRepository {
       holdReason: dto.holdReason,
       missingItemDescription: dto.missingItemDescription,
       pendingSuspensionReason: dto.pendingSuspensionReason,
-      startedAt: DateTime.tryParse(dto.startedAt ?? '')?.millisecondsSinceEpoch,
+      pendingSuspensionRequestedAt: _epochMillis(
+        dto.pendingSuspensionRequestedAt,
+      ),
+      startedAt: _epochMillis(dto.startedAt),
       totalPausedSeconds: dto.totalPausedSeconds ?? 0,
       syncedAt: now().millisecondsSinceEpoch,
     );
+  }
+
+  int? _epochMillis(String? iso) {
+    return DateTime.tryParse(iso ?? '')?.millisecondsSinceEpoch;
   }
 
   Future<void> _enrich(
@@ -409,6 +594,12 @@ class TaskRepositoryImpl implements TaskRepository {
       holdReason: HoldReason.fromString(row.task.holdReason),
       missingItemDescription: row.task.missingItemDescription,
       pendingSuspensionReason: row.task.pendingSuspensionReason,
+      pendingSuspensionRequestedAt: row.task.pendingSuspensionRequestedAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              row.task.pendingSuspensionRequestedAt!,
+              isUtc: true,
+            )
+          : null,
       startedAt: row.task.startedAt != null
           ? DateTime.fromMillisecondsSinceEpoch(
               row.task.startedAt!,

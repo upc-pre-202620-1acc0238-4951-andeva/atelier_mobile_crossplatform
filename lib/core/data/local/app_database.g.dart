@@ -3686,6 +3686,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _pendingSuspensionRequestedAtMeta =
+      const VerificationMeta('pendingSuspensionRequestedAt');
+  @override
+  late final GeneratedColumn<int> pendingSuspensionRequestedAt =
+      GeneratedColumn<int>(
+        'pending_suspension_requested_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
   );
@@ -3735,6 +3746,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     holdReason,
     missingItemDescription,
     pendingSuspensionReason,
+    pendingSuspensionRequestedAt,
     startedAt,
     totalPausedSeconds,
     syncedAt,
@@ -3872,6 +3884,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         ),
       );
     }
+    if (data.containsKey('pending_suspension_requested_at')) {
+      context.handle(
+        _pendingSuspensionRequestedAtMeta,
+        pendingSuspensionRequestedAt.isAcceptableOrUnknown(
+          data['pending_suspension_requested_at']!,
+          _pendingSuspensionRequestedAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('started_at')) {
       context.handle(
         _startedAtMeta,
@@ -3966,6 +3987,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}pending_suspension_reason'],
       ),
+      pendingSuspensionRequestedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_suspension_requested_at'],
+      ),
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}started_at'],
@@ -4003,6 +4028,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
   final String? holdReason;
   final String? missingItemDescription;
   final String? pendingSuspensionReason;
+  final int? pendingSuspensionRequestedAt;
   final int? startedAt;
   final int totalPausedSeconds;
   final int syncedAt;
@@ -4022,6 +4048,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     this.holdReason,
     this.missingItemDescription,
     this.pendingSuspensionReason,
+    this.pendingSuspensionRequestedAt,
     this.startedAt,
     required this.totalPausedSeconds,
     required this.syncedAt,
@@ -4066,6 +4093,11 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     if (!nullToAbsent || pendingSuspensionReason != null) {
       map['pending_suspension_reason'] = Variable<String>(
         pendingSuspensionReason,
+      );
+    }
+    if (!nullToAbsent || pendingSuspensionRequestedAt != null) {
+      map['pending_suspension_requested_at'] = Variable<int>(
+        pendingSuspensionRequestedAt,
       );
     }
     if (!nullToAbsent || startedAt != null) {
@@ -4113,6 +4145,10 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       pendingSuspensionReason: pendingSuspensionReason == null && nullToAbsent
           ? const Value.absent()
           : Value(pendingSuspensionReason),
+      pendingSuspensionRequestedAt:
+          pendingSuspensionRequestedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSuspensionRequestedAt),
       startedAt: startedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(startedAt),
@@ -4146,6 +4182,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       pendingSuspensionReason: serializer.fromJson<String?>(
         json['pendingSuspensionReason'],
       ),
+      pendingSuspensionRequestedAt: serializer.fromJson<int?>(
+        json['pendingSuspensionRequestedAt'],
+      ),
       startedAt: serializer.fromJson<int?>(json['startedAt']),
       totalPausedSeconds: serializer.fromJson<int>(json['totalPausedSeconds']),
       syncedAt: serializer.fromJson<int>(json['syncedAt']),
@@ -4174,6 +4213,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       'pendingSuspensionReason': serializer.toJson<String?>(
         pendingSuspensionReason,
       ),
+      'pendingSuspensionRequestedAt': serializer.toJson<int?>(
+        pendingSuspensionRequestedAt,
+      ),
       'startedAt': serializer.toJson<int?>(startedAt),
       'totalPausedSeconds': serializer.toJson<int>(totalPausedSeconds),
       'syncedAt': serializer.toJson<int>(syncedAt),
@@ -4196,6 +4238,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     Value<String?> holdReason = const Value.absent(),
     Value<String?> missingItemDescription = const Value.absent(),
     Value<String?> pendingSuspensionReason = const Value.absent(),
+    Value<int?> pendingSuspensionRequestedAt = const Value.absent(),
     Value<int?> startedAt = const Value.absent(),
     int? totalPausedSeconds,
     int? syncedAt,
@@ -4225,6 +4268,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     pendingSuspensionReason: pendingSuspensionReason.present
         ? pendingSuspensionReason.value
         : this.pendingSuspensionReason,
+    pendingSuspensionRequestedAt: pendingSuspensionRequestedAt.present
+        ? pendingSuspensionRequestedAt.value
+        : this.pendingSuspensionRequestedAt,
     startedAt: startedAt.present ? startedAt.value : this.startedAt,
     totalPausedSeconds: totalPausedSeconds ?? this.totalPausedSeconds,
     syncedAt: syncedAt ?? this.syncedAt,
@@ -4266,6 +4312,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       pendingSuspensionReason: data.pendingSuspensionReason.present
           ? data.pendingSuspensionReason.value
           : this.pendingSuspensionReason,
+      pendingSuspensionRequestedAt: data.pendingSuspensionRequestedAt.present
+          ? data.pendingSuspensionRequestedAt.value
+          : this.pendingSuspensionRequestedAt,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
       totalPausedSeconds: data.totalPausedSeconds.present
           ? data.totalPausedSeconds.value
@@ -4292,6 +4341,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           ..write('holdReason: $holdReason, ')
           ..write('missingItemDescription: $missingItemDescription, ')
           ..write('pendingSuspensionReason: $pendingSuspensionReason, ')
+          ..write(
+            'pendingSuspensionRequestedAt: $pendingSuspensionRequestedAt, ',
+          )
           ..write('startedAt: $startedAt, ')
           ..write('totalPausedSeconds: $totalPausedSeconds, ')
           ..write('syncedAt: $syncedAt')
@@ -4316,6 +4368,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     holdReason,
     missingItemDescription,
     pendingSuspensionReason,
+    pendingSuspensionRequestedAt,
     startedAt,
     totalPausedSeconds,
     syncedAt,
@@ -4339,6 +4392,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           other.holdReason == this.holdReason &&
           other.missingItemDescription == this.missingItemDescription &&
           other.pendingSuspensionReason == this.pendingSuspensionReason &&
+          other.pendingSuspensionRequestedAt ==
+              this.pendingSuspensionRequestedAt &&
           other.startedAt == this.startedAt &&
           other.totalPausedSeconds == this.totalPausedSeconds &&
           other.syncedAt == this.syncedAt);
@@ -4360,6 +4415,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
   final Value<String?> holdReason;
   final Value<String?> missingItemDescription;
   final Value<String?> pendingSuspensionReason;
+  final Value<int?> pendingSuspensionRequestedAt;
   final Value<int?> startedAt;
   final Value<int> totalPausedSeconds;
   final Value<int> syncedAt;
@@ -4380,6 +4436,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.holdReason = const Value.absent(),
     this.missingItemDescription = const Value.absent(),
     this.pendingSuspensionReason = const Value.absent(),
+    this.pendingSuspensionRequestedAt = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.totalPausedSeconds = const Value.absent(),
     this.syncedAt = const Value.absent(),
@@ -4401,6 +4458,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.holdReason = const Value.absent(),
     this.missingItemDescription = const Value.absent(),
     this.pendingSuspensionReason = const Value.absent(),
+    this.pendingSuspensionRequestedAt = const Value.absent(),
     this.startedAt = const Value.absent(),
     required int totalPausedSeconds,
     required int syncedAt,
@@ -4428,6 +4486,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Expression<String>? holdReason,
     Expression<String>? missingItemDescription,
     Expression<String>? pendingSuspensionReason,
+    Expression<int>? pendingSuspensionRequestedAt,
     Expression<int>? startedAt,
     Expression<int>? totalPausedSeconds,
     Expression<int>? syncedAt,
@@ -4451,6 +4510,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
         'missing_item_description': missingItemDescription,
       if (pendingSuspensionReason != null)
         'pending_suspension_reason': pendingSuspensionReason,
+      if (pendingSuspensionRequestedAt != null)
+        'pending_suspension_requested_at': pendingSuspensionRequestedAt,
       if (startedAt != null) 'started_at': startedAt,
       if (totalPausedSeconds != null)
         'total_paused_seconds': totalPausedSeconds,
@@ -4475,6 +4536,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Value<String?>? holdReason,
     Value<String?>? missingItemDescription,
     Value<String?>? pendingSuspensionReason,
+    Value<int?>? pendingSuspensionRequestedAt,
     Value<int?>? startedAt,
     Value<int>? totalPausedSeconds,
     Value<int>? syncedAt,
@@ -4498,6 +4560,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
           missingItemDescription ?? this.missingItemDescription,
       pendingSuspensionReason:
           pendingSuspensionReason ?? this.pendingSuspensionReason,
+      pendingSuspensionRequestedAt:
+          pendingSuspensionRequestedAt ?? this.pendingSuspensionRequestedAt,
       startedAt: startedAt ?? this.startedAt,
       totalPausedSeconds: totalPausedSeconds ?? this.totalPausedSeconds,
       syncedAt: syncedAt ?? this.syncedAt,
@@ -4557,6 +4621,11 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
         pendingSuspensionReason.value,
       );
     }
+    if (pendingSuspensionRequestedAt.present) {
+      map['pending_suspension_requested_at'] = Variable<int>(
+        pendingSuspensionRequestedAt.value,
+      );
+    }
     if (startedAt.present) {
       map['started_at'] = Variable<int>(startedAt.value);
     }
@@ -4590,6 +4659,9 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
           ..write('holdReason: $holdReason, ')
           ..write('missingItemDescription: $missingItemDescription, ')
           ..write('pendingSuspensionReason: $pendingSuspensionReason, ')
+          ..write(
+            'pendingSuspensionRequestedAt: $pendingSuspensionRequestedAt, ',
+          )
           ..write('startedAt: $startedAt, ')
           ..write('totalPausedSeconds: $totalPausedSeconds, ')
           ..write('syncedAt: $syncedAt, ')
@@ -13486,6 +13558,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> holdReason,
   Value<String?> missingItemDescription,
   Value<String?> pendingSuspensionReason,
+  Value<int?> pendingSuspensionRequestedAt,
   Value<int?> startedAt,
   required int totalPausedSeconds,
   required int syncedAt,
@@ -13507,6 +13580,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> holdReason,
   Value<String?> missingItemDescription,
   Value<String?> pendingSuspensionReason,
+  Value<int?> pendingSuspensionRequestedAt,
   Value<int?> startedAt,
   Value<int> totalPausedSeconds,
   Value<int> syncedAt,
@@ -13593,6 +13667,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get pendingSuspensionReason => $composableBuilder(
     column: $table.pendingSuspensionReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pendingSuspensionRequestedAt => $composableBuilder(
+    column: $table.pendingSuspensionRequestedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13696,6 +13775,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pendingSuspensionRequestedAt => $composableBuilder(
+    column: $table.pendingSuspensionRequestedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get startedAt => $composableBuilder(
     column: $table.startedAt,
     builder: (column) => ColumnOrderings(column),
@@ -13786,6 +13870,11 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get pendingSuspensionRequestedAt => $composableBuilder(
+    column: $table.pendingSuspensionRequestedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
 
@@ -13841,6 +13930,7 @@ class $$TasksTableTableManager
                 Value<String?> holdReason = const Value.absent(),
                 Value<String?> missingItemDescription = const Value.absent(),
                 Value<String?> pendingSuspensionReason = const Value.absent(),
+                Value<int?> pendingSuspensionRequestedAt = const Value.absent(),
                 Value<int?> startedAt = const Value.absent(),
                 Value<int> totalPausedSeconds = const Value.absent(),
                 Value<int> syncedAt = const Value.absent(),
@@ -13861,6 +13951,7 @@ class $$TasksTableTableManager
                 holdReason: holdReason,
                 missingItemDescription: missingItemDescription,
                 pendingSuspensionReason: pendingSuspensionReason,
+                pendingSuspensionRequestedAt: pendingSuspensionRequestedAt,
                 startedAt: startedAt,
                 totalPausedSeconds: totalPausedSeconds,
                 syncedAt: syncedAt,
@@ -13883,6 +13974,7 @@ class $$TasksTableTableManager
                 Value<String?> holdReason = const Value.absent(),
                 Value<String?> missingItemDescription = const Value.absent(),
                 Value<String?> pendingSuspensionReason = const Value.absent(),
+                Value<int?> pendingSuspensionRequestedAt = const Value.absent(),
                 Value<int?> startedAt = const Value.absent(),
                 required int totalPausedSeconds,
                 required int syncedAt,
@@ -13903,6 +13995,7 @@ class $$TasksTableTableManager
                 holdReason: holdReason,
                 missingItemDescription: missingItemDescription,
                 pendingSuspensionReason: pendingSuspensionReason,
+                pendingSuspensionRequestedAt: pendingSuspensionRequestedAt,
                 startedAt: startedAt,
                 totalPausedSeconds: totalPausedSeconds,
                 syncedAt: syncedAt,
