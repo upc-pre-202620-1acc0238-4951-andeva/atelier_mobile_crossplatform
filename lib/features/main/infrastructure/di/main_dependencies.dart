@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
@@ -9,11 +10,15 @@ import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/consume_push_destination_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/discard_pending_operation_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/mark_all_push_notifications_read_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operations_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_destination_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/open_push_notification_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/retry_pending_operation_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/sync_now_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/domain/pending_operation_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/main/domain/push_destination_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/main/domain/session_repository.dart';
@@ -30,6 +35,7 @@ void setupMainDependencies() {
       session: getIt<SessionManager>(),
       supportDirectory: getApplicationSupportDirectory,
       requestSync: _requestSync,
+      handlers: getIt<OperationHandlerRegistry>(),
     ),
   );
   getIt.registerLazySingleton<SessionRepository>(
@@ -52,6 +58,9 @@ void setupMainDependencies() {
       repository: getIt<PendingOperationRepository>(),
     ),
   );
+  getIt.registerLazySingleton<SyncNowUseCase>(
+    () => SyncNowUseCase(repository: getIt<PendingOperationRepository>()),
+  );
   getIt.registerLazySingleton<RetryPendingOperationUseCase>(
     () => RetryPendingOperationUseCase(
       repository: getIt<PendingOperationRepository>(),
@@ -69,6 +78,21 @@ void setupMainDependencies() {
   );
   getIt.registerLazySingleton<ConsumePushDestinationUseCase>(
     () => ConsumePushDestinationUseCase(
+      repository: getIt<PushDestinationRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<ObservePushHistoryUseCase>(
+    () => ObservePushHistoryUseCase(
+      repository: getIt<PushDestinationRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<OpenPushNotificationUseCase>(
+    () => OpenPushNotificationUseCase(
+      repository: getIt<PushDestinationRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<MarkAllPushNotificationsReadUseCase>(
+    () => MarkAllPushNotificationsReadUseCase(
       repository: getIt<PushDestinationRepository>(),
     ),
   );
