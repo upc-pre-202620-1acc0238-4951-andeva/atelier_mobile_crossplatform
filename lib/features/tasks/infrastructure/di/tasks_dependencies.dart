@@ -24,6 +24,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/application/pause_ta
 import 'package:atelier_mobile_crossplatform/features/tasks/application/refresh_my_tasks_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/remove_part_from_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reopen_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/request_suspension_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/search_parts_use_case.dart';
@@ -38,6 +39,7 @@ import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/remot
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/repository/task_evidence_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/sync/attach_task_evidence_handler.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/infrastructure/task_repository_impl.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/infrastructure/remote/work_order_api.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,6 +78,7 @@ void setupTasksDependencies() {
       evidenceCapture: getIt<TaskEvidenceCapture>(),
       session: getIt<SessionManager>(),
       supportDirectory: getApplicationSupportDirectory,
+      workOrderApi: getIt<WorkOrderApi>(),
     ),
   );
 
@@ -114,6 +117,9 @@ void setupTasksDependencies() {
   );
   getIt.registerLazySingleton<CompleteTaskUseCase>(
     () => CompleteTaskUseCase(repository: getIt<TaskRepository>()),
+  );
+  getIt.registerLazySingleton<ReopenTaskUseCase>(
+    () => ReopenTaskUseCase(repository: getIt<TaskRepository>()),
   );
   getIt.registerLazySingleton<AttachTaskEvidenceUseCase>(
     () => AttachTaskEvidenceUseCase(repository: getIt<TaskRepository>()),

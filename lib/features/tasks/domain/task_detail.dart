@@ -56,5 +56,7 @@ class TaskDetail {
       holdReason != null &&
       !holdReason!.isMechanicPause;
 
-  bool get hasPendingSuspension => pendingSuspensionReason != null;
+  bool get hasPendingSuspension =>
+      pendingSuspensionRequestedAt != null ||
+      (pendingSuspensionReason?.trim().isNotEmpty ?? false);
 }

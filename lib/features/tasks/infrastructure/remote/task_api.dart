@@ -84,6 +84,17 @@ class TaskApi {
     return WorkOrderTaskDto.fromJson(json);
   }
 
+  /// Reabre una tarea completada. `reason` va como parámetro de consulta (docs/api/operations.md).
+  Future<WorkOrderTaskDto> reopen(String taskId, {String? reason}) async {
+    final query = reason == null
+        ? ''
+        : '?reason=${Uri.encodeQueryComponent(reason)}';
+    final Map<String, dynamic> json = await client.post(
+      '/api/v1/tasks/$taskId/reopen$query',
+    );
+    return WorkOrderTaskDto.fromJson(json);
+  }
+
   Future<WorkOrderTaskImageDto> attachEvidence(
     String taskId,
     AttachTaskEvidenceRequestDto body,

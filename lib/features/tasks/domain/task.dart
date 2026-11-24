@@ -23,6 +23,7 @@ class Task {
   final String? pendingSuspensionReason;
   final DateTime? startedAt;
   final int totalPausedSeconds;
+  final DateTime? pendingSuspensionRequestedAt;
 
   const Task({
     required this.id,
@@ -44,6 +45,7 @@ class Task {
     this.pendingSuspensionReason,
     this.startedAt,
     required this.totalPausedSeconds,
+    this.pendingSuspensionRequestedAt,
   });
 
   bool get isPausedByMechanic =>
@@ -54,5 +56,8 @@ class Task {
       holdReason != null &&
       !holdReason!.isMechanicPause;
 
-  bool get hasPendingSuspension => pendingSuspensionReason != null;
+  /// Solicitud de suspensión enviada, a la espera de que un supervisor la apruebe o rechace.
+  bool get hasPendingSuspension =>
+      pendingSuspensionRequestedAt != null ||
+      (pendingSuspensionReason?.trim().isNotEmpty ?? false);
 }

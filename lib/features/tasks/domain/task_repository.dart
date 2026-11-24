@@ -40,6 +40,9 @@ abstract class TaskRepository {
     String? notes,
   });
 
+  /// Reabre una tarea cerrada para retrabajo de calidad. En línea; exige `operations:work_orders:update`.
+  Future<TaskDetail> reopen(TaskId id, {String? reason});
+
   Future<void> attachEvidence(
     TaskId id,
     String workOrderId,
