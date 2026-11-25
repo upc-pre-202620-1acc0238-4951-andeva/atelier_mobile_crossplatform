@@ -137,7 +137,7 @@ void main() {
     vm.dispose();
   });
 
-  testWidgets('"Módulos" abre la hoja con Comprobantes SUNAT (US37) y sin Bahías, series ni alertas', (
+  testWidgets('"Módulos" abre la hoja con Comprobantes SUNAT (US37) y Bahías (US40), sin series ni alertas', (
     tester,
   ) async {
     final vm = viewModel(_admin);
@@ -151,10 +151,11 @@ void main() {
     expect(find.text('Caja del día'), findsOneWidget);
     expect(find.text('Comprobantes SUNAT'), findsOneWidget);
     expect(find.text('Reportes'), findsOneWidget);
+    expect(find.text('Bahías'), findsOneWidget);
     expect(find.text('Catálogo de repuestos'), findsOneWidget);
     expect(find.text('Notificaciones'), findsOneWidget);
     expect(find.text('m@taller.pe'), findsOneWidget);
-    for (final excluded in ['Bahías', 'Series de comprobantes', 'Alertas de stock']) {
+    for (final excluded in ['Series de comprobantes', 'Alertas de stock']) {
       expect(find.text(excluded), findsNothing, reason: excluded);
     }
 

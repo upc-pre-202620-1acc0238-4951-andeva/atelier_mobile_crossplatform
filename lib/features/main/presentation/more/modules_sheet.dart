@@ -15,13 +15,14 @@ import 'package:flutter/material.dart';
 
 /// Adónde puede ir quien abre "Módulos". `MainShellController.navigateToModule` decide la ruta de cada uno.
 ///
-/// Sin Bahías (US40), Comprobantes SUNAT (US37), Series de comprobantes (US42) ni Alertas de stock (US34):
-/// sus historias están fuera.
+/// Sin Comprobantes SUNAT (US37), Series de comprobantes (US42) ni Alertas de stock (US34): sus historias están
+/// fuera.
 enum MoreDestination {
   branch,
   myAttendance,
   myTasks,
   workOrders,
+  bays,
   reception,
   services,
   dailyCash,
@@ -43,6 +44,7 @@ enum MoreDestination {
     myAttendance => (AppRoute.attendanceDetail, null),
     myTasks => (AppRoute.myTasks, MainTab.tasks),
     workOrders => (AppRoute.workOrders, MainTab.orders),
+    bays => (AppRoute.bays, null),
     reception => (AppRoute.vehicleSearch, MainTab.reception),
     services => (AppRoute.servicesCatalog, null),
     dailyCash => (AppRoute.dailyCash, MainTab.cash),
@@ -138,6 +140,9 @@ List<_MoreRow> _moreRows(Session s) {
   }
   if (s.has(Permission.workOrdersRead) && !MainTab.tabsFor(s).contains(MainTab.orders)) {
     add(_MoreGroup.workshop, MoreDestination.workOrders, Icons.build_outlined, (t) => t.moreHOrders, (t) => t.moreHOrdersSub);
+  }
+  if (s.has(Permission.baysRead)) {
+    add(_MoreGroup.workshop, MoreDestination.bays, Icons.garage_outlined, (t) => t.moreHBays, (t) => t.moreHBaysSub);
   }
   if (s.has(Permission.customersRead) ||
       s.has(Permission.vehiclesRead) ||
