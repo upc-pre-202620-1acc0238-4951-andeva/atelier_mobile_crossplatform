@@ -6213,6 +6213,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get baysTapToAssign => 'Toca para ingresar una orden';
 
   @override
+  String get baysUnavailableError => 'Esa bahía no está libre. Elige otra.';
+
+  @override
+  String baysMovedNotice(String p1) {
+    return 'Orden movida a $p1.';
+  }
+
+  @override
+  String baysAssignedNotice(String p1) {
+    return 'Orden ingresada a $p1.';
+  }
+
+  @override
+  String get baysNoAssignableOrders => 'No hay órdenes activas sin bahía.';
+
+  @override
+  String get baysNoFreeTargets => 'No hay otras bahías registradas.';
+
+  @override
+  String get baysNameError => 'Escribe un nombre de hasta 100 caracteres.';
+
+  @override
   String get baysMechanicsSection => 'Mecánicos y faenas en bahía';
 
   @override

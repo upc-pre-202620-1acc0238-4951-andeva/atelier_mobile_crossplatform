@@ -10912,6 +10912,42 @@ abstract class AppLocalizations {
   /// **'Toca para ingresar una orden'**
   String get baysTapToAssign;
 
+  /// No description provided for @baysUnavailableError.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa bahía no está libre. Elige otra.'**
+  String get baysUnavailableError;
+
+  /// No description provided for @baysMovedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Orden movida a {p1}.'**
+  String baysMovedNotice(String p1);
+
+  /// No description provided for @baysAssignedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Orden ingresada a {p1}.'**
+  String baysAssignedNotice(String p1);
+
+  /// No description provided for @baysNoAssignableOrders.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay órdenes activas sin bahía.'**
+  String get baysNoAssignableOrders;
+
+  /// No description provided for @baysNoFreeTargets.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay otras bahías registradas.'**
+  String get baysNoFreeTargets;
+
+  /// No description provided for @baysNameError.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe un nombre de hasta 100 caracteres.'**
+  String get baysNameError;
+
   /// No description provided for @baysMechanicsSection.
   ///
   /// In es, this message translates to:
