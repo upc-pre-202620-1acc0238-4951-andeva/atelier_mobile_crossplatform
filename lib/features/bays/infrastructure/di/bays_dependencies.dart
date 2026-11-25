@@ -1,3 +1,7 @@
+import 'package:atelier_mobile_crossplatform/features/bays/application/create_work_bay_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/set_bay_maintenance_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/restore_bay_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/release_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
@@ -47,5 +51,17 @@ void setupBaysDependencies() {
   );
   getIt.registerLazySingleton<ReassignTaskMechanicUseCase>(
     () => ReassignTaskMechanicUseCase(repository: getIt<BayRepository>()),
+  );
+  getIt.registerLazySingleton<CreateWorkBayUseCase>(
+    () => CreateWorkBayUseCase(repository: getIt<BayRepository>()),
+  );
+  getIt.registerLazySingleton<SetBayMaintenanceUseCase>(
+    () => SetBayMaintenanceUseCase(repository: getIt<BayRepository>()),
+  );
+  getIt.registerLazySingleton<RestoreBayUseCase>(
+    () => RestoreBayUseCase(repository: getIt<BayRepository>()),
+  );
+  getIt.registerLazySingleton<ReleaseBayUseCase>(
+    () => ReleaseBayUseCase(repository: getIt<BayRepository>()),
   );
 }
