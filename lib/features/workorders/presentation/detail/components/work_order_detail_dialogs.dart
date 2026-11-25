@@ -12,6 +12,9 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/date_format.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/lima_time_format.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/cascade.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/components/quotation_summary_section.dart';
@@ -534,6 +537,141 @@ class PdfPreviewSheet extends StatelessWidget {
           icon: Icons.description_outlined,
           kind: BannerKind.info,
         ),
+      ],
+    );
+  }
+}
+
+/// US40 E1/E2: elegir la bahía de la orden. Las ocupadas y en mantenimiento se ven, pero no se eligen.
+class AssignBaySheet extends StatelessWidget {
+  final AssignBayForm form;
+  final String? currentBayId;
+  final bool isOnline;
+  final bool isSaving;
+  final UiText? error;
+  final ValueChanged<WorkBay> onSelect;
+  final VoidCallback onDismiss;
+
+  const AssignBaySheet({
+    super.key,
+    required this.form,
+    required this.currentBayId,
+    required this.isOnline,
+    required this.isSaving,
+    required this.error,
+    required this.onSelect,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final secondary = context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary);
+    return AtelierBottomSheet(
+      title: strings.orderAssignBayTitle,
+      actions: [
+        if (!isOnline) const AtelierRequiresConnection(),
+        AtelierButton(
+          text: strings.proposalsCancel,
+          onClick: onDismiss,
+          style: AtelierButtonStyle.text,
+          enabled: !isSaving,
+        ),
+      ],
+      content: [
+        Text(strings.orderAssignBaySubtitle, style: secondary),
+        if (form.isLoading)
+          Text(strings.searchLoading, style: secondary)
+        else if (form.bays.isEmpty)
+          Text(strings.baysEmpty, style: secondary),
+        for (final bay in form.bays)
+          AtelierSelectionCard(
+            title: bay.name,
+            subtitle: bay.id == currentBayId
+                ? strings.orderBayCurrent
+                : switch (bay.status) {
+                    BayStatus.available => strings.bayStatusAvailableDesc,
+                    BayStatus.occupied => strings.bayStatusOccupiedDesc,
+                    BayStatus.maintenance => strings.bayStatusMaintenanceDesc,
+                    null => null,
+                  },
+            selected: bay.id == currentBayId,
+            enabled: bay.canReceive && isOnline && !isSaving,
+            onClick: () => onSelect(bay),
+          ),
+        _SheetError(error),
+      ],
+    );
+  }
+}
+
+/// US29 E1/E2 (H5): el supervisor revisa el motivo desde la orden y aprueba o desestima.
+class SuspensionSheet extends StatelessWidget {
+  final String taskTitle;
+  final TaskDetail task;
+  final bool isOnline;
+  final WorkOrderDetailAction? busyAction;
+  final UiText? error;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  final VoidCallback onDismiss;
+
+  const SuspensionSheet({
+    super.key,
+    required this.taskTitle,
+    required this.task,
+    required this.isOnline,
+    required this.busyAction,
+    required this.error,
+    required this.onApprove,
+    required this.onReject,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final reason = task.pendingSuspensionReason;
+    final requestedAt = task.pendingSuspensionRequestedAt;
+    final isSaving = busyAction != null;
+    return AtelierBottomSheet(
+      title: strings.ordersSuspensionTitle,
+      actions: [
+        if (!isOnline) const AtelierRequiresConnection(),
+        AtelierButton(
+          text: strings.ordersSuspensionApprove,
+          onClick: onApprove,
+          minHeight: 56,
+          enabled: isOnline && !isSaving,
+          loading: busyAction == WorkOrderDetailAction.approveSuspension,
+        ),
+        AtelierButton(
+          text: strings.ordersSuspensionReject,
+          onClick: onReject,
+          style: AtelierButtonStyle.outlined,
+          minHeight: 56,
+          enabled: isOnline && !isSaving,
+          loading: busyAction == WorkOrderDetailAction.rejectSuspension,
+        ),
+        AtelierButton(
+          text: strings.proposalsCancel,
+          onClick: onDismiss,
+          style: AtelierButtonStyle.text,
+          enabled: !isSaving,
+        ),
+      ],
+      content: [
+        Text(taskTitle, style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface)),
+        Text(
+          reason != null && reason.trim().isNotEmpty ? reason : strings.ordersSuspensionNoReason,
+          style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface),
+        ),
+        if (requestedAt != null)
+          Text(
+            strings.tasksSeg2SuspensionRequestedAt(formatLimaDayTime(requestedAt)),
+            style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary),
+          ),
+        _SheetError(error),
       ],
     );
   }
