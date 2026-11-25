@@ -14,7 +14,9 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/ge
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_paired_obd_adapters_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_tenant_predictive_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/install_obd_device_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_diagnostics_sync_state_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_live_telemetry_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_predictive_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/refresh_predictive_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/register_obd_device_use_case.dart';
@@ -81,6 +83,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
   final ConnectObdUseCase connectObd;
   final DisconnectObdUseCase disconnectObd;
   final ObserveLiveTelemetryUseCase observeLiveTelemetry;
+  final ObserveDiagnosticsSyncStateUseCase? observeSyncState;
   final GetTenantPredictiveAlertsUseCase getTenantPredictiveAlerts;
   final RefreshPredictiveAlertsUseCase refreshPredictiveAlerts;
   final ObservePredictiveAlertsUseCase observePredictiveAlerts;
@@ -111,6 +114,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     required this.connectObd,
     required this.disconnectObd,
     required this.observeLiveTelemetry,
+    this.observeSyncState,
     required this.getTenantPredictiveAlerts,
     required this.refreshPredictiveAlerts,
     required this.observePredictiveAlerts,
@@ -166,6 +170,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     );
     connectivity.addListener(_onConnectivity);
     _watchVehicleAlerts(initialVehicleId);
+    _watchSyncState(initialVehicleId);
     loadPairedAdapters();
   }
 
@@ -174,6 +179,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
 
   final List<StreamSubscription<Object?>> _subscriptions = [];
   StreamSubscription<List<PredictiveAlert>>? _vehicleAlertsSubscription;
+  StreamSubscription<DiagnosticsSyncState>? _syncSubscription;
   String? _selectedVehicleId;
   List<VehicleWithOwner> _vehicles = const [];
   List<Task> _tasks = const [];
@@ -195,6 +201,19 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     if (vehicleId == _selectedVehicleId) return;
     _selectedVehicleId = vehicleId;
     _watchVehicleAlerts(vehicleId);
+    _watchSyncState(vehicleId);
+  }
+
+  /// US18: lecturas y fallas del vehículo elegido que aún no llegan al backend.
+  void _watchSyncState(String? vehicleId) {
+    _syncSubscription?.cancel();
+    _syncSubscription = null;
+    final observe = observeSyncState;
+    _update(_state.copyWith(clearVehicleSyncState: true));
+    if (observe == null || vehicleId == null || vehicleId.isEmpty) return;
+    _syncSubscription = observe
+        .execute(vehicleId)
+        .listen((sync) => _update(_state.copyWith(vehicleSyncState: sync)));
   }
 
   void _watchVehicleAlerts(String? vehicleId) {
@@ -218,6 +237,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
       planIncludesAi: planAi,
       canUseTelemetry: session?.canUseTelemetry() ?? false,
       canReadTelemetry: session?.canReadTelemetry() ?? false,
+      canReadRemoteTelemetry: has(Permission.telemetryRead) && (session?.canReadTelemetry() ?? false),
       canUseAiDiagnostics: session?.canUseAiDiagnostics() ?? false,
       canReadAiReports: session?.canReadAiReports() ?? false,
       canReadDevices: has(Permission.devicesRead),
@@ -916,6 +936,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     _disposed = true;
     connectivity.removeListener(_onConnectivity);
     _vehicleAlertsSubscription?.cancel();
+    _syncSubscription?.cancel();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
