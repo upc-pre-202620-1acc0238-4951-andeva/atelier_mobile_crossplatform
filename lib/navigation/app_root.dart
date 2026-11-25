@@ -86,8 +86,8 @@ class _AppRootState extends State<AppRoot> {
     }
   }
 
-  /// Abre la pantalla de un push. Los destinos de historias excluidas (alertas de stock US34, revisión de
-  /// suspensión US29) no navegan a ninguna parte.
+  /// Abre la pantalla de un push. La revisión de suspensión (US29) abre la tarea. El destino de la historia
+  /// excluida (alertas de stock, US34) no navega a ninguna parte.
   void _openPush(PushDestination destination) {
     final shell = MainShellController.current;
     void open(AppRoute route, {MainTab? tab, Object? args}) {
@@ -108,7 +108,9 @@ class _AppRootState extends State<AppRoot> {
         open(AppRoute.adminAttendance, tab: MainTab.team);
       case MyAttendanceDestination() || ClockInDestination():
         open(AppRoute.attendanceHome, tab: MainTab.shift);
-      case TaskSuspensionReviewDestination() || LowStockAlertsDestination():
+      case TaskSuspensionReviewDestination(:final workOrderId, :final taskId):
+        open(AppRoute.taskDetail, args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId));
+      case LowStockAlertsDestination():
         break;
     }
   }
