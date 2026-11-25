@@ -2452,6 +2452,12 @@ abstract class AppLocalizations {
   /// **'Confirmar cierre'**
   String get taskCompleteConfirm;
 
+  /// No description provided for @taskCompletedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarea cerrada. Sale de tus tareas pendientes.'**
+  String get taskCompletedNotice;
+
   /// No description provided for @taskFieldHours.
   ///
   /// In es, this message translates to:
@@ -11271,6 +11277,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tomar foto'**
   String get tasksSeg2EvidenceTakePhoto;
+
+  /// No description provided for @tasksSeg2EvidencePickGallery.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir de la galería'**
+  String get tasksSeg2EvidencePickGallery;
 
   /// No description provided for @tasksSeg2EvidenceEmpty.
   ///

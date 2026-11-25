@@ -1343,6 +1343,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskCompleteConfirm => 'Confirmar cierre';
 
   @override
+  String get taskCompletedNotice =>
+      'Tarea cerrada. Sale de tus tareas pendientes.';
+
+  @override
   String get taskFieldHours => 'Escribe un número de horas mayor o igual a 0.';
 
   @override
@@ -6428,6 +6432,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksSeg2EvidenceTakePhoto => 'Tomar foto';
+
+  @override
+  String get tasksSeg2EvidencePickGallery => 'Elegir de la galería';
 
   @override
   String get tasksSeg2EvidenceEmpty =>
