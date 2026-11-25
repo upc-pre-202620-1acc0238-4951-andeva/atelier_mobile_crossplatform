@@ -1,3 +1,23 @@
+/// `CreateWorkBayResource` (docs/api/operations.md).
+class CreateWorkBayRequestDto {
+  final String branchId;
+  final String name;
+  final String bayType;
+
+  const CreateWorkBayRequestDto({required this.branchId, required this.name, required this.bayType});
+
+  Map<String, dynamic> toJson() => {'branchId': branchId, 'name': name, 'bayType': bayType};
+}
+
+/// `MaintenanceBayResource`.
+class MaintenanceBayRequestDto {
+  final String reason;
+
+  const MaintenanceBayRequestDto({required this.reason});
+
+  Map<String, dynamic> toJson() => {'reason': reason};
+}
+
 /// `AssignWorkBayResource` (docs/api/operations.md).
 class AssignWorkBayRequestDto {
   final String bayId;
