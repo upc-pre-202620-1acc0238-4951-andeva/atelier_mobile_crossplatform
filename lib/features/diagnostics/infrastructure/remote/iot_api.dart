@@ -1,10 +1,10 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/converted_appointment_dto.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/iot_dtos.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/latest_telemetry_dto.dart';
 
 /// IoT de docs/api/iot.md que usa la app (US16–US21, US43 E1). `generate-async` queda sin usar: no hay
-/// endpoint para consultar el trabajo (H21). La telemetría remota (`latest`, `history`) es solo de la
-/// telemetría en vivo (US18) y no se porta. El PDF de flota (US43 E2) es del paso 9.
+/// endpoint para consultar el trabajo (H21). De la telemetría remota se usa `latest` (US18); `history` no. El PDF de flota (US43 E2) es del paso 9.
 class IotApi {
   static const _base = '/api/v1/iot';
 
@@ -20,6 +20,11 @@ class IotApi {
     return list
         .map((e) => ObdDeviceDto.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// US18, lectura remota. 404 si el vehículo no tiene lecturas.
+  Future<LatestTelemetryDto> getLatestTelemetry(String vehicleId) async {
+    return LatestTelemetryDto.fromJson(await client.get('$_base/telemetry/vehicle/$vehicleId/latest'));
   }
 
   /// 409 si el identificador ya existe o se superó la cuota.
