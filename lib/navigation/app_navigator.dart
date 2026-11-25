@@ -49,6 +49,7 @@ enum AppRoute {
   // diagnostics
   diagnosticsHub, // DiagnosticsHubArgs?
   vehicleFaults, // VehicleArgs
+  liveTelemetry, // VehicleArgs
   aiHealthReport, // VehicleArgs
   // cashier
   dailyCash,
