@@ -107,7 +107,7 @@ void main() {
   setUpAll(_loadSatoshi);
 
   group('ReportsContent', () {
-    testWidgets('cargado: panel, avisos, periodo y movimientos; sin descargas', (tester) async {
+    testWidgets('cargado: panel, avisos, periodo, descargas PDF flujo de caja (US41) y movimientos', (tester) async {
       await _pump(tester, _content(_state(summary: _summary())));
 
       expect(find.text('Reportes'), findsOneWidget);
@@ -125,10 +125,11 @@ void main() {
       expect(find.text('REFUND'), findsOneWidget);
       expect(find.text('−S/ 354.50'), findsOneWidget);
 
-      // US41 y US43: ni descargas ni PDF.
-      expect(find.text('Descargas'), findsNothing);
-      expect(find.textContaining('PDF'), findsNothing);
-      expect(find.text('Abrir PDF'), findsNothing);
+      // US41: descargas PDF de flujo de caja presentes; US43 (flota) sigue excluido.
+      expect(find.text('Descargas'), findsOneWidget);
+      expect(find.text('Abrir PDF'), findsOneWidget);
+      expect(find.text('Compartir PDF'), findsOneWidget);
+      expect(find.textContaining('flota'), findsNothing);
       await _teardown(tester);
     });
 
@@ -152,7 +153,7 @@ void main() {
       await _pump(tester, _content(_state(isOnline: false)));
 
       expect(find.text('Reintentar'), findsOneWidget);
-      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off_outlined), findsWidgets);
       await _teardown(tester);
     });
 

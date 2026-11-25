@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reports/application/download_cash_flow_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/application/get_cash_flow_summary_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/domain/cash_flow.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/presentation/reports_ui_state.dart';
@@ -15,6 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockGetCashFlow extends Mock implements GetCashFlowSummaryUseCase {}
+
+class _MockDownloadCashFlowPdf extends Mock implements DownloadCashFlowPdfUseCase {}
 
 class _MockObserveSession extends Mock implements ObserveSessionUseCase {}
 
@@ -222,5 +226,34 @@ void main() {
 
     expect(viewModel!.state.summary, isNotNull);
     expect(viewModel!.state.error, isNull);
+  });
+
+  test('US41: descarga flujo de caja en PDF para abrir y compartir, y maneja errores', () async {
+    final downloadPdf = _MockDownloadCashFlowPdf();
+    when(() => getCashFlow.execute(any())).thenAnswer((_) async => _summary());
+    when(() => downloadPdf.execute(any())).thenAnswer((_) async => File('cash_flow.pdf'));
+
+    viewModel = ReportsViewModel(
+      getCashFlow: getCashFlow,
+      downloadCashFlowPdf: downloadPdf,
+      observeSession: observeSession,
+      connectivity: connectivity,
+      now: () => DateTime.utc(2026, 11, 16, 2),
+    );
+    sessions.add(_session({'invoicing:cashflow:export_pdf'}));
+    await _settle();
+
+    await viewModel!.onOpenCashFlowPdf();
+    expect(viewModel!.state.pdf?.path, 'cash_flow.pdf');
+    expect(viewModel!.state.pdfActionMode, ReportPdfActionMode.open);
+    expect(viewModel!.state.busy, isNull);
+    viewModel!.onPdfHandled();
+    expect(viewModel!.state.pdf, isNull);
+
+    await viewModel!.onShareCashFlowPdf();
+    expect(viewModel!.state.pdfActionMode, ReportPdfActionMode.share);
+    viewModel!.onPdfOpenFailed();
+    expect(viewModel!.state.pdf, isNull);
+    expect(viewModel!.state.actionError, isNotNull);
   });
 }
