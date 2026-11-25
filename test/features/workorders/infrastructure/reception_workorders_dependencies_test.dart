@@ -62,7 +62,7 @@ void main() {
             .length;
 
     expect(count('lib/features/reception/application'), 22);
-    expect(count('lib/features/workorders/application'), 32);
+    expect(count('lib/features/workorders/application'), 33);
 
     int registered(String path) =>
         RegExp(r'registerLazySingleton<\w+UseCase>')
@@ -79,7 +79,7 @@ void main() {
       registered(
         'lib/features/workorders/infrastructure/di/workorders_dependencies.dart',
       ),
-      32,
+      33,
     );
   });
 
