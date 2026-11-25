@@ -4403,6 +4403,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diagAlertTypeGeneric => 'Alerta predictiva';
 
   @override
+  String get diagActionLiveSub => 'RPM, temperatura, presión y voltaje en vivo';
+
+  @override
+  String get diagLivePidRpm => 'RPM';
+
+  @override
+  String get diagLivePidCoolant => 'Refrigerante';
+
+  @override
+  String get diagLivePidIntake => 'Presión de admisión';
+
+  @override
+  String get diagLivePidVoltage => 'Voltaje';
+
+  @override
+  String get diagLivePidSpeed => 'Velocidad';
+
+  @override
+  String get diagLivePidFuel => 'Combustible';
+
+  @override
+  String get diagLiveOutOfRange => 'Fuera de rango';
+
+  @override
+  String get diagLiveFrozenClose => 'Descartar muestra';
+
+  @override
+  String get diagLiveExitTitle => '¿Salir del muestreo?';
+
+  @override
+  String get diagLiveExitBody =>
+      'El muestreo está activo. Si sales, se detiene; lo ya capturado no se pierde.';
+
+  @override
+  String get diagLiveExitConfirm => 'Detener y salir';
+
+  @override
   String get diagLiveTitle => 'Telemetría';
 
   @override
