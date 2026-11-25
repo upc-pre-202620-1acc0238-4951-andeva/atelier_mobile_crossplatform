@@ -13,6 +13,8 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_the
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/date_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/cascade.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/components/quotation_summary_section.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_audit.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_references.dart';
@@ -479,18 +481,17 @@ class QuotationDecisionSheet extends StatelessWidget {
   }
 }
 
-/// US24: la proforma generada, lista para compartir (`FileProvider` en Android, hoja de compartir en iOS).
-/// Sin el desglose de subtotal, IGV y total (US36) y sin vista de las páginas: no hay un renderizador de PDF
-/// en el proyecto, así que se muestra el aviso de "proforma generada" que Android usa cuando no puede
-/// dibujarlas.
+/// US24 + US36: la proforma generada, con el resumen de liquidación en cascada y lista para compartir.
 class PdfPreviewSheet extends StatelessWidget {
   final File pdfFile;
+  final CascadeBreakdown? breakdown;
   final VoidCallback onShare;
   final VoidCallback onDismiss;
 
   const PdfPreviewSheet({
     super.key,
     required this.pdfFile,
+    this.breakdown,
     required this.onShare,
     required this.onDismiss,
   });
@@ -499,6 +500,7 @@ class PdfPreviewSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final name = pdfFile.uri.pathSegments.isEmpty ? pdfFile.path : pdfFile.uri.pathSegments.last;
+    final currentBreakdown = breakdown;
     return AtelierBottomSheet(
       title: strings.quotationPdfPreviewTitle,
       actions: [
@@ -518,6 +520,15 @@ class PdfPreviewSheet extends StatelessWidget {
           name,
           style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary),
         ),
+        if (currentBreakdown != null) ...[
+          SummaryRow(label: strings.quotationSubtotal, value: currentBreakdown.subtotal.format()),
+          SummaryRow(label: strings.quotationIgv, value: currentBreakdown.taxAmount.format()),
+          SummaryRow(
+            label: strings.quotationTotal,
+            value: currentBreakdown.totalAmount.format(),
+            emphasized: true,
+          ),
+        ],
         AtelierBanner(
           message: strings.quotationPdfReady,
           icon: Icons.description_outlined,

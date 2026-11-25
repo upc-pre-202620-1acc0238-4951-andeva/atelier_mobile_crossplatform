@@ -5,17 +5,20 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/domain/business_time.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reports/application/download_cash_flow_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/application/get_cash_flow_summary_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/presentation/reports_ui_state.dart';
 import 'package:flutter/foundation.dart';
 
 class ReportsViewModel extends ChangeNotifier {
   final GetCashFlowSummaryUseCase getCashFlow;
+  final DownloadCashFlowPdfUseCase? downloadCashFlowPdf;
   final ObserveSessionUseCase observeSession;
   final ConnectivityObserver connectivity;
 
   ReportsViewModel({
     required this.getCashFlow,
+    this.downloadCashFlowPdf,
     required this.observeSession,
     required this.connectivity,
     DateTime Function()? now,
@@ -81,6 +84,41 @@ class ReportsViewModel extends ChangeNotifier {
   void onOpenCustomRange() => _update(_state.copyWith(showCustomRangePicker: true));
 
   void onDismissCustomRange() => _update(_state.copyWith(showCustomRangePicker: false));
+
+  Future<void> onDownloadCashFlow([ReportPdfActionMode mode = ReportPdfActionMode.open]) async {
+    final downloader = downloadCashFlowPdf;
+    if (downloader == null || !_state.canReadCashFlow || !_state.isOnline || _state.busy != null) {
+      return;
+    }
+    _update(
+      _state.copyWith(
+        busy: ReportDownload.cashFlow,
+        pdfActionMode: mode,
+        clearActionError: true,
+      ),
+    );
+    try {
+      final file = await downloader.execute(_state.period);
+      _update(_state.copyWith(pdf: file));
+    } on Object catch (e) {
+      _update(_state.copyWith(actionError: toUiText(e)));
+    } finally {
+      _update(_state.copyWith(clearBusy: true));
+    }
+  }
+
+  Future<void> onOpenCashFlowPdf() => onDownloadCashFlow(ReportPdfActionMode.open);
+
+  Future<void> onShareCashFlowPdf() => onDownloadCashFlow(ReportPdfActionMode.share);
+
+  void onPdfHandled() => _update(_state.copyWith(clearPdf: true));
+
+  void onPdfOpenFailed() => _update(
+    _state.copyWith(
+      clearPdf: true,
+      actionError: UiText.resource((s) => s.reportsPdfNoApp),
+    ),
+  );
 
   /// El selector de rango entrega fechas de calendario (sin hora que importe): se toman año, mes y día tal cual,
   /// sin pasar por zonas horarias. Sin fin elegido, el rango es el día de inicio.

@@ -372,3 +372,43 @@ class ConfigureSeriesRequestDto {
     'initialCorrelative': initialCorrelative,
   };
 }
+
+/// `VoidVoucherRequest` de docs/api/invoicing.md.
+class VoidVoucherRequestDto {
+  final String reason;
+
+  const VoidVoucherRequestDto({required this.reason});
+
+  Map<String, dynamic> toJson() => {'reason': reason};
+}
+
+/// `IssueCreditNoteRequest` de docs/api/invoicing.md.
+class IssueCreditNoteRequestDto {
+  final String branchId;
+  final String customerId;
+  final List<VoucherLineRequestDto> lines;
+  final String reason;
+  final String reasonDescription;
+  final String referenceVoucherId;
+  final String serie;
+
+  const IssueCreditNoteRequestDto({
+    required this.branchId,
+    required this.customerId,
+    required this.lines,
+    required this.reason,
+    required this.reasonDescription,
+    required this.referenceVoucherId,
+    required this.serie,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'branchId': branchId,
+    'customerId': customerId,
+    'lines': [for (final line in lines) line.toJson()],
+    'reason': reason,
+    'reasonDescription': reasonDescription,
+    'referenceVoucherId': referenceVoucherId,
+    'serie': serie,
+  };
+}

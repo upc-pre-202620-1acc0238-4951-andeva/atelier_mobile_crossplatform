@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_adaptive_row.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_banner.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_panels.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_segmented_control.dart';
@@ -12,6 +16,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_the
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/date_format.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/domain/cash_flow.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/presentation/reports_ui_state.dart';
@@ -42,8 +47,10 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   late final ReportsViewModel viewModel = getIt<ReportsViewModel>();
+  final AtelierHaptics _haptics = rememberAtelierHaptics();
   Object? _lastError;
   bool _pickerOpen = false;
+  File? _handlingPdf;
 
   @override
   void initState() {
@@ -60,12 +67,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   void _onChange() {
     final state = viewModel.state;
-    if (state.error != null && !identical(state.error, _lastError)) {
-      rememberAtelierHaptics().reject();
+    final err = state.actionError ?? state.error;
+    if (err != null && !identical(err, _lastError)) {
+      _haptics.reject();
     }
-    _lastError = state.error;
+    _lastError = err;
     if (state.showCustomRangePicker && !_pickerOpen) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _openRangePicker());
+    }
+    final file = state.pdf;
+    if (file != null && !identical(file, _handlingPdf)) {
+      _handlingPdf = file;
+      final mode = state.pdfActionMode;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openPdf(file, mode));
+    }
+  }
+
+  Future<void> _openPdf(File file, ReportPdfActionMode mode) async {
+    if (!mounted) return;
+    final title = AppLocalizations.of(context).reportsPdfChooser;
+    final opened = switch (mode) {
+      ReportPdfActionMode.open => await DocumentIntents.openPdf(file, title),
+      ReportPdfActionMode.share => await DocumentIntents.sharePdf(file, title),
+    };
+    _handlingPdf = null;
+    if (!mounted) return;
+    if (opened) {
+      viewModel.onPdfHandled();
+    } else {
+      viewModel.onPdfOpenFailed();
     }
   }
 
@@ -101,6 +131,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
         onRetry: viewModel.load,
         onChoice: viewModel.onChoice,
         onOpenCustomRange: viewModel.onOpenCustomRange,
+        onOpenCashFlowPdf: () {
+          _haptics.confirm();
+          viewModel.onOpenCashFlowPdf();
+        },
+        onShareCashFlowPdf: () {
+          _haptics.confirm();
+          viewModel.onShareCashFlowPdf();
+        },
       ),
     );
   }
@@ -121,6 +159,8 @@ class ReportsContent extends StatelessWidget {
   final Future<void> Function() onRetry;
   final ValueChanged<PeriodChoice> onChoice;
   final VoidCallback onOpenCustomRange;
+  final VoidCallback? onOpenCashFlowPdf;
+  final VoidCallback? onShareCashFlowPdf;
 
   const ReportsContent({
     super.key,
@@ -129,6 +169,8 @@ class ReportsContent extends StatelessWidget {
     required this.onRetry,
     required this.onChoice,
     required this.onOpenCustomRange,
+    this.onOpenCashFlowPdf,
+    this.onShareCashFlowPdf,
   });
 
   @override
@@ -209,6 +251,11 @@ class ReportsContent extends StatelessWidget {
           onChoice: onChoice,
           onOpenCustomRange: onOpenCustomRange,
         ),
+        _Downloads(
+          state: state,
+          onOpenCashFlowPdf: onOpenCashFlowPdf ?? () {},
+          onShareCashFlowPdf: onShareCashFlowPdf ?? () {},
+        ),
         Padding(
           padding: side,
           child: AtelierSectionHeader(title: strings.reportsMovementsHeader, count: summary?.movements.length),
@@ -253,6 +300,77 @@ class ReportsContent extends StatelessWidget {
 String _movementAmount(Decimal amount, String currency) {
   final money = Money(amount: amount.abs(), currency: currency == Money.usd ? Money.usd : Money.pen).format();
   return amount < Decimal.zero ? '−$money' : money;
+}
+
+class _Downloads extends StatelessWidget {
+  final ReportsUiState state;
+  final VoidCallback onOpenCashFlowPdf;
+  final VoidCallback onShareCashFlowPdf;
+
+  const _Downloads({
+    required this.state,
+    required this.onOpenCashFlowPdf,
+    required this.onShareCashFlowPdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!state.canReadCashFlow) return const SizedBox.shrink();
+    final strings = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AtelierSectionHeader(title: strings.reportsDownloadsHeader),
+          AtelierSurface(
+            tier: SurfaceTier.elevated,
+            shape: cardLargeShape,
+            contentPadding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 10,
+              children: [
+                Text(
+                  strings.reportsDownloadCashflow,
+                  style: context.text.titleSmall?.copyWith(color: context.scheme.onSurface),
+                ),
+                AtelierAdaptiveRow(
+                  equalWidthInRow: true,
+                  children: [
+                    AtelierButton(
+                      text: strings.reportsOpenPdf,
+                      onClick: onOpenCashFlowPdf,
+                      style: AtelierButtonStyle.tonal,
+                      enabled: state.isOnline && state.busy == null,
+                      loading:
+                          state.busy == ReportDownload.cashFlow &&
+                          state.pdfActionMode == ReportPdfActionMode.open,
+                    ),
+                    AtelierButton(
+                      text: strings.reportsSharePdf,
+                      onClick: onShareCashFlowPdf,
+                      style: AtelierButtonStyle.outlined,
+                      enabled: state.isOnline && state.busy == null,
+                      loading:
+                          state.busy == ReportDownload.cashFlow &&
+                          state.pdfActionMode == ReportPdfActionMode.share,
+                    ),
+                  ],
+                ),
+                if (!state.isOnline) const AtelierRequiresConnection(),
+                if (state.actionError != null)
+                  AtelierBanner(
+                    message: state.actionError!.asString(strings),
+                    icon: Icons.error_outline,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PeriodSelector extends StatelessWidget {

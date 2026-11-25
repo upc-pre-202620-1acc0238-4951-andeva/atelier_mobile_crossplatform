@@ -26,6 +26,19 @@ class PdfDownloader {
     return target.writeAsBytes(response.bytes);
   }
 
+  /// Descarga un documento fiscal preservando su extensión (`.pdf`, `.xml`, `.zip`).
+  Future<File> downloadDocument(
+    String fallbackName,
+    Future<ApiFile> Function() call,
+  ) async {
+    final response = await call();
+    final directory = await cacheDirectory();
+    final safe = fallbackName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final target = File('${directory.path}/$_directory/$safe');
+    await target.parent.create(recursive: true);
+    return target.writeAsBytes(response.bytes);
+  }
+
   /// `filename*=UTF-8''…` gana a `filename="…"`; el resultado es seguro y termina en `.pdf`.
   static String fileName(String? contentDisposition, String fallbackName) {
     final parts = (contentDisposition ?? '').split(';').map((e) => e.trim());

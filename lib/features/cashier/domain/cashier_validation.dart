@@ -4,9 +4,12 @@ import 'package:decimal/decimal.dart';
 /// Reglas de caja. Los montos de la orden van sin IGV y las líneas del comprobante con IGV
 /// (docs/api/README.md); el IGV se aplica por unidad y por línea (H26).
 abstract final class CashierValidation {
+  static final igvRate = Decimal.parse('0.18');
   static final igvFactor = Decimal.parse('1.18');
   static final minAmount = Decimal.parse('0.01');
   static const maxReferenceLength = 100;
+  static const maxReasonLength = 250;
+  static const maxLineDescriptionLength = 250;
 
   static final _placeholderProduct = RegExp(
     r'^Product [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
@@ -47,5 +50,27 @@ abstract final class CashierValidation {
   /// Regla de la app, no de la API: al menos 0,01 y como mucho 2 decimales.
   static bool isPaymentAmount(Decimal amount) {
     return amount >= minAmount && amount == amount.round(scale: 2);
+  }
+
+  static bool isValidMoneyAmount(Decimal amount, {Decimal? max}) {
+    return isPaymentAmount(amount) && (max == null || amount <= max);
+  }
+
+  static bool isValidReason(String reason) {
+    final trimmed = reason.trim();
+    return trimmed.isNotEmpty && trimmed.length <= maxReasonLength;
+  }
+
+  /// Serie de nota de crédito (4 caracteres): `F...` para factura, `B...` para boleta.
+  static bool isCreditNoteSeries(String serie, [VoucherType? referenceType]) {
+    final normalized = serie.trim().toUpperCase();
+    if (normalized.length != 4 || !_seriesSuffix.hasMatch(normalized.substring(1))) {
+      return false;
+    }
+    return switch (referenceType) {
+      VoucherType.factura => normalized.startsWith('F'),
+      VoucherType.boleta => normalized.startsWith('B'),
+      _ => normalized.startsWith('F') || normalized.startsWith('B'),
+    };
   }
 }
