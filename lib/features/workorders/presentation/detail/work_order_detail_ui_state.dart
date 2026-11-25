@@ -177,6 +177,7 @@ class WorkOrderDetailUiState {
   final bool canResolveProposals;
   final bool canReadPartMovements;
   final bool canOpenObd;
+  final bool hasCheckoutPermission;
 
   const WorkOrderDetailUiState({
     this.cachedOrder,
@@ -215,6 +216,7 @@ class WorkOrderDetailUiState {
     this.canResolveProposals = false,
     this.canReadPartMovements = false,
     this.canOpenObd = false,
+    this.hasCheckoutPermission = false,
   });
 
   bool get isBusy => busyAction != null;
@@ -235,6 +237,9 @@ class WorkOrderDetailUiState {
   bool get canCompleteOrder =>
       canUpdateWorkOrder && status == WorkOrderStatus.inProgress && isOnline && !isBusy;
   bool get canCancelOrder => canCancelWorkOrder && isEditableOrder && isOnline && !isBusy;
+  bool get canCheckout =>
+      hasCheckoutPermission &&
+      (status == WorkOrderStatus.completed || status == WorkOrderStatus.paid);
 
   /// Alguna hoja abierta: el error se muestra dentro de ella y no en el cuerpo.
   bool get hasOpenSheet =>
@@ -329,6 +334,7 @@ class WorkOrderDetailUiState {
     bool? canResolveProposals,
     bool? canReadPartMovements,
     bool? canOpenObd,
+    bool? hasCheckoutPermission,
   }) {
     return WorkOrderDetailUiState(
       cachedOrder: identical(cachedOrder, _keep) ? this.cachedOrder : cachedOrder as WorkOrder?,
@@ -381,6 +387,7 @@ class WorkOrderDetailUiState {
       canResolveProposals: canResolveProposals ?? this.canResolveProposals,
       canReadPartMovements: canReadPartMovements ?? this.canReadPartMovements,
       canOpenObd: canOpenObd ?? this.canOpenObd,
+      hasCheckoutPermission: hasCheckoutPermission ?? this.hasCheckoutPermission,
     );
   }
 }

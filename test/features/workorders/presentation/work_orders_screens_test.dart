@@ -152,7 +152,7 @@ void main() {
       intakeImages: const [],
     );
 
-    testWidgets('cargado sin historias excluidas (US29/US35/US36/US37-39/US40)', (tester) async {
+    testWidgets('cargado con liquidación en cascada (US36) y sin historias excluidas (US29/US35/US40)', (tester) async {
       await _pump(
         tester,
         WorkOrderDetailContent(
@@ -176,9 +176,12 @@ void main() {
       expect(find.text('Eliminar tarea'), findsOneWidget);
       expect(find.text('Movimientos de repuestos'), findsOneWidget);
       expect(find.text('Diagnóstico OBD-II'), findsOneWidget);
-      // Excluidas: rentabilidad (US35), liquidación IGV (US36), cobro (US37-39), reanudar suspensión (US29)
+      // US36: tarjeta de liquidación en cascada (Subtotal, IGV 18 %, Total).
+      expect(find.text('Subtotal mano de obra'), findsOneWidget);
+      expect(find.text('IGV 18 %'), findsOneWidget);
+      expect(find.text('S/ 212.40'), findsOneWidget);
+      // Excluidas: rentabilidad (US35), reanudar suspensión (US29); FAB oculto mientras esté IN_PROGRESS.
       expect(find.text('Rentabilidad'), findsNothing);
-      expect(find.text('IGV 18 %'), findsNothing);
       expect(find.text('Cobrar y entregar'), findsNothing);
       expect(find.text('Reanudar tarea'), findsNothing);
       await _teardown(tester);

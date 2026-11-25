@@ -15,6 +15,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_sha
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
@@ -98,6 +99,7 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
         AppRoute.openWorkOrder,
         OpenWorkOrderArgs(vehicleId: vehicleId, customerId: customerId, workOrderId: orderId),
       ),
+      onOpenCheckout: () => _pushAndRefresh(AppRoute.workOrderCheckout, vm.workOrderId),
       onOpenObd: (vehicleId, plate) =>
           _pushAndRefresh(AppRoute.diagnosticsHub, DiagnosticsHubArgs(initialVehicleId: vehicleId)),
       onOpenTask: (orderId, taskId) =>
@@ -359,6 +361,7 @@ class _OrderSheetHosts extends StatelessWidget {
                       onDismiss: actions.onDismissPdfPreview,
                       sheetBuilder: (context, file) => PdfPreviewSheet(
                         pdfFile: file,
+                        breakdown: vm.state.breakdown,
                         onShare: () => actions.onSharePdf(file),
                         onDismiss: actions.onDismissPdfPreview,
                       ),
@@ -420,6 +423,7 @@ class WorkOrderDetailActions {
   final VoidCallback onBack;
   final Future<void> Function() onRetry;
   final void Function(String vehicleId, String customerId, String workOrderId) onCompleteIntake;
+  final VoidCallback onOpenCheckout;
   final void Function(String vehicleId, String? plate) onOpenObd;
   final void Function(String workOrderId, String taskId) onOpenTask;
   final VoidCallback onOpenProposals;
@@ -482,6 +486,7 @@ class WorkOrderDetailActions {
     this.onBack = _noop,
     this.onRetry = _noopRefresh,
     this.onCompleteIntake = _noop3,
+    this.onOpenCheckout = _noop,
     this.onOpenObd = _noop2,
     this.onOpenTask = _noop2,
     this.onOpenProposals = _noop,
@@ -549,6 +554,13 @@ class WorkOrderDetailContent extends StatelessWidget {
     final headerOrder = order ?? state.cachedOrder;
     final strings = AppLocalizations.of(context);
     return Scaffold(
+      floatingActionButton: state.canCheckout
+          ? AtelierButton(
+              text: strings.ordersCheckout,
+              icon: Icons.payments_outlined,
+              onClick: actions.onOpenCheckout,
+            )
+          : null,
       body: DelayedLoading(
         loading: state.isLoading && detail == null,
         builder: (context, showSkeleton) => RefreshIndicator(
@@ -690,6 +702,7 @@ class WorkOrderDetailContent extends StatelessWidget {
             title: strings.ordersQuotationDecisionTitle,
             subtitle: strings.ordersQuotationDecisionRowHint,
             plate: order.plate,
+            amount: state.breakdown?.totalAmount.format(),
             onClick: actions.onOpenQuotationDecision,
           ),
         ),
@@ -884,7 +897,8 @@ class WorkOrderDetailContent extends StatelessWidget {
   }
 
   List<Widget> _quotation(AppLocalizations strings) {
-    if (!state.canReadQuotation && !state.canSendQuotation) return const [];
+    final breakdown = state.breakdown;
+    if (breakdown == null) return const [];
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -895,6 +909,7 @@ class WorkOrderDetailContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           QuotationSection(
+            breakdown: breakdown,
             canGeneratePdf: state.canGeneratePdf,
             canEmailQuotation: state.canEmailQuotation,
             showPdfActions: state.canReadQuotation,
@@ -903,7 +918,7 @@ class WorkOrderDetailContent extends StatelessWidget {
             onGeneratePdf: actions.onGenerateQuotationPdf,
             onSendEmail: actions.onSendQuotationEmail,
           ),
-          if (!state.isOnline)
+          if (!state.isOnline && (state.canReadQuotation || state.canSendQuotation))
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: AtelierRequiresConnection(),
@@ -971,6 +986,7 @@ class _OrderPanel extends StatelessWidget {
     final subtitleParts = [
       if (current.customerName != null) numberLabel,
       ?current.bayName,
+      if (current.totalAmount != null) strings.ordersTotal(current.totalAmount!.format()),
     ];
     final plate = current.plate;
     return AtelierFichaPanel(
