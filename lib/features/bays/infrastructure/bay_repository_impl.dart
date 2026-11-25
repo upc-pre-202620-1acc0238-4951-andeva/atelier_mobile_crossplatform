@@ -181,11 +181,48 @@ class BayRepositoryImpl implements BayRepository {
       AssignWorkBayRequestDto(bayId: bayId),
     );
     await workOrderDao.saveHeader(dto.toEntity(now().millisecondsSinceEpoch));
+    await _refreshQuietly();
+  }
+
+  @override
+  Future<void> createBay(String name, BayType type) async {
+    final current = await session.getSession();
+    if (current == null) throw StateError('Sin sesión');
+    final branchId = current.branchId;
+    if (branchId == null) throw const MissingBranchException();
+    await api.createBay(CreateWorkBayRequestDto(branchId: branchId, name: name, bayType: type.value));
+    await _refreshQuietly();
+  }
+
+  @override
+  Future<void> setMaintenance(String bayId, String reason) async {
+    await api.setMaintenance(bayId, MaintenanceBayRequestDto(reason: reason));
+    await _refreshQuietly();
+  }
+
+  @override
+  Future<void> restoreBay(String bayId) async {
+    await api.restore(bayId);
+    await _refreshQuietly();
+  }
+
+  @override
+  Future<void> releaseBay(String workOrderId) async {
+    await api.releaseBay(workOrderId);
+    // El 204 no trae la orden: se recarga la lista para que deje de figurar con bahía.
+    try {
+      await workOrders.refreshBranchWorkOrders();
+    } catch (_) {
+      // Cortesía: la bahía ya se liberó.
+    }
+    await _refreshQuietly();
+  }
+
+  /// Cortesía tras una escritura ya hecha: si falla, el sondeo traerá las bahías.
+  Future<void> _refreshQuietly() async {
     try {
       await refreshBranchBays();
-    } catch (_) {
-      // Cortesía: la reasignación ya se hizo; el sondeo traerá las bahías.
-    }
+    } catch (_) {}
   }
 
   @override
