@@ -282,10 +282,14 @@ class AdminDashboardContent extends StatelessWidget {
     ];
   }
 
-  /// "Esperan tu decisión": órdenes sin iniciar y descargos por revisar. Sin nada pendiente, la sección no existe.
+  /// "Esperan tu decisión": suspensiones (US29), órdenes sin iniciar y descargos por revisar. Sin nada pendiente, la sección no existe.
   List<Widget> _decisions(AppLocalizations strings) {
     final drafts = state.draftOrders;
-    if (drafts.isEmpty && state.justifications.isEmpty && state.failedJustificationDays == 0) {
+    final suspensions = state.suspensionDecisions;
+    if (drafts.isEmpty &&
+        suspensions.isEmpty &&
+        state.justifications.isEmpty &&
+        state.failedJustificationDays == 0) {
       return const [];
     }
     const rowPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 4);
@@ -294,6 +298,16 @@ class AdminDashboardContent extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: AtelierSectionHeader(title: strings.todayDecisions, count: state.decisionsCount),
       ),
+      for (final item in suspensions)
+        Padding(
+          padding: rowPadding,
+          child: AtelierDecisionRow(
+            title: strings.todayDecisionSuspension,
+            subtitle: item.order.customerName ?? orderNumberLabel(strings, item.order),
+            plate: item.order.plate,
+            onClick: () => actions.onOpenOrder(item.order.id.value),
+          ),
+        ),
       for (final order in drafts)
         Padding(
           padding: rowPadding,
