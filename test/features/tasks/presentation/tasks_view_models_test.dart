@@ -1,5 +1,17 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
+
+import 'package:atelier_mobile_crossplatform/features/tasks/application/approve_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/attach_task_evidence_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/complete_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/observe_pending_evidence_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/request_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/suggest_labor_hours_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/evidence_kind.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
 
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
@@ -60,6 +72,20 @@ class _MockUpdatePart extends Mock implements UpdateTaskPartQuantityUseCase {}
 class _MockRemovePart extends Mock implements RemovePartFromTaskUseCase {}
 
 class _MockPausedElapsed extends Mock implements PausedElapsedStore {}
+
+class _MockComplete extends Mock implements CompleteTaskUseCase {}
+
+class _MockAttach extends Mock implements AttachTaskEvidenceUseCase {}
+
+class _MockObserveEvidence extends Mock implements ObservePendingEvidenceUseCase {}
+
+class _MockRequestSuspension extends Mock implements RequestSuspensionUseCase {}
+
+class _MockApproveSuspension extends Mock implements ApproveSuspensionUseCase {}
+
+class _MockRejectSuspension extends Mock implements RejectSuspensionUseCase {}
+
+class _MockResumeSuspended extends Mock implements ResumeSuspendedTaskUseCase {}
 
 Session _session(Set<String> permissions) {
   return Session(
@@ -127,6 +153,8 @@ void main() {
     registerFallbackValue(TaskId('x'));
     registerFallbackValue(PauseReason.breakTime);
     registerFallbackValue(Decimal.one);
+    registerFallbackValue(EvidenceKind.disassembly);
+    registerFallbackValue(File('x'));
   });
 
   group('MyTasksViewModel', () {
@@ -259,6 +287,14 @@ void main() {
     late _MockUpdatePart updatePart;
     late _MockRemovePart removePart;
     late _MockPausedElapsed pausedElapsed;
+    late _MockComplete completeTask;
+    late _MockAttach attachEvidence;
+    late _MockObserveEvidence observeEvidence;
+    late _MockRequestSuspension requestSuspension;
+    late _MockApproveSuspension approveSuspension;
+    late _MockRejectSuspension rejectSuspension;
+    late _MockResumeSuspended resumeSuspended;
+    late StreamController<List<PendingEvidence>> evidenceStream;
     final startedAt = DateTime.utc(2026, 11, 24, 10);
     final now = startedAt.add(const Duration(seconds: 3600));
 
@@ -266,6 +302,7 @@ void main() {
       required Set<String> permissions,
       Task? task,
       Future<TaskDetail> Function()? loadDetail,
+      ConnectivityObserver? connectivity,
     }) {
       when(() => observeSession.execute()).thenAnswer((_) => Stream.value(_session(permissions)));
       when(() => observeTask.execute(any())).thenAnswer((_) => Stream.value(task));
@@ -273,6 +310,7 @@ void main() {
       when(() => pausedElapsed.get(any())).thenAnswer((_) async => null);
       when(() => pausedElapsed.clear(any())).thenAnswer((_) async {});
       when(() => pausedElapsed.save(any(), any())).thenAnswer((_) async {});
+      when(() => observeEvidence.execute(any())).thenAnswer((_) => evidenceStream.stream);
       return TaskDetailViewModel(
         taskId: TaskId('t1'),
         workOrderId: 'wo1',
@@ -286,8 +324,16 @@ void main() {
         addPart: addPart,
         updatePartQuantity: updatePart,
         removePart: removePart,
+        suggestLaborHours: SuggestLaborHoursUseCase(now: () => now),
+        completeTask: completeTask,
+        attachTaskEvidence: attachEvidence,
+        observePendingEvidence: observeEvidence,
+        requestSuspension: requestSuspension,
+        approveSuspension: approveSuspension,
+        rejectSuspension: rejectSuspension,
+        resumeSuspendedTask: resumeSuspended,
         pausedElapsed: pausedElapsed,
-        connectivity: _online(),
+        connectivity: connectivity ?? _online(),
         now: () => now,
       );
     }
@@ -304,6 +350,228 @@ void main() {
       updatePart = _MockUpdatePart();
       removePart = _MockRemovePart();
       pausedElapsed = _MockPausedElapsed();
+      completeTask = _MockComplete();
+      attachEvidence = _MockAttach();
+      observeEvidence = _MockObserveEvidence();
+      requestSuspension = _MockRequestSuspension();
+      approveSuspension = _MockApproveSuspension();
+      rejectSuspension = _MockRejectSuspension();
+      resumeSuspended = _MockResumeSuspended();
+      evidenceStream = StreamController<List<PendingEvidence>>.broadcast();
+    });
+
+    group('US30 cierre técnico', () {
+      const permissions = {'operations:tasks:complete'};
+
+      test('precarga las horas del cronómetro y cierra con Decimal', () async {
+        when(() => completeTask.execute(any(), any(), notes: any(named: 'notes')))
+            .thenAnswer((_) async => _detail(status: TaskStatus.completed));
+        final vm = build(
+          permissions: permissions,
+          loadDetail: () async => _detail(startedAt: startedAt, paused: 300),
+        );
+        await _settle();
+
+        vm.onCompleteClick();
+        // (3600 − 300) s = 0.92 h.
+        expect(vm.state.completeForm!.hours, '0.92');
+        vm.onCompleteHoursChange('1,5');
+        await vm.onCompleteConfirm();
+
+        verify(() => completeTask.execute(any(), Decimal.parse('1.5'), notes: '')).called(1);
+        expect(vm.state.completeForm, isNull);
+        expect(vm.state.status, TaskStatus.completed);
+        expect(vm.state.notice?.asString(strings), strings.taskCompletedNotice);
+        vm.dispose();
+      });
+
+      test('en pausa propia sugiere el tiempo guardado al pausar, o nada si se desconoce', () async {
+        final paused = _detail(status: TaskStatus.onHold, hold: HoldReason.breakTime, startedAt: startedAt);
+        final unknown = build(permissions: permissions, loadDetail: () async => paused);
+        await _settle();
+        unknown.onCompleteClick();
+        expect(unknown.state.completeForm!.hours, isEmpty);
+        unknown.dispose();
+
+        final known = build(permissions: permissions, loadDetail: () async => paused);
+        when(() => pausedElapsed.get(any())).thenAnswer((_) async => 1800);
+        await _settle();
+        known.onCompleteClick();
+        expect(known.state.completeForm!.hours, '0.5');
+        known.dispose();
+      });
+
+      test('no ofrece cerrar sin permiso, sin iniciar ni suspendida por repuesto', () async {
+        for (final (granted, detail) in [
+          (<String>{}, _detail()),
+          (permissions, _detail(status: TaskStatus.assigned)),
+          (permissions, _detail(status: TaskStatus.onHold, hold: HoldReason.waitingParts)),
+        ]) {
+          final vm = build(permissions: granted, loadDetail: () async => detail);
+          await _settle();
+          vm.onCompleteClick();
+          expect(vm.state.completeForm, isNull);
+          vm.dispose();
+        }
+      });
+
+      test('horas ilegibles marcan el campo sin llamar al backend', () async {
+        final vm = build(permissions: permissions);
+        await _settle();
+        vm.onCompleteClick();
+        vm.onCompleteHoursChange('dos');
+        await vm.onCompleteConfirm();
+
+        verifyNever(() => completeTask.execute(any(), any(), notes: any(named: 'notes')));
+        expect(vm.state.invalidField, 'actualLaborHours');
+        vm.dispose();
+      });
+    });
+
+    group('US29 suspensión', () {
+      test('el técnico solicita con motivo y queda pendiente', () async {
+        when(() => requestSuspension.execute(any(), any(), inventoryItemId: any(named: 'inventoryItemId')))
+            .thenAnswer(
+          (_) async => TaskDetail(
+            id: TaskId('t1'),
+            workOrderId: 'wo1',
+            status: TaskStatus.inProgress,
+            description: 'Cambio de pastillas',
+            totalPausedSeconds: 0,
+            pendingSuspensionReason: 'Retén roto',
+          ),
+        );
+        final vm = build(permissions: {'operations:tasks:hold_request'});
+        await _settle();
+
+        vm.onRequestSuspensionClick();
+        vm.onSuspensionDescriptionChange('Retén roto');
+        await vm.onRequestSuspensionConfirm();
+
+        verify(() => requestSuspension.execute(any(), 'Retén roto', inventoryItemId: null)).called(1);
+        expect(vm.state.suspensionForm, isNull);
+        expect(vm.state.hasPendingSuspension, isTrue);
+        expect(vm.state.showRequestSuspension, isFalse);
+        expect(vm.state.showReviewSuspension, isFalse, reason: 'quien solicita no valida');
+        vm.dispose();
+      });
+
+      test('el supervisor aprueba, rechaza y reanuda según el estado', () async {
+        final pending = TaskDetail(
+          id: TaskId('t1'),
+          workOrderId: 'wo1',
+          status: TaskStatus.inProgress,
+          description: 'Cambio de pastillas',
+          totalPausedSeconds: 0,
+          pendingSuspensionReason: 'Retén roto',
+        );
+        final suspended = _detail(status: TaskStatus.onHold, hold: HoldReason.waitingParts);
+        when(() => approveSuspension.execute(any())).thenAnswer((_) async => suspended);
+        when(() => rejectSuspension.execute(any())).thenAnswer((_) async => _detail());
+        when(() => resumeSuspended.execute(any())).thenAnswer((_) async => _detail());
+        const permissions = {'operations:tasks:hold_validate'};
+
+        final rejecting = build(permissions: permissions, loadDetail: () async => pending);
+        await _settle();
+        rejecting.onReviewSuspensionClick();
+        await rejecting.onRejectSuspension();
+        expect(rejecting.state.status, TaskStatus.inProgress);
+        expect(rejecting.state.notice?.asString(strings), strings.ordersSuspensionRejectedNotice);
+        rejecting.dispose();
+
+        final vm = build(permissions: permissions, loadDetail: () async => pending);
+        await _settle();
+        vm.onReviewSuspensionClick();
+        await vm.onApproveSuspension();
+        expect(vm.state.isSuspended, isTrue);
+        expect(vm.state.reviewForm, isNull);
+
+        vm.onResumeSuspendedClick();
+        await vm.onResumeSuspendedConfirm();
+        verify(() => resumeSuspended.execute(any())).called(1);
+        expect(vm.state.status, TaskStatus.inProgress);
+        expect(vm.state.notice?.asString(strings), strings.ordersTaskResumedNotice);
+        vm.dispose();
+      });
+
+      test('un error del backend deja la hoja abierta con su message', () async {
+        when(() => requestSuspension.execute(any(), any(), inventoryItemId: any(named: 'inventoryItemId')))
+            .thenThrow(const ApiException(httpStatus: 422, code: 'X', message: 'Ya hay una solicitud'));
+        final vm = build(permissions: {'operations:tasks:hold_request'});
+        await _settle();
+        vm.onRequestSuspensionClick();
+        vm.onSuspensionDescriptionChange('Retén');
+        await vm.onRequestSuspensionConfirm();
+
+        expect(vm.state.suspensionForm, isNotNull);
+        expect(vm.state.error?.asString(strings), 'Ya hay una solicitud');
+        vm.dispose();
+      });
+    });
+
+    group('US28 evidencia', () {
+      const permissions = {'operations:tasks:upload_photos'};
+
+      PendingEvidence queued(String id) => PendingEvidence(
+        operationId: id,
+        imageUrl: 'https://x/$id.jpg',
+        status: 'PENDING',
+        capturedAt: now,
+      );
+
+      test('se adjunta sin red y deja el aviso de cola', () async {
+        when(() => attachEvidence.execute(any(), any(), any(), any(), note: any(named: 'note')))
+            .thenAnswer((_) async {});
+        final offline = ConnectivityObserver(
+          changes: const Stream.empty(),
+          current: () async => [ConnectivityResult.none],
+        );
+        await offline.start();
+        final vm = build(
+          permissions: permissions,
+          task: _task(status: TaskStatus.inProgress),
+          loadDetail: () async => throw const NetworkException(),
+          connectivity: offline,
+        );
+        await _settle();
+
+        vm.onAddEvidenceClick();
+        vm.onEvidenceKindChange(EvidenceKind.assembly);
+        vm.onEvidenceNoteChange('Pastilla nueva');
+        await vm.onEvidenceCaptured(File('foto.jpg'));
+
+        expect(vm.state.isOnline, isFalse);
+        verify(
+          () => attachEvidence.execute(any(), 'wo1', any(), EvidenceKind.assembly, note: 'Pastilla nueva'),
+        ).called(1);
+        expect(vm.state.evidenceForm, isNull);
+        expect(vm.state.notice?.asString(strings), strings.tasksSeg2EvidenceQueued);
+        vm.dispose();
+      });
+
+      test('cuando una foto sale de la cola recarga el detalle', () async {
+        final vm = build(permissions: permissions);
+        await _settle();
+        clearInteractions(getDetail);
+
+        evidenceStream.add([queued('op1')]);
+        await _settle();
+        verifyNever(() => getDetail.execute(any()));
+        expect(vm.state.pendingEvidence, hasLength(1));
+
+        evidenceStream.add([]);
+        await _settle();
+        verify(() => getDetail.execute(any())).called(1);
+        vm.dispose();
+      });
+
+      test('sin permiso no abre la captura', () async {
+        final vm = build(permissions: {});
+        await _settle();
+        vm.onAddEvidenceClick();
+        expect(vm.state.evidenceForm, isNull);
+        vm.dispose();
+      });
     });
 
     test('carga el detalle y deriva permisos de la sesión', () async {

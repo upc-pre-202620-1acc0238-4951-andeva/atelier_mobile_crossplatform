@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
@@ -6,19 +7,30 @@ import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/add_part_to_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/approve_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/attach_task_evidence_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/complete_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/get_task_detail_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/observe_pending_evidence_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/observe_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/pause_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/remove_part_from_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/reopen_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/request_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/search_parts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/start_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/suggest_labor_hours_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/update_task_part_quantity_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/evidence_kind.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/invalid_task_input_exception.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/labor_time.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/paused_elapsed_store.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/pause_reason.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
@@ -29,7 +41,8 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
 /// US27, US23, US33: detalle de tarea con cronómetro tabular, pausa tipificada, reapertura y gestión FIFO de
-/// repuestos. Sin evidencia fotográfica (US28), suspensiones (US29) ni cierre con horas hombre (US30).
+/// repuestos. US28: evidencia fotográfica (funciona sin red). US29: suspensión por pieza. US30: cierre con horas
+/// hombre.
 class TaskDetailViewModel extends ChangeNotifier {
   static const searchDebounce = Duration(milliseconds: 300);
 
@@ -44,6 +57,14 @@ class TaskDetailViewModel extends ChangeNotifier {
   final AddPartToTaskUseCase addPart;
   final UpdateTaskPartQuantityUseCase updatePartQuantity;
   final RemovePartFromTaskUseCase removePart;
+  final SuggestLaborHoursUseCase suggestLaborHours;
+  final CompleteTaskUseCase completeTask;
+  final AttachTaskEvidenceUseCase attachTaskEvidence;
+  final ObservePendingEvidenceUseCase observePendingEvidence;
+  final RequestSuspensionUseCase requestSuspension;
+  final ApproveSuspensionUseCase approveSuspension;
+  final RejectSuspensionUseCase rejectSuspension;
+  final ResumeSuspendedTaskUseCase resumeSuspendedTask;
   final PausedElapsedStore pausedElapsed;
   final ConnectivityObserver connectivity;
   final DateTime Function() now;
@@ -61,6 +82,14 @@ class TaskDetailViewModel extends ChangeNotifier {
     required this.addPart,
     required this.updatePartQuantity,
     required this.removePart,
+    required this.suggestLaborHours,
+    required this.completeTask,
+    required this.attachTaskEvidence,
+    required this.observePendingEvidence,
+    required this.requestSuspension,
+    required this.approveSuspension,
+    required this.rejectSuspension,
+    required this.resumeSuspendedTask,
     required this.pausedElapsed,
     required this.connectivity,
     this.now = DateTime.now,
@@ -86,11 +115,16 @@ class TaskDetailViewModel extends ChangeNotifier {
             canReportFinding: session?.has(Permission.proposalsCreate) == true,
             canOpenObd: canOpenObd,
             canReopenTask: session?.has(Permission.workOrdersUpdate) == true,
+            canCompleteTask: session?.has(Permission.tasksComplete) == true,
+            canUploadPhotos: session?.has(Permission.tasksUploadPhotos) == true,
+            canRequestSuspensionPermission: session?.has(Permission.tasksHoldRequest) == true,
+            canValidateSuspension: session?.has(Permission.tasksHoldValidate) == true,
           ),
         );
       }),
     );
     _subscriptions.add(observeTask.execute(taskId).listen((task) => _update(_state.copyWith(task: task))));
+    _subscriptions.add(observePendingEvidence.execute(taskId).listen(_onPendingEvidence));
     connectivity.addListener(_onConnectivity);
     load();
   }
@@ -102,11 +136,24 @@ class TaskDetailViewModel extends ChangeNotifier {
   Timer? _searchTimer;
   bool _disposed = false;
 
+  /// Una foto salió de la cola y falta traer la confirmada por el servidor.
+  bool _evidenceStale = false;
+
   /// D3: si la pantalla se abrió sin red, al volver la conexión se carga el detalle (repuestos incluidos).
   void _onConnectivity() {
     final online = connectivity.isOnline;
     _update(_state.copyWith(isOnline: online));
-    if (online && _state.detail == null && !_state.isLoading) load();
+    if (online && (_state.detail == null || _evidenceStale) && !_state.isLoading) load();
+  }
+
+  /// US28: cuando una foto deja la cola (ya se registró en el backend) se recarga el detalle para mostrarla.
+  void _onPendingEvidence(List<PendingEvidence> evidence) {
+    final current = {for (final item in evidence) item.operationId};
+    final someLeft = _state.pendingEvidence.any((item) => !current.contains(item.operationId));
+    _update(_state.copyWith(pendingEvidence: evidence));
+    if (!someLeft) return;
+    _evidenceStale = true;
+    if (_state.isOnline && !_state.isLoading) load();
   }
 
   /// `GET /tasks/{id}`: servicio y repuestos imputados. Sin red se sigue con la caché.
@@ -114,6 +161,7 @@ class TaskDetailViewModel extends ChangeNotifier {
     _update(_state.copyWith(isLoading: true, clearError: true));
     try {
       final detail = await getDetail.execute(taskId);
+      _evidenceStale = false;
       _update(_state.copyWith(isLoading: false, detail: detail));
     } on Object catch (e) {
       _update(_state.copyWith(isLoading: false, error: toTaskUiText(e)));
@@ -159,6 +207,289 @@ class TaskDetailViewModel extends ChangeNotifier {
       () => pauseTask.execute(taskId, reason),
       frozenAtPause: elapsed,
     );
+  }
+
+  // --- US30: cierre técnico con horas hombre ---
+
+  void onCompleteClick() {
+    if (!_state.canComplete) return;
+    _update(
+      _state.copyWith(
+        completeForm: CompleteTaskForm(hours: _suggestedHours()?.toString() ?? ''),
+        clearNotice: true,
+        clearError: true,
+        clearInvalidField: true,
+      ),
+    );
+  }
+
+  /// H3: en curso, `ahora − startedAt − totalPausedSeconds`. En pausa ese cálculo sumaría la pausa abierta, así
+  /// que solo se sugiere el tiempo guardado al pausar; sin él, el mecánico escribe las horas.
+  Decimal? _suggestedHours() {
+    var startedAt = _state.startedAt;
+    var pausedSeconds = _state.totalPausedSeconds;
+    if (_state.status == TaskStatus.onHold) {
+      final frozen = _state.pausedElapsedSeconds;
+      if (frozen == null) return null;
+      startedAt = suggestLaborHours.now().subtract(Duration(seconds: frozen));
+      pausedSeconds = 0;
+    }
+    return suggestLaborHours.execute(
+      Task(
+        id: taskId,
+        workOrderId: _state.resolvedWorkOrderId,
+        vehicleId: _state.vehicleId ?? '',
+        description: _state.description,
+        startedAt: startedAt,
+        totalPausedSeconds: pausedSeconds,
+      ),
+    );
+  }
+
+  void onCompleteDismiss() {
+    if (_state.completeForm == null) return;
+    _update(_state.copyWith(clearCompleteForm: true, clearError: true, clearInvalidField: true));
+  }
+
+  void onCompleteHoursChange(String value) => _editComplete((f) => f.copyWith(hours: value));
+
+  void onCompleteNotesChange(String value) => _editComplete((f) => f.copyWith(notes: value));
+
+  void _editComplete(CompleteTaskForm Function(CompleteTaskForm form) change) {
+    final form = _state.completeForm;
+    if (form == null || _state.isBusy) return;
+    _update(_state.copyWith(completeForm: change(form), clearError: true, clearInvalidField: true));
+  }
+
+  Future<void> onCompleteConfirm() async {
+    final form = _state.completeForm;
+    if (form == null || !_state.canComplete) return;
+    final hours = _toAmount(form.hours);
+    if (hours == null) {
+      _fail(const InvalidTaskInputException('actualLaborHours'));
+      return;
+    }
+    _startAction(TaskAction.complete);
+    try {
+      final detail = await completeTask.execute(taskId, hours, notes: form.notes);
+      await pausedElapsed.clear(taskId);
+      _update(
+        _state.copyWith(
+          clearBusyAction: true,
+          clearCompleteForm: true,
+          detail: detail,
+          clearPausedElapsedSeconds: true,
+          notice: UiText.resource((s) => s.taskCompletedNotice),
+        ),
+      );
+    } on Object catch (e) {
+      _fail(e);
+    }
+  }
+
+  // --- US29: suspensión por pieza defectuosa ---
+
+  void onRequestSuspensionClick() {
+    if (!_state.showRequestSuspension || _state.isBusy) return;
+    _update(
+      _state.copyWith(
+        suspensionForm: const RequestSuspensionForm(),
+        clearNotice: true,
+        clearError: true,
+        clearInvalidField: true,
+      ),
+    );
+  }
+
+  void onRequestSuspensionDismiss() {
+    _searchTimer?.cancel();
+    if (_state.suspensionForm == null) return;
+    _update(_state.copyWith(clearSuspensionForm: true, clearError: true, clearInvalidField: true));
+  }
+
+  void onSuspensionDescriptionChange(String value) =>
+      _editSuspension((f) => f.copyWith(missingItemDescription: value));
+
+  void _editSuspension(RequestSuspensionForm Function(RequestSuspensionForm form) change) {
+    final form = _state.suspensionForm;
+    if (form == null || _state.isBusy) return;
+    _update(_state.copyWith(suspensionForm: change(form), clearError: true, clearInvalidField: true));
+  }
+
+  /// Repuesto opcional del catálogo: misma búsqueda en línea que al imputar.
+  void onSuspensionPartQueryChange(String value) {
+    _searchTimer?.cancel();
+    if (value.trim().isEmpty) {
+      _editSuspension((f) => f.copyWith(partQuery: value, partResults: const [], isSearching: false));
+      return;
+    }
+    _editSuspension((f) => f.copyWith(partQuery: value));
+    _searchTimer = Timer(searchDebounce, () async {
+      _editSuspension((f) => f.copyWith(isSearching: true));
+      try {
+        final parts = await searchParts.execute(value.trim());
+        _editSuspension((f) => f.copyWith(partResults: parts, isSearching: false));
+      } on Object catch (e) {
+        final form = _state.suspensionForm;
+        _update(
+          _state.copyWith(suspensionForm: form?.copyWith(isSearching: false), error: toTaskUiText(e)),
+        );
+      }
+    });
+  }
+
+  /// Se admite un repuesto agotado: justamente puede ser el que falta.
+  void onSuspensionPartSelect(PartOption part) => _editSuspension((f) => f.copyWith(selectedPart: part));
+
+  void onSuspensionPartClear() => _editSuspension((f) => f.copyWith(clearSelectedPart: true));
+
+  Future<void> onRequestSuspensionConfirm() async {
+    final form = _state.suspensionForm;
+    if (form == null || !_state.showRequestSuspension || _state.isBusy) return;
+    await _runSuspension(
+      TaskAction.requestSuspension,
+      () => requestSuspension.execute(
+        taskId,
+        form.missingItemDescription,
+        inventoryItemId: form.inventoryItemId,
+      ),
+      UiText.resource((s) => s.tasksSeg2SuspensionRequestedNotice),
+    );
+  }
+
+  void onReviewSuspensionClick() {
+    if (!_state.showReviewSuspension || _state.isBusy) return;
+    _update(
+      _state.copyWith(reviewForm: const ReviewSuspensionForm(), clearNotice: true, clearError: true),
+    );
+  }
+
+  void onReviewSuspensionDismiss() {
+    if (_state.reviewForm == null) return;
+    _update(_state.copyWith(clearReviewForm: true, clearError: true));
+  }
+
+  Future<void> onApproveSuspension() async {
+    if (!_state.showReviewSuspension || _state.isBusy) return;
+    await _runSuspension(
+      TaskAction.approveSuspension,
+      () => approveSuspension.execute(taskId),
+      UiText.resource((s) => s.ordersSuspensionApprovedNotice),
+    );
+  }
+
+  Future<void> onRejectSuspension() async {
+    if (!_state.showReviewSuspension || _state.isBusy) return;
+    await _runSuspension(
+      TaskAction.rejectSuspension,
+      () => rejectSuspension.execute(taskId),
+      UiText.resource((s) => s.ordersSuspensionRejectedNotice),
+    );
+  }
+
+  void onResumeSuspendedClick() {
+    if (!_state.showResumeSuspended || _state.isBusy) return;
+    _update(
+      _state.copyWith(resumeForm: const ResumeSuspensionForm(), clearNotice: true, clearError: true),
+    );
+  }
+
+  void onResumeSuspendedDismiss() {
+    if (_state.resumeForm == null) return;
+    _update(_state.copyWith(clearResumeForm: true, clearError: true));
+  }
+
+  Future<void> onResumeSuspendedConfirm() async {
+    if (!_state.showResumeSuspended || _state.isBusy) return;
+    await _runSuspension(
+      TaskAction.resumeSuspended,
+      () => resumeSuspendedTask.execute(taskId),
+      UiText.resource((s) => s.ordersTaskResumedNotice),
+    );
+  }
+
+  /// Las cuatro acciones de US29 devuelven la tarea: si salen bien se cierra su hoja y se muestra el estado nuevo.
+  Future<void> _runSuspension(
+    TaskAction action,
+    Future<TaskDetail> Function() call,
+    UiText notice,
+  ) async {
+    _startAction(action);
+    try {
+      final detail = await call();
+      _searchTimer?.cancel();
+      _update(
+        _state.copyWith(
+          clearBusyAction: true,
+          clearSuspensionForm: true,
+          clearReviewForm: true,
+          clearResumeForm: true,
+          detail: detail,
+          notice: notice,
+        ),
+      );
+      await _syncPausedElapsed();
+    } on Object catch (e) {
+      _fail(e);
+    }
+  }
+
+  // --- US28: evidencia fotográfica ---
+
+  void onAddEvidenceClick() {
+    if (!_state.canAddEvidence || _state.isBusy) return;
+    _update(
+      _state.copyWith(
+        evidenceForm: const EvidenceCaptureForm(),
+        clearNotice: true,
+        clearError: true,
+        clearInvalidField: true,
+      ),
+    );
+  }
+
+  void onEvidenceDismiss() {
+    if (_state.evidenceForm == null) return;
+    _update(_state.copyWith(clearEvidenceForm: true, clearError: true, clearInvalidField: true));
+  }
+
+  void onEvidenceKindChange(EvidenceKind kind) => _editEvidence((f) => f.copyWith(kind: kind));
+
+  void onEvidenceNoteChange(String value) => _editEvidence((f) => f.copyWith(note: value));
+
+  void _editEvidence(EvidenceCaptureForm Function(EvidenceCaptureForm form) change) {
+    final form = _state.evidenceForm;
+    if (form == null || _state.isBusy) return;
+    _update(_state.copyWith(evidenceForm: change(form), clearError: true, clearInvalidField: true));
+  }
+
+  void onCameraDenied() {
+    _update(_state.copyWith(error: UiText.resource((s) => s.galleryCameraDenied)));
+  }
+
+  /// No exige conexión: la foto se encola y se sube cuando haya señal.
+  Future<void> onEvidenceCaptured(File photo) async {
+    final form = _state.evidenceForm;
+    if (form == null || !_state.canAddEvidence || _state.isBusy) return;
+    _startAction(TaskAction.attachEvidence);
+    try {
+      await attachTaskEvidence.execute(
+        taskId,
+        _state.resolvedWorkOrderId,
+        photo,
+        form.kind,
+        note: form.note,
+      );
+      _update(
+        _state.copyWith(
+          clearBusyAction: true,
+          clearEvidenceForm: true,
+          notice: UiText.resource((s) => s.tasksSeg2EvidenceQueued),
+        ),
+      );
+    } on Object catch (e) {
+      _fail(e);
+    }
   }
 
   // --- Reabrir tarea cerrada (`operations:work_orders:update`) ---
@@ -376,14 +707,18 @@ class TaskDetailViewModel extends ChangeNotifier {
     }
   }
 
+  void _startAction(TaskAction action) {
+    _update(
+      _state.copyWith(busyAction: action, clearNotice: true, clearError: true, clearInvalidField: true),
+    );
+  }
+
   Future<void> _run(
     TaskAction action,
     Future<TaskDetail> Function() call, {
     int? frozenAtPause,
   }) async {
-    _update(
-      _state.copyWith(busyAction: action, clearNotice: true, clearError: true, clearInvalidField: true),
-    );
+    _startAction(action);
     try {
       final detail = await call();
       // Al pausar se guarda el tiempo efectivo; al reanudar se descarta.
