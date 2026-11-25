@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher_draft.dart';
 import 'package:decimal/decimal.dart';
@@ -13,6 +15,31 @@ abstract class CashierRepository {
   Future<List<Voucher>> refreshWorkOrderVouchers(String workOrderId);
 
   Stream<List<VoucherSummary>> observeWorkOrderVouchers(String workOrderId);
+
+  /// Consulta y refresca un comprobante individual por id (`GET /invoicing/vouchers/{id}`).
+  Future<Voucher> getVoucher(String id);
+
+  /// Lista comprobantes electrónicos emitidos en la sede actual.
+  Future<List<Voucher>> getVouchers({
+    VoucherType? type,
+    VoucherStatus? status,
+    String? from,
+    String? to,
+  });
+
+  /// Anula un comprobante electrónico (comunicación de baja).
+  Future<Voucher> voidVoucher(String voucherId, String reason);
+
+  /// Emite una nota de crédito electrónica referenciando un comprobante vigente.
+  Future<Voucher> issueCreditNote({
+    required Voucher referenceVoucher,
+    required String serie,
+    required String reason,
+    required Decimal amount,
+  });
+
+  /// Descarga un documento fiscal (`pdfUrl`, `xmlUrl` o `cdrUrl`) a la caché local de documentos.
+  Future<File> downloadVoucherDocument(String url, String fileNamePrefix);
 
   /// Nunca reintenta. Devuelve el comprobante releído; si no se sabe si el cobro entró, lanza
   /// `PaymentOutcomeUnknownException` (H28).

@@ -220,6 +220,9 @@ class Voucher {
   });
 
   bool get activeSale => isActiveSale(type, status);
+
+  /// Solo una factura o boleta vigente no borrador admite anulación o nota de crédito.
+  bool get canIssueActions => activeSale && status != VoucherStatus.draft;
 }
 
 /// Cabecera en la caché `vouchers`: sin moneda, líneas ni cobros.
@@ -251,6 +254,9 @@ class VoucherSummary {
   });
 
   bool get activeSale => isActiveSale(type, status);
+
+  /// Solo una factura o boleta vigente no borrador admite anulación o nota de crédito.
+  bool get canIssueActions => activeSale && status != VoucherStatus.draft;
 }
 
 class FiscalSeries {

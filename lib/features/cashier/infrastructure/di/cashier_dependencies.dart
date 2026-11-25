@@ -1,20 +1,26 @@
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/configure_series_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/deliver_vehicle_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_exit_pass_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_branch_series_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_daily_cash_summary_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/get_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_work_order_vouchers_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_credit_note_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/mark_work_order_paid_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/observe_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/prepare_voucher_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/refresh_voucher_status_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/register_payment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/set_series_active_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/void_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/cashier_repository_impl.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/local/voucher_dao.dart';
@@ -35,6 +41,7 @@ void setupCashierDependencies() {
       api: getIt<CashierApi>(),
       voucherDao: getIt<VoucherDao>(),
       session: getIt<SessionManager>(),
+      pdfDownloader: getIt.isRegistered<PdfDownloader>() ? getIt<PdfDownloader>() : null,
     ),
   );
 
@@ -84,5 +91,20 @@ void setupCashierDependencies() {
   );
   getIt.registerLazySingleton<SetSeriesActiveUseCase>(
     () => SetSeriesActiveUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<GetVouchersUseCase>(
+    () => GetVouchersUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<RefreshVoucherStatusUseCase>(
+    () => RefreshVoucherStatusUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<VoidVoucherUseCase>(
+    () => VoidVoucherUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<IssueCreditNoteUseCase>(
+    () => IssueCreditNoteUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<DownloadVoucherDocumentUseCase>(
+    () => DownloadVoucherDocumentUseCase(repository: getIt<CashierRepository>()),
   );
 }

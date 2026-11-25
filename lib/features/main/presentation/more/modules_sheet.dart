@@ -25,6 +25,7 @@ enum MoreDestination {
   reception,
   services,
   dailyCash,
+  vouchers,
   reports,
   parts,
   purchaseOrders,
@@ -45,6 +46,7 @@ enum MoreDestination {
     reception => (AppRoute.vehicleSearch, MainTab.reception),
     services => (AppRoute.servicesCatalog, null),
     dailyCash => (AppRoute.dailyCash, MainTab.cash),
+    vouchers => (AppRoute.vouchers, null),
     reports => (AppRoute.reports, null),
     parts => (AppRoute.partsCatalog, MainTab.inventory),
     purchaseOrders => (AppRoute.purchaseOrders, MainTab.purchases),
@@ -170,6 +172,7 @@ List<_MoreRow> _moreRows(Session s) {
   }
   if (s.has(Permission.invoicesRead)) {
     add(_MoreGroup.cashier, MoreDestination.dailyCash, Icons.payments_outlined, (t) => t.moreHDailyCash, (t) => t.moreHDailyCashSub);
+    add(_MoreGroup.cashier, MoreDestination.vouchers, Icons.receipt_long_outlined, (t) => t.moreHVouchers, (t) => t.moreHVouchersSub);
   }
   if (s.has(Permission.cashflowExportPdf) || (s.canReadAiReports() && s.has(Permission.customersRead))) {
     add(_MoreGroup.cashier, MoreDestination.reports, Icons.assessment_outlined, (t) => t.moreHReports, (t) => t.moreHReportsSub);

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/missing_branch_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
@@ -22,6 +24,7 @@ class CashierRepositoryImpl implements CashierRepository {
   final CashierApi api;
   final VoucherDao voucherDao;
   final SessionManager session;
+  final PdfDownloader? pdfDownloader;
   final DateTime Function() now;
 
   final _issueLocks = KeyedLock();
@@ -31,6 +34,7 @@ class CashierRepositoryImpl implements CashierRepository {
     required this.api,
     required this.voucherDao,
     required this.session,
+    this.pdfDownloader,
     this.now = DateTime.now,
   });
 
@@ -128,6 +132,146 @@ class CashierRepositoryImpl implements CashierRepository {
     return voucherDao
         .watchByWorkOrder(workOrderId)
         .map((rows) => [for (final row in rows) ?row.toSummary()]);
+  }
+
+  @override
+  Future<Voucher> getVoucher(String id) => _readVoucher(id);
+
+  @override
+  Future<List<Voucher>> getVouchers({
+    VoucherType? type,
+    VoucherStatus? status,
+    String? from,
+    String? to,
+  }) async {
+    final branchId = await _branchId();
+    final dtos = await api.getVouchers(
+      branchId: branchId,
+      voucherType: type?.code,
+      status: status?.value,
+      from: from,
+      to: to,
+    );
+    final vouchers = dtos.map((dto) => dto.toDomain()).toList();
+    for (final dto in dtos) {
+      if (dto.workOrderId case final workOrderId?) {
+        await _cacheHeader(dto, workOrderId);
+      }
+    }
+    return vouchers;
+  }
+
+  @override
+  Future<Voucher> voidVoucher(String voucherId, String reason) async {
+    final trimmed = reason.trim();
+    if (!CashierValidation.isValidReason(trimmed)) {
+      throw const InvalidCashierInputException('reason');
+    }
+    final dto = await api.voidVoucher(
+      voucherId,
+      VoidVoucherRequestDto(reason: trimmed),
+    );
+    if (dto.workOrderId case final workOrderId?) {
+      await _cacheHeader(dto, workOrderId);
+    }
+    return dto.toDomain();
+  }
+
+  @override
+  Future<Voucher> issueCreditNote({
+    required Voucher referenceVoucher,
+    required String serie,
+    required String reason,
+    required Decimal amount,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (!CashierValidation.isValidReason(trimmedReason)) {
+      throw const InvalidCashierInputException('reason');
+    }
+    if (!CashierValidation.isValidMoneyAmount(
+      amount,
+      max: referenceVoucher.totalAmount.amount,
+    )) {
+      throw const InvalidCashierInputException('amount');
+    }
+    final trimmedSerie = serie.trim().toUpperCase();
+    if (!CashierValidation.isCreditNoteSeries(trimmedSerie, referenceVoucher.type)) {
+      throw const InvalidCashierInputException('serie');
+    }
+    if (!referenceVoucher.activeSale ||
+        referenceVoucher.status == VoucherStatus.draft) {
+      throw const InvalidCashierInputException('status');
+    }
+    final customerId = referenceVoucher.customerId;
+    if (customerId == null) {
+      throw const InvalidCashierInputException('customerId');
+    }
+    final branchId = await _branchId();
+
+    final normalizedAmount = amount.round(scale: 2);
+    final fullMatch =
+        normalizedAmount == referenceVoucher.totalAmount.amount &&
+        referenceVoucher.lines.isNotEmpty &&
+        referenceVoucher.lines.every(
+          (line) =>
+              line.description.trim().isNotEmpty &&
+              line.unitPrice != null &&
+              line.unitPrice! >= CashierValidation.minAmount &&
+              line.quantity >= CashierValidation.minAmount,
+        );
+
+    String truncate(String value) =>
+        value.length > CashierValidation.maxLineDescriptionLength
+            ? value.substring(0, CashierValidation.maxLineDescriptionLength)
+            : value;
+
+    final lines = fullMatch
+        ? [
+            for (final line in referenceVoucher.lines)
+              VoucherLineRequestDto(
+                description: truncate(line.description),
+                itemType: (line.itemType ?? VoucherItemType.service).value,
+                quantity: line.quantity,
+                unitPriceWithIgv: line.unitPrice!,
+                itemId: line.itemId,
+              ),
+          ]
+        : [
+            VoucherLineRequestDto(
+              description: truncate(trimmedReason),
+              itemType: VoucherItemType.service.value,
+              quantity: Decimal.one,
+              unitPriceWithIgv: normalizedAmount,
+            ),
+          ];
+
+    final dto = await api.issueCreditNote(
+      IssueCreditNoteRequestDto(
+        branchId: branchId,
+        customerId: customerId,
+        lines: lines,
+        reason: trimmedReason,
+        reasonDescription: trimmedReason,
+        referenceVoucherId: referenceVoucher.id,
+        serie: trimmedSerie,
+      ),
+    );
+    if (dto.workOrderId case final workOrderId?) {
+      await _cacheHeader(dto, workOrderId);
+    }
+    return dto.toDomain();
+  }
+
+  @override
+  Future<File> downloadVoucherDocument(String url, String fileNamePrefix) {
+    final downloader = pdfDownloader;
+    if (downloader == null) {
+      throw StateError('PdfDownloader no configurado en CashierRepositoryImpl');
+    }
+    return downloader.downloadDocument(
+      fileNamePrefix,
+      () => api.downloadDocument(url),
+    );
   }
 
   @override
