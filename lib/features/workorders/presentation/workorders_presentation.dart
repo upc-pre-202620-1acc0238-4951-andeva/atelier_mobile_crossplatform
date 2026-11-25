@@ -1,11 +1,18 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_task_mechanic_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/refresh_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/enrich_reception_references_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/add_part_to_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/approve_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/find_pending_suspensions_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/remove_part_from_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/search_parts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/update_task_part_quantity_use_case.dart';
@@ -79,6 +86,7 @@ void setupWorkOrdersPresentation() {
       enrichReferences: getIt<EnrichReceptionReferencesUseCase>(),
       observePendingSyncCount: getIt<ObservePendingOperationCountUseCase>(),
       observePushHistory: getIt<ObservePushHistoryUseCase>(),
+      findPendingSuspensions: getIt<FindPendingSuspensionsUseCase>(),
     ),
   );
   getIt.registerFactoryParam<WorkOrderDetailViewModel, String, void>(
@@ -106,6 +114,12 @@ void setupWorkOrdersPresentation() {
       cancelOrder: getIt<CancelWorkOrderUseCase>(),
       getPartMovements: getIt<GetPartMovementsUseCase>(),
       observeWorkOrder: getIt<ObserveWorkOrderUseCase>(),
+      observeBayBoard: getIt<ObserveBayBoardUseCase>(),
+      refreshBayBoard: getIt<RefreshBayBoardUseCase>(),
+      reassignBay: getIt<ReassignBayUseCase>(),
+      approveSuspension: getIt<ApproveSuspensionUseCase>(),
+      rejectSuspension: getIt<RejectSuspensionUseCase>(),
+      resumeSuspendedTask: getIt<ResumeSuspendedTaskUseCase>(),
     ),
   );
   getIt.registerFactoryParam<IntakeGalleryViewModel, String, void>(
