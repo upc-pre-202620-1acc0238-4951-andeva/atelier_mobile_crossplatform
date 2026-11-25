@@ -79,6 +79,7 @@ class FloorHubUiState {
       (session?.canReadTelemetry() ?? false) ||
       _has(Permission.devicesRead);
   bool get canReadParts => _has(Permission.partsRead);
+  bool get canReadBays => _has(Permission.baysRead);
 
   Task? get activeTask {
     for (final task in assignedTasks) {

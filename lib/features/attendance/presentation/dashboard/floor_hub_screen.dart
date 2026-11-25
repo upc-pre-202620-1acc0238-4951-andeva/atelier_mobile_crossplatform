@@ -121,6 +121,7 @@ class _FloorHubScreenState extends State<FloorHubScreen> {
             onOpenReception: () => _open(AppRoute.vehicleSearch),
             onRegisterWalkIn: () => _open(AppRoute.registerCustomer, const RegisterCustomerArgs()),
             onOpenInventory: () => _open(AppRoute.partsCatalog),
+            onOpenBays: () => _open(AppRoute.bays),
             onOpenPurchaseOrders: () => _open(AppRoute.purchaseOrders),
             onOpenPurchaseOrderDetail: (id) => _open(AppRoute.purchaseOrderDetail, id),
             onOpenWorkOrder: (id) => _open(AppRoute.workOrderDetail, id),
@@ -147,6 +148,7 @@ class FloorHubActions {
   final VoidCallback onOpenReception;
   final VoidCallback onRegisterWalkIn;
   final VoidCallback onOpenInventory;
+  final VoidCallback onOpenBays;
   final VoidCallback onOpenPurchaseOrders;
   final ValueChanged<String> onOpenPurchaseOrderDetail;
   final ValueChanged<String> onOpenWorkOrder;
@@ -167,6 +169,7 @@ class FloorHubActions {
     VoidCallback? onOpenReception,
     VoidCallback? onRegisterWalkIn,
     VoidCallback? onOpenInventory,
+    VoidCallback? onOpenBays,
     VoidCallback? onOpenPurchaseOrders,
     ValueChanged<String>? onOpenPurchaseOrderDetail,
     ValueChanged<String>? onOpenWorkOrder,
@@ -185,6 +188,7 @@ class FloorHubActions {
        onOpenReception = onOpenReception ?? (() {}),
        onRegisterWalkIn = onRegisterWalkIn ?? (() {}),
        onOpenInventory = onOpenInventory ?? (() {}),
+       onOpenBays = onOpenBays ?? (() {}),
        onOpenPurchaseOrders = onOpenPurchaseOrders ?? (() {}),
        onOpenPurchaseOrderDetail = onOpenPurchaseOrderDetail ?? ((_) {}),
        onOpenWorkOrder = onOpenWorkOrder ?? ((_) {}),
@@ -271,7 +275,8 @@ class FloorHubContent extends StatelessWidget {
       // 5. Bloque de Caja / Cajero.
       if (state.canOperateCash) ..._cashierBlock(strings, showSkeleton),
       // 6. Accesos de piso para quien tiene herramientas adicionales.
-      if (state.canTrackTasks || state.canUseObd) _FloorShortcutsCard(state: state, actions: actions),
+      if (state.canTrackTasks || state.canUseObd || state.canReadBays)
+        _FloorShortcutsCard(state: state, actions: actions),
       SizedBox(height: FloatingBarInset.of(context)),
     ];
     return ListView.separated(
@@ -925,6 +930,13 @@ class _FloorShortcutsCard extends StatelessWidget {
           subtitle: strings.floorHubQuickFindingSub,
           icon: Icons.report_problem_outlined,
           onClick: () => actions.onOpenReportFinding(activeWorkOrderId),
+        ),
+      if (state.canReadBays)
+        (
+          title: strings.floorHubQuickBays,
+          subtitle: strings.moreHBaysSub,
+          icon: Icons.garage_outlined,
+          onClick: actions.onOpenBays,
         ),
       if (state.canReadParts)
         (
