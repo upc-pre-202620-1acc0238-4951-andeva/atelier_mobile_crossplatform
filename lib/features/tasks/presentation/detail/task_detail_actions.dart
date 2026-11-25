@@ -3,8 +3,13 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/pause_reason.
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
 import 'package:flutter/foundation.dart';
 
-/// Acciones de la pantalla de detalle de tarea. Sin las de evidencia (US28), suspensión (US29) ni cierre (US30).
+/// Acciones de la pantalla de detalle de tarea. Las de las hojas de US28–US30 van directas al ViewModel.
 class TaskDetailActions {
+  final VoidCallback onCompleteClick;
+  final VoidCallback onRequestSuspensionClick;
+  final VoidCallback onReviewSuspensionClick;
+  final VoidCallback onResumeSuspendedClick;
+  final VoidCallback onAddEvidenceClick;
   final VoidCallback onBack;
   final Future<void> Function() onRetry;
   final VoidCallback onStart;
@@ -34,6 +39,11 @@ class TaskDetailActions {
   static void _noop1(Object? _) {}
 
   const TaskDetailActions({
+    this.onCompleteClick = _noop,
+    this.onRequestSuspensionClick = _noop,
+    this.onReviewSuspensionClick = _noop,
+    this.onResumeSuspendedClick = _noop,
+    this.onAddEvidenceClick = _noop,
     this.onBack = _noop,
     this.onRetry = _noopAsync,
     this.onStart = _noop,
