@@ -17,6 +17,7 @@ import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
@@ -153,6 +154,14 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
       onOpenAssignMechanic: vm.onOpenAssignMechanic,
       onDismissAssignMechanic: vm.onDismissAssignMechanic,
       onConfirmAssignMechanic: vm.onConfirmAssignMechanic,
+      onOpenAssignBay: vm.onOpenAssignBay,
+      onDismissAssignBay: vm.onDismissAssignBay,
+      onConfirmAssignBay: vm.onConfirmAssignBay,
+      onOpenSuspensionReview: vm.onOpenSuspensionReview,
+      onDismissSuspensionReview: vm.onDismissSuspensionReview,
+      onApproveSuspension: vm.onApproveSuspension,
+      onRejectSuspension: vm.onRejectSuspension,
+      onResumeSuspendedTask: vm.onResumeSuspendedTask,
       onStartOrder: vm.onStartOrder,
       onCompleteWorkOrder: vm.onCompleteOrder,
       onOpenCancelOrder: vm.onOpenCancelOrder,
@@ -183,6 +192,40 @@ class _OrderSheetHosts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vm = viewModel;
+    return StateSheetHost<TaskDetail>(
+      listenable: vm,
+      value: () => vm.state.reviewingSuspensionTask,
+      onDismiss: actions.onDismissSuspensionReview,
+      sheetBuilder: (context, task) => SuspensionSheet(
+        taskTitle: vm.state.taskTitle(task),
+        task: task,
+        isOnline: vm.state.isOnline,
+        busyAction: vm.state.busyAction,
+        error: vm.state.error,
+        onApprove: actions.onApproveSuspension,
+        onReject: actions.onRejectSuspension,
+        onDismiss: actions.onDismissSuspensionReview,
+      ),
+      child: StateSheetHost<AssignBayForm>(
+        listenable: vm,
+        value: () => vm.state.assignBayForm,
+        onDismiss: actions.onDismissAssignBay,
+        sheetBuilder: (context, form) => AssignBaySheet(
+          form: form,
+          currentBayId: vm.state.detail?.workOrder.currentBayId,
+          isOnline: vm.state.isOnline,
+          isSaving: vm.state.busyAction == WorkOrderDetailAction.assignBay,
+          error: vm.state.error,
+          onSelect: actions.onConfirmAssignBay,
+          onDismiss: actions.onDismissAssignBay,
+        ),
+        child: _orderSheets(),
+      ),
+    );
+  }
+
+  Widget _orderSheets() {
     final vm = viewModel;
     return StateSheetHost<AddTaskForm>(
       listenable: vm,
@@ -467,6 +510,14 @@ class WorkOrderDetailActions {
   final ValueChanged<TaskDetail> onOpenAssignMechanic;
   final VoidCallback onDismissAssignMechanic;
   final ValueChanged<MechanicOption> onConfirmAssignMechanic;
+  final VoidCallback onOpenAssignBay;
+  final VoidCallback onDismissAssignBay;
+  final ValueChanged<WorkBay> onConfirmAssignBay;
+  final ValueChanged<TaskDetail> onOpenSuspensionReview;
+  final VoidCallback onDismissSuspensionReview;
+  final VoidCallback onApproveSuspension;
+  final VoidCallback onRejectSuspension;
+  final ValueChanged<TaskDetail> onResumeSuspendedTask;
   final VoidCallback onStartOrder;
   final VoidCallback onCompleteWorkOrder;
   final VoidCallback onOpenCancelOrder;
@@ -530,6 +581,14 @@ class WorkOrderDetailActions {
     this.onOpenAssignMechanic = _noop1,
     this.onDismissAssignMechanic = _noop,
     this.onConfirmAssignMechanic = _noop1,
+    this.onOpenAssignBay = _noop,
+    this.onDismissAssignBay = _noop,
+    this.onConfirmAssignBay = _noop1,
+    this.onOpenSuspensionReview = _noop1,
+    this.onDismissSuspensionReview = _noop,
+    this.onApproveSuspension = _noop,
+    this.onRejectSuspension = _noop,
+    this.onResumeSuspendedTask = _noop1,
     this.onStartOrder = _noop,
     this.onCompleteWorkOrder = _noop,
     this.onOpenCancelOrder = _noop,
@@ -749,12 +808,12 @@ class WorkOrderDetailContent extends StatelessWidget {
     ];
   }
 
-  /// Bahía (solo lectura: US40 está fuera), kilometraje y diagnóstico de ingreso.
+  /// Bahía (con permiso se asigna o cambia, US40), kilometraje y diagnóstico de ingreso.
   List<Widget> _orderData(AppLocalizations strings, WorkOrder order) {
     final mileage = order.mileageIn != null && order.mileageIn! > 0 ? order.mileageIn : null;
     final rawDiag = order.diagnosticSummary;
     final diagnostic = rawDiag != null && rawDiag.trim().isNotEmpty ? rawDiag : null;
-    final showBay = order.bayName != null;
+    final showBay = order.bayName != null || state.showBayAction;
     if (!showBay && mileage == null && diagnostic == null) return const [];
     return [
       Padding(
@@ -770,9 +829,18 @@ class WorkOrderDetailContent extends StatelessWidget {
             children: [
               if (showBay)
                 AtelierListRow(
-                  title: order.bayName!,
+                  title: order.bayName ?? strings.ordersBayNone,
                   subtitle: strings.ordersBayLabel,
                   showDivider: mileage != null || diagnostic != null,
+                  onClick: state.canAssignBay ? actions.onOpenAssignBay : null,
+                  trailing: state.showBayAction
+                      ? AtelierButton(
+                          text: order.bayName == null ? strings.ordersBayAssign : strings.ordersBayChange,
+                          onClick: actions.onOpenAssignBay,
+                          style: AtelierButtonStyle.text,
+                          enabled: state.canAssignBay,
+                        )
+                      : null,
                 ),
               if (mileage != null)
                 AtelierListRow(
@@ -821,6 +889,8 @@ class WorkOrderDetailContent extends StatelessWidget {
                 onReturnPart: (product) => actions.onOpenReturnPart(task.id, product),
                 onAssignMechanic: () => actions.onOpenAssignMechanic(task),
                 onDeleteTask: () => actions.onOpenDeleteTask(task),
+                onReviewSuspension: () => actions.onOpenSuspensionReview(task),
+                onResumeTask: () => actions.onResumeSuspendedTask(task),
                 showOuterDivider: false,
               ),
             ),
