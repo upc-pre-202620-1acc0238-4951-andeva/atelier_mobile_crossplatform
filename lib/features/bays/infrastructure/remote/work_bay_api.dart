@@ -19,6 +19,29 @@ class WorkBayApi {
         .toList();
   }
 
+  Future<WorkBayDto> createBay(CreateWorkBayRequestDto body) async {
+    final Map<String, dynamic> json = await client.post('/api/v1/work-bays', body: body.toJson());
+    return WorkBayDto.fromJson(json);
+  }
+
+  Future<WorkBayDto> setMaintenance(String bayId, MaintenanceBayRequestDto body) async {
+    final Map<String, dynamic> json = await client.put(
+      '/api/v1/work-bays/$bayId/maintenance',
+      body: body.toJson(),
+    );
+    return WorkBayDto.fromJson(json);
+  }
+
+  Future<WorkBayDto> restore(String bayId) async {
+    final Map<String, dynamic> json = await client.put('/api/v1/work-bays/$bayId/restore');
+    return WorkBayDto.fromJson(json);
+  }
+
+  /// 204 sin cuerpo.
+  Future<void> releaseBay(String workOrderId) async {
+    await client.delete('/api/v1/work-orders/$workOrderId/bay');
+  }
+
   Future<WorkOrderDto> reassignBay(
     String workOrderId,
     AssignWorkBayRequestDto body,
