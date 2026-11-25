@@ -2,6 +2,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/predictive_alert.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/vehicle.dart';
 
 enum DiagnosticsHubTab { scanner, devices, alerts }
@@ -64,6 +65,12 @@ class DiagnosticsHubUiState {
   final bool planIncludesAi;
   final bool canUseTelemetry;
   final bool canReadTelemetry;
+
+  /// `iot:telemetry:read` (no basta con leer fallas): ver la última lectura remota (US18).
+  final bool canReadRemoteTelemetry;
+
+  /// Pendientes de sincronizar del vehículo elegido.
+  final DiagnosticsSyncState? vehicleSyncState;
   final bool canUseAiDiagnostics;
   final bool canReadAiReports;
   final bool canReadDevices;
@@ -129,6 +136,8 @@ class DiagnosticsHubUiState {
     this.planIncludesAi = true,
     this.canUseTelemetry = false,
     this.canReadTelemetry = false,
+    this.canReadRemoteTelemetry = false,
+    this.vehicleSyncState,
     this.canUseAiDiagnostics = false,
     this.canReadAiReports = false,
     this.canReadDevices = false,
@@ -236,6 +245,9 @@ class DiagnosticsHubUiState {
     bool? planIncludesAi,
     bool? canUseTelemetry,
     bool? canReadTelemetry,
+    bool? canReadRemoteTelemetry,
+    DiagnosticsSyncState? vehicleSyncState,
+    bool clearVehicleSyncState = false,
     bool? canUseAiDiagnostics,
     bool? canReadAiReports,
     bool? canReadDevices,
@@ -307,6 +319,8 @@ class DiagnosticsHubUiState {
       planIncludesAi: planIncludesAi ?? this.planIncludesAi,
       canUseTelemetry: canUseTelemetry ?? this.canUseTelemetry,
       canReadTelemetry: canReadTelemetry ?? this.canReadTelemetry,
+      canReadRemoteTelemetry: canReadRemoteTelemetry ?? this.canReadRemoteTelemetry,
+      vehicleSyncState: clearVehicleSyncState ? null : vehicleSyncState ?? this.vehicleSyncState,
       canUseAiDiagnostics: canUseAiDiagnostics ?? this.canUseAiDiagnostics,
       canReadAiReports: canReadAiReports ?? this.canReadAiReports,
       canReadDevices: canReadDevices ?? this.canReadDevices,
