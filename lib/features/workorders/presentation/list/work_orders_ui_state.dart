@@ -2,8 +2,9 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
 
 /// Órdenes no cerradas de la sede, desde Drift (se ven sin red). Punto de entrada del supervisor a las tareas
-/// (US33). Sin el chip "Suspensión por revisar" de la lista: es la historia US29.
+/// (US33). Con permiso de validar suspensiones marca las órdenes con una solicitud por revisar (US29).
 class WorkOrdersUiState {
+  final Set<String> pendingSuspensionOrderIds;
   final List<WorkOrder> orders;
   final bool isLoaded;
   final bool isRefreshing;
@@ -25,6 +26,7 @@ class WorkOrdersUiState {
   final int unreadNotificationsCount;
 
   const WorkOrdersUiState({
+    this.pendingSuspensionOrderIds = const {},
     this.orders = const [],
     this.isLoaded = false,
     this.isRefreshing = false,
@@ -74,8 +76,10 @@ class WorkOrdersUiState {
     String? query,
     int? pendingSyncCount,
     int? unreadNotificationsCount,
+    Set<String>? pendingSuspensionOrderIds,
   }) {
     return WorkOrdersUiState(
+      pendingSuspensionOrderIds: pendingSuspensionOrderIds ?? this.pendingSuspensionOrderIds,
       orders: orders ?? this.orders,
       isLoaded: isLoaded ?? this.isLoaded,
       isRefreshing: isRefreshing ?? this.isRefreshing,
