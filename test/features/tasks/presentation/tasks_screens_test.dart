@@ -243,14 +243,74 @@ void main() {
       expect(find.text('Corregir cantidad'), findsOneWidget);
       expect(find.text('Imputar repuesto'), findsOneWidget);
       expect(find.text('Pausar'), findsOneWidget);
-      // Historias excluidas: cierre (US30), suspensión (US29) y evidencia (US28).
+      // Sin sus permisos no hay cierre (US30), suspensión (US29) ni captura (US28).
       expect(find.text('Terminar tarea'), findsNothing);
       expect(find.text('Solicitar suspensión'), findsNothing);
-      expect(find.text('Evidencias fotográficas'), findsNothing);
       expect(find.text('Control de labor'), findsNothing);
+      expect(find.text('Evidencias fotográficas'), findsOneWidget);
+      expect(find.text('Tomar foto'), findsNothing);
 
       await tester.tap(find.text('Pausar'));
       expect(paused, isTrue);
+      await _teardown(tester);
+    });
+
+    testWidgets('US28–US30 con permisos: cerrar, solicitar suspensión y tomar foto sin red', (tester) async {
+      final tapped = <String>[];
+      await _pump(
+        tester,
+        content(
+          TaskDetailUiState(
+            task: _task('t1', status: TaskStatus.inProgress),
+            detail: _detail(),
+            isLoading: false,
+            canCompleteTask: true,
+            canRequestSuspensionPermission: true,
+            canUploadPhotos: true,
+          ),
+          actions: TaskDetailActions(
+            onCompleteClick: () => tapped.add('complete'),
+            onRequestSuspensionClick: () => tapped.add('suspend'),
+            onAddEvidenceClick: () => tapped.add('photo'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Terminar tarea'));
+      await tester.tap(find.text('Solicitar suspensión'));
+      await tester.tap(find.text('Tomar foto'));
+      expect(tapped, ['complete', 'suspend', 'photo']);
+      await _teardown(tester);
+    });
+
+    testWidgets('US29: el supervisor revisa la solicitud pendiente y reanuda la suspendida', (tester) async {
+      var reviewed = false;
+      await _pump(
+        tester,
+        content(
+          TaskDetailUiState(
+            task: _task('t1', status: TaskStatus.inProgress, pendingSuspension: 'Falta retén'),
+            isLoading: false,
+            canValidateSuspension: true,
+          ),
+          actions: TaskDetailActions(onReviewSuspensionClick: () => reviewed = true),
+        ),
+      );
+      await tester.tap(find.text('Suspensión por validar'));
+      expect(reviewed, isTrue);
+      await _teardown(tester);
+
+      await _pump(
+        tester,
+        content(
+          TaskDetailUiState(
+            task: _task('t1', status: TaskStatus.onHold, hold: HoldReason.waitingParts),
+            isLoading: false,
+            canValidateSuspension: true,
+          ),
+        ),
+      );
+      expect(find.text('Reanudar tarea'), findsOneWidget);
+      expect(find.text('Tarea suspendida: solo un supervisor puede levantarla.'), findsNothing);
       await _teardown(tester);
     });
 
