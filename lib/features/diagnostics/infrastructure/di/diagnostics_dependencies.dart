@@ -20,6 +20,7 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/ge
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_active_installation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_health_report_detail_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_latest_health_report_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_latest_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_obd_devices_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_paired_obd_adapters_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/install_obd_device_use_case.dart';
@@ -233,6 +234,9 @@ void setupDiagnosticsDependencies() {
     () => ObserveDiagnosticsSyncStateUseCase(
       repository: getIt<DiagnosticsRepository>(),
     ),
+  );
+  getIt.registerLazySingleton<GetLatestTelemetryUseCase>(
+    () => GetLatestTelemetryUseCase(repository: getIt<DiagnosticsRepository>()),
   );
   getIt.registerLazySingleton<GenerateHealthReportUseCase>(
     () => GenerateHealthReportUseCase(
