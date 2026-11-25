@@ -7,6 +7,7 @@ import 'package:atelier_mobile_crossplatform/features/main/application/observe_p
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/application/enrich_reception_references_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/find_pending_suspensions_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
@@ -25,9 +26,11 @@ class WorkOrdersViewModel extends ChangeNotifier {
   final EnrichReceptionReferencesUseCase? enrichReferences;
   final ObservePendingOperationCountUseCase? observePendingSyncCount;
   final ObservePushHistoryUseCase? observePushHistory;
+  final FindPendingSuspensionsUseCase? findPendingSuspensions;
   final DateTime Function() now;
 
   WorkOrdersViewModel({
+    this.findPendingSuspensions,
     required this.observeSession,
     required this.observeOrders,
     required this.refreshOrders,
@@ -73,6 +76,7 @@ class WorkOrdersViewModel extends ChangeNotifier {
     final branchChanged = _hasSession && session?.branchId != _lastBranchId;
     _hasSession = true;
     _lastBranchId = session?.branchId;
+    _canValidateSuspension = session?.has(Permission.tasksHoldValidate) == true;
     _update(
       _state.copyWith(
         canRead: session?.has(Permission.workOrdersRead) == true,
@@ -127,6 +131,24 @@ class WorkOrdersViewModel extends ChangeNotifier {
       _update(
         _state.copyWith(isRefreshing: false, showingCache: true, error: toWorkOrderUiText(error)),
       );
+      return;
+    }
+    await _loadPendingSuspensions();
+  }
+
+  bool _canValidateSuspension = false;
+
+  /// US29 (H5): marca las órdenes con una suspensión por revisar. Solo para quien puede validarla.
+  Future<void> _loadPendingSuspensions() async {
+    final find = findPendingSuspensions;
+    if (find == null || !_canValidateSuspension || _disposed) return;
+    try {
+      final pending = await find.execute(await observeOrders.execute().first);
+      _update(
+        _state.copyWith(pendingSuspensionOrderIds: {for (final item in pending) item.order.id.value}),
+      );
+    } on Object {
+      // Se conservan las marcas que ya había.
     }
   }
 
