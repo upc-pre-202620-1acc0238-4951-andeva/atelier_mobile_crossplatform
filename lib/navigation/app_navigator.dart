@@ -56,6 +56,8 @@ enum AppRoute {
   workOrderCheckout, // String workOrderId
   // reports
   reports,
+  // bays
+  bays,
 }
 
 class LoginArgs {
