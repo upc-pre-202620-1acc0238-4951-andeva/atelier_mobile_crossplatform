@@ -5,9 +5,17 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_task_mechanic_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/refresh_bay_board_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/bay_errors.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/add_part_to_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/approve_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/remove_part_from_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/search_parts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/update_task_part_quantity_use_case.dart';
@@ -52,8 +60,11 @@ const _searchDebounce = Duration(milliseconds: 300);
 /// - **US24**: descarga de la proforma comercial en PDF para compartirla y envío por correo.
 /// - **US25**: respuesta del cliente (aceptar e iniciar trabajos o rechazar con motivo y cancelar).
 ///
-/// Sin lo que es de otras historias: suspensiones (US29), rentabilidad (US35), resumen de liquidación (US36),
-/// cobro y entrega (US37–US39) y bahías (US40).
+/// - **US29**: aprobar o desestimar suspensiones y reanudar tareas suspendidas.
+/// - **US40**: asignar o cambiar la bahía de una orden editable.
+///
+/// Sin lo que es de otras historias: rentabilidad (US35), resumen de liquidación (US36), cobro y entrega
+/// (US37–US39).
 class WorkOrderDetailViewModel extends ChangeNotifier {
   final String workOrderId;
   final ObserveSessionUseCase observeSession;
@@ -78,8 +89,20 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   final CancelWorkOrderUseCase? cancelOrder;
   final GetPartMovementsUseCase? getPartMovements;
   final ObserveWorkOrderUseCase? observeWorkOrder;
+  final ObserveBayBoardUseCase? observeBayBoard;
+  final RefreshBayBoardUseCase? refreshBayBoard;
+  final ReassignBayUseCase? reassignBay;
+  final ApproveSuspensionUseCase? approveSuspension;
+  final RejectSuspensionUseCase? rejectSuspension;
+  final ResumeSuspendedTaskUseCase? resumeSuspendedTask;
 
   WorkOrderDetailViewModel({
+    this.observeBayBoard,
+    this.refreshBayBoard,
+    this.reassignBay,
+    this.approveSuspension,
+    this.rejectSuspension,
+    this.resumeSuspendedTask,
     required this.workOrderId,
     required this.observeSession,
     required this.getDetail,
@@ -157,6 +180,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
             session.has(Permission.predictiveAlertsRead));
     _update(
       _state.copyWith(
+        canValidateSuspension: has(Permission.tasksHoldValidate),
+        canReassignBays: has(Permission.baysReassign),
         canUpdateWorkOrder: has(Permission.workOrdersUpdate),
         canChargeParts: has(Permission.tasksChargeParts) || has(Permission.workOrdersUpdate),
         canReadParts: canReadParts,
@@ -890,6 +915,143 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     } on Object catch (error) {
       _failWorkOrder(error);
     }
+  }
+
+  // --- US40: asignar o cambiar la bahía de la orden ---
+
+  Future<void> onOpenAssignBay() async {
+    final observe = observeBayBoard;
+    if (observe == null || !_state.canAssignBay) return;
+    _update(_state.copyWith(assignBayForm: const AssignBayForm(), notice: null, error: null));
+    Object? failure;
+    try {
+      await refreshBayBoard?.execute();
+    } on Object catch (error) {
+      failure = error;
+    }
+    var bays = const <WorkBay>[];
+    try {
+      bays = [for (final item in await observe.execute().first) item.bay];
+    } on Object catch (error) {
+      failure = error;
+    }
+    // La hoja pudo cerrarse mientras cargaba.
+    if (_state.assignBayForm == null) return;
+    _update(
+      _state.copyWith(
+        assignBayForm: AssignBayForm(isLoading: false, bays: bays),
+        error: failure == null ? null : toWorkOrderUiText(failure),
+      ),
+    );
+  }
+
+  void onDismissAssignBay() {
+    if (_state.isBusy) return;
+    _update(_state.copyWith(assignBayForm: null, error: null));
+  }
+
+  /// US40 E1/E2: una bahía no libre no llega al backend; con 409 la asignación previa queda intacta.
+  Future<void> onConfirmAssignBay(WorkBay bay) async {
+    final reassign = reassignBay;
+    if (reassign == null || _state.assignBayForm == null || !_state.canAssignBay) return;
+    _update(_state.copyWith(busyAction: WorkOrderDetailAction.assignBay, error: null, notice: null));
+    try {
+      await reassign.execute(workOrderId, bay);
+    } on BayUnavailableException {
+      _update(_state.copyWith(busyAction: null, error: UiText.resource((s) => s.baysUnavailableError)));
+      return;
+    } on Object catch (error) {
+      _failWorkOrder(error);
+      return;
+    }
+    var detail = _state.detail;
+    try {
+      detail = await getDetail.execute(WorkOrderId(workOrderId));
+    } on Object {
+      detail = detail?.copyWith(
+        workOrder: detail.workOrder.copyWith(currentBayId: bay.id, bayName: bay.name),
+      );
+    }
+    _update(
+      _state.copyWith(
+        busyAction: null,
+        assignBayForm: null,
+        detail: detail,
+        notice: UiText.resource((s) => s.baysAssignedNotice(bay.name)),
+      ),
+    );
+  }
+
+  // --- US29: revisar solicitudes de suspensión y reanudar tareas (H5) ---
+
+  void onOpenSuspensionReview(TaskDetail task) {
+    if (!_state.canReviewSuspension || !task.hasPendingSuspension) return;
+    _update(_state.copyWith(reviewingSuspensionTask: task, notice: null, error: null));
+  }
+
+  void onDismissSuspensionReview() {
+    if (_state.isBusy) return;
+    _update(_state.copyWith(reviewingSuspensionTask: null, error: null));
+  }
+
+  Future<void> onApproveSuspension() async {
+    final approve = approveSuspension;
+    final task = _state.reviewingSuspensionTask;
+    if (approve == null || task == null || !_state.canReviewSuspension) return;
+    await _runSuspensionAction(
+      WorkOrderDetailAction.approveSuspension,
+      UiText.resource((s) => s.ordersSuspensionApprovedNotice),
+      () => approve.execute(task.id),
+    );
+  }
+
+  Future<void> onRejectSuspension() async {
+    final reject = rejectSuspension;
+    final task = _state.reviewingSuspensionTask;
+    if (reject == null || task == null || !_state.canReviewSuspension) return;
+    await _runSuspensionAction(
+      WorkOrderDetailAction.rejectSuspension,
+      UiText.resource((s) => s.ordersSuspensionRejectedNotice),
+      () => reject.execute(task.id),
+    );
+  }
+
+  Future<void> onResumeSuspendedTask(TaskDetail task) async {
+    final resume = resumeSuspendedTask;
+    if (resume == null || !_state.canReviewSuspension || !task.isSuspended) return;
+    await _runSuspensionAction(
+      WorkOrderDetailAction.resumeSuspended,
+      UiText.resource((s) => s.ordersTaskResumedNotice),
+      () => resume.execute(task.id),
+    );
+  }
+
+  /// La acción devuelve solo la tarea: se recarga la orden. Si la recarga falla, la acción igual se hizo, así
+  /// que se pone la tarea devuelta en su sitio.
+  Future<void> _runSuspensionAction(
+    WorkOrderDetailAction action,
+    UiText notice,
+    Future<TaskDetail> Function() call,
+  ) async {
+    _update(_state.copyWith(busyAction: action, notice: null, error: null, invalidField: null));
+    final TaskDetail updated;
+    try {
+      updated = await call();
+    } on Object catch (error) {
+      _failTask(error);
+      return;
+    }
+    var detail = _state.detail;
+    try {
+      detail = await getDetail.execute(WorkOrderId(workOrderId));
+    } on Object {
+      detail = detail?.copyWith(
+        tasks: [for (final task in detail.tasks) task.id.value == updated.id.value ? updated : task],
+      );
+    }
+    _update(
+      _state.copyWith(busyAction: null, reviewingSuspensionTask: null, detail: detail, notice: notice),
+    );
   }
 
   // --- Movimientos de repuestos (US33 E2): se piden al abrir la hoja ---
