@@ -91,6 +91,19 @@ class ApiClient {
     );
   }
 
+  /// Descarga un documento fiscal desde una URL absoluta o una ruta relativa al backend.
+  Future<ApiFile> getBytesFromUrl(String url) async {
+    final trimmed = url.trim();
+    final uri = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+        ? Uri.parse(trimmed)
+        : _uri(trimmed.startsWith('/') ? trimmed : '/$trimmed', null);
+    final response = await _send(() => client.get(uri));
+    return ApiFile(
+      bytes: response.bodyBytes,
+      contentDisposition: response.headers['content-disposition'],
+    );
+  }
+
   Uri _uri(String path, Map<String, String>? query) {
     return Uri.parse('$baseUrl$path').replace(queryParameters: query);
   }

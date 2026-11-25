@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/domain/cash_flow.dart';
+
+enum ReportDownload { cashFlow }
+
+enum ReportPdfActionMode { open, share }
 
 /// Periodo elegido en el selector. Los días son de Lima (`yyyy-MM-dd`).
 sealed class PeriodChoice {
@@ -51,10 +57,9 @@ ReportPeriod periodFor(PeriodChoice choice, String today) {
   };
 }
 
-/// Reportes del taller: flujo de caja del periodo (todas las sedes, H30). Nunca se muestran `totalExpenses`
-/// ni `accountsReceivable`: llegan siempre en 0 (H31). Todo es en línea y sin caché.
-///
-/// Las descargas en PDF (flujo de caja US41 y salud de flota US43) están fuera de alcance: no hay estado para ellas.
+/// Reportes del taller: flujo de caja del periodo (todas las sedes, H30) y exportación PDF (US41).
+/// Nunca se muestran `totalExpenses` ni `accountsReceivable`: llegan siempre en 0 (H31).
+/// Salud de flota (US43) queda fuera de alcance.
 class ReportsUiState {
   /// Hoy en Lima, `yyyy-MM-dd`.
   final String today;
@@ -66,6 +71,10 @@ class ReportsUiState {
   final UiText? error;
   final bool canReadCashFlow;
   final bool showCustomRangePicker;
+  final ReportDownload? busy;
+  final File? pdf;
+  final ReportPdfActionMode pdfActionMode;
+  final UiText? actionError;
 
   const ReportsUiState({
     required this.today,
@@ -77,6 +86,10 @@ class ReportsUiState {
     this.error,
     this.canReadCashFlow = false,
     this.showCustomRangePicker = false,
+    this.busy,
+    this.pdf,
+    this.pdfActionMode = ReportPdfActionMode.open,
+    this.actionError,
   });
 
   bool get hasAnyAccess => canReadCashFlow;
@@ -92,6 +105,13 @@ class ReportsUiState {
     bool clearError = false,
     bool? canReadCashFlow,
     bool? showCustomRangePicker,
+    ReportDownload? busy,
+    bool clearBusy = false,
+    File? pdf,
+    bool clearPdf = false,
+    ReportPdfActionMode? pdfActionMode,
+    UiText? actionError,
+    bool clearActionError = false,
   }) {
     return ReportsUiState(
       today: today,
@@ -103,6 +123,10 @@ class ReportsUiState {
       error: clearError ? null : (error ?? this.error),
       canReadCashFlow: canReadCashFlow ?? this.canReadCashFlow,
       showCustomRangePicker: showCustomRangePicker ?? this.showCustomRangePicker,
+      busy: clearBusy ? null : (busy ?? this.busy),
+      pdf: clearPdf ? null : (pdf ?? this.pdf),
+      pdfActionMode: pdfActionMode ?? this.pdfActionMode,
+      actionError: clearActionError ? null : (actionError ?? this.actionError),
     );
   }
 }

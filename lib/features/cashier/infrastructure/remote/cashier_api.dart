@@ -10,6 +10,26 @@ class CashierApi {
 
   const CashierApi({required this.client});
 
+  Future<List<ElectronicVoucherDto>> getVouchers({
+    String? branchId,
+    String? voucherType,
+    String? status,
+    String? from,
+    String? to,
+  }) async {
+    final query = <String, String>{
+      'branchId': ?branchId,
+      'voucherType': ?voucherType,
+      'status': ?status,
+      'from': ?from,
+      'to': ?to,
+    };
+    final List list = await client.get('$_base/vouchers', query: query);
+    return list
+        .map((e) => ElectronicVoucherDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// `null` si el backend respondió 2xx sin cuerpo.
   Future<ElectronicVoucherDto?> issueVoucher(
     IssueVoucherRequestDto body,
@@ -18,6 +38,27 @@ class CashierApi {
     return json == null
         ? null
         : ElectronicVoucherDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<ElectronicVoucherDto> voidVoucher(
+    String id,
+    VoidVoucherRequestDto body,
+  ) async {
+    final Map<String, dynamic> json = await client.post(
+      '$_base/vouchers/$id/void',
+      body: body.toJson(),
+    );
+    return ElectronicVoucherDto.fromJson(json);
+  }
+
+  Future<ElectronicVoucherDto> issueCreditNote(
+    IssueCreditNoteRequestDto body,
+  ) async {
+    final Map<String, dynamic> json = await client.post(
+      '$_base/vouchers/credit-notes',
+      body: body.toJson(),
+    );
+    return ElectronicVoucherDto.fromJson(json);
   }
 
   Future<ElectronicVoucherDto> getVoucher(String id) async {
@@ -87,4 +128,6 @@ class CashierApi {
       body: {'active': active},
     );
   }
+
+  Future<ApiFile> downloadDocument(String url) => client.getBytesFromUrl(url);
 }

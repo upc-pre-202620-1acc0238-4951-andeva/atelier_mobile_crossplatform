@@ -1,4 +1,5 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_grouped_card.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_live_beacon.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_main_top_bar.dart';
@@ -20,6 +21,7 @@ import 'package:atelier_mobile_crossplatform/features/cashier/presentation/cashi
 import 'package:atelier_mobile_crossplatform/features/cashier/presentation/dailycash/daily_cash_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/presentation/dailycash/daily_cash_view_model.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
+import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
 
 const _placeholderTotal = 'S/ 0.00';
@@ -57,6 +59,7 @@ class _DailyCashScreenState extends State<DailyCashScreen> {
         state: viewModel.state,
         showBack: showBack,
         onBack: () => Navigator.of(context).maybePop(),
+        onOpenVouchers: () => AppNavigator.push(context, AppRoute.vouchers),
         onRetry: viewModel.load,
         onPreviousDay: viewModel.onPreviousDay,
         onNextDay: viewModel.onNextDay,
@@ -70,6 +73,7 @@ class DailyCashContent extends StatelessWidget {
   final DailyCashUiState state;
   final bool showBack;
   final VoidCallback onBack;
+  final VoidCallback? onOpenVouchers;
   final VoidCallback onRetry;
   final VoidCallback onPreviousDay;
   final VoidCallback onNextDay;
@@ -80,6 +84,7 @@ class DailyCashContent extends StatelessWidget {
     required this.state,
     this.showBack = true,
     required this.onBack,
+    this.onOpenVouchers,
     required this.onRetry,
     required this.onPreviousDay,
     required this.onNextDay,
@@ -139,6 +144,19 @@ class DailyCashContent extends StatelessWidget {
         )
       else ...[
         _DateSwitcher(state: state, onPrevious: onPreviousDay, onNext: onNextDay, onToday: onToday),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: AtelierGroupedCard(
+            children: [
+              AtelierGroupedRow(
+                title: strings.cashierDailyVouchers,
+                subtitle: strings.cashierDailyVouchersSub,
+                icon: Icons.receipt_long_outlined,
+                onClick: onOpenVouchers ?? () {},
+              ),
+            ],
+          ),
+        ),
         if (showSkeleton)
           for (var i = 0; i < 3; i++) const _SkeletonRow()
         else if (rawSkeleton)

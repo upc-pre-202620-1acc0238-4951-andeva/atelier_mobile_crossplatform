@@ -108,7 +108,7 @@ void main() {
   setUpAll(_loadSatoshi);
 
   group('DailyCashContent', () {
-    testWidgets('cargado: panel, fecha, medios de pago y cobros; sin acceso a comprobantes', (tester) async {
+    testWidgets('cargado: panel, fecha, acceso a comprobantes SUNAT (US37), medios de pago y cobros', (tester) async {
       await _pump(tester, _content(_state(summary: _summary())));
 
       expect(find.text('Caja del día'), findsOneWidget);
@@ -127,8 +127,8 @@ void main() {
       // es hoy: ni "Hoy" ni día siguiente habilitado.
       expect(find.text('Hoy'), findsNothing);
 
-      // US37: la tarjeta de comprobantes SUNAT no existe.
-      expect(find.text('Comprobantes SUNAT'), findsNothing);
+      // US37: acceso rápido a comprobantes SUNAT.
+      expect(find.text('Comprobantes SUNAT'), findsOneWidget);
       await _teardown(tester);
     });
 

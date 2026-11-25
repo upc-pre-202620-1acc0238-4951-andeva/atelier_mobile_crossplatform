@@ -168,6 +168,7 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
         canResolveProposals: has(Permission.proposalsResolve),
         canReadPartMovements: has(Permission.batchesRead) || has(Permission.batchesRestore),
         canOpenObd: canOpenObd,
+        hasCheckoutPermission: has(Permission.invoicesRead) || has(Permission.invoicesIssueSunat),
       ),
     );
     if (canReadParts && _state.partNamesById.isEmpty) _preloadPartNames();

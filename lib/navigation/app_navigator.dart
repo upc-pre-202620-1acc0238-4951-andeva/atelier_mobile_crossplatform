@@ -52,6 +52,8 @@ enum AppRoute {
   aiHealthReport, // VehicleArgs
   // cashier
   dailyCash,
+  vouchers,
+  workOrderCheckout, // String workOrderId
   // reports
   reports,
 }

@@ -1,6 +1,8 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_chip.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_surface.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_shapes.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
@@ -266,9 +268,10 @@ class _PartLine extends StatelessWidget {
   }
 }
 
-/// US24: las acciones de la proforma, generar el PDF y enviarlo por correo. Sin sssobre el resumen en
-/// cascada (subtotal, IGV y total): es la historia US36. Sin conexión las acciones se apagan y se dice por qué.
+/// US22 + US24 + US36: la liquidación económica en cascada (`Subtotal`, `IGV 18 %`, `Total`) y las acciones
+/// para generar el PDF y enviarlo por correo. Sin conexión las acciones se apagan y se dice por qué.
 class QuotationSection extends StatelessWidget {
+  final CascadeBreakdown breakdown;
   final bool canGeneratePdf;
   final bool canEmailQuotation;
   final bool showPdfActions;
@@ -279,6 +282,7 @@ class QuotationSection extends StatelessWidget {
 
   const QuotationSection({
     super.key,
+    required this.breakdown,
     required this.canGeneratePdf,
     required this.canEmailQuotation,
     required this.showPdfActions,
@@ -291,32 +295,134 @@ class QuotationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
+    final scheme = context.scheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        spacing: 8,
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: Spacing.sm,
         children: [
-          if (showPdfActions)
-            Expanded(
-              child: AtelierButton(
-                text: strings.quotationGeneratePdf,
-                onClick: onGeneratePdf,
-                style: AtelierButtonStyle.tonal,
-                enabled: canGeneratePdf,
-                loading: busyAction == WorkOrderDetailAction.downloadPdf,
-                icon: Icons.description_outlined,
+          AtelierSurface(
+            tier: SurfaceTier.elevated,
+            shape: heroShape,
+            contentPadding: const EdgeInsets.all(Spacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: Spacing.xs,
+              children: [
+                SummaryRow(
+                  label: strings.quotationLaborSubtotal,
+                  value: breakdown.laborSubtotal.format(),
+                ),
+                SummaryRow(
+                  label: strings.quotationPartsSubtotal,
+                  value: breakdown.partsSubtotal.format(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+                  child: Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
+                ),
+                SummaryRow(
+                  label: strings.quotationSubtotal,
+                  value: breakdown.subtotal.format(),
+                ),
+                SummaryRow(
+                  label: strings.quotationIgv,
+                  value: breakdown.taxAmount.format(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+                  child: Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
+                ),
+                Row(
+                  spacing: 12,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        strings.quotationTotal,
+                        style: context.text.titleMedium?.copyWith(color: scheme.onSurface),
+                      ),
+                    ),
+                    Text(
+                      breakdown.totalAmount.format(),
+                      style: context.text.headlineMedium?.copyWith(color: scheme.onSurface),
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (showPdfActions || showEmailAction)
+            Row(
+              spacing: Spacing.sm,
+              children: [
+                if (showPdfActions)
+                  Expanded(
+                    child: AtelierButton(
+                      text: strings.quotationGeneratePdf,
+                      onClick: onGeneratePdf,
+                      style: AtelierButtonStyle.tonal,
+                      enabled: canGeneratePdf,
+                      loading: busyAction == WorkOrderDetailAction.downloadPdf,
+                      icon: Icons.description_outlined,
+                    ),
+                  ),
+                if (showEmailAction)
+                  Expanded(
+                    child: AtelierButton(
+                      text: strings.ordersQuotationSendShort,
+                      onClick: onSendEmail,
+                      style: AtelierButtonStyle.outlined,
+                      enabled: canEmailQuotation,
+                      loading: busyAction == WorkOrderDetailAction.sendEmail,
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rótulo a la izquierda y cifra a la derecha.
+class SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasized;
+
+  const SummaryRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final colors = context.atelier;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 32),
+      child: Row(
+        spacing: 12,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: (emphasized ? context.text.titleMedium : context.text.bodyMedium)?.copyWith(
+                color: emphasized ? scheme.onSurface : colors.inkSecondary,
               ),
             ),
-          if (showEmailAction)
-            Expanded(
-              child: AtelierButton(
-                text: strings.ordersQuotationSendShort,
-                onClick: onSendEmail,
-                style: AtelierButtonStyle.outlined,
-                enabled: canEmailQuotation,
-                loading: busyAction == WorkOrderDetailAction.sendEmail,
-              ),
+          ),
+          Text(
+            value,
+            style: (emphasized ? context.text.titleLarge : context.text.bodyMedium)?.copyWith(
+              color: scheme.onSurface,
             ),
+            maxLines: 1,
+          ),
         ],
       ),
     );
