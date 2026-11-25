@@ -273,9 +273,9 @@ void main() {
       expect(find.text('Reportar hallazgo'), findsOneWidget);
       expect(find.text('Consultar repuestos'), findsOneWidget);
       expect(find.text('Tablero de bahías'), findsOneWidget);
-      // Fuera de esta versión: alertas de stock (US34) y telemetría en vivo (US18).
+      // Fuera de esta versión: alertas de stock (US34).
       expect(find.text('Requieren reposición'), findsNothing);
-      expect(find.textContaining('Telemetría en vivo'), findsNothing);
+      expect(find.textContaining('Telemetría en vivo'), findsOneWidget);
       await _teardown(tester);
     });
 

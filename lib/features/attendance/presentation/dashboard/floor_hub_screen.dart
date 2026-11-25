@@ -920,7 +920,7 @@ class _FloorShortcutsCard extends StatelessWidget {
       if (state.canUseObd)
         (
           title: strings.floorHubQuickObd,
-          subtitle: strings.floorHubQuickObdSubNoLive,
+          subtitle: strings.floorHubQuickObdSub,
           icon: null,
           onClick: actions.onOpenObd,
         ),
