@@ -1,7 +1,7 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
-import 'package:atelier_mobile_crossplatform/features/auth/application/get_pending_operation_count_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/get_device_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/sign_in_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/auth_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/login/login_screen.dart';
@@ -102,10 +102,10 @@ void main() {
     late _MockAuthRepository repository;
 
     LoginViewModel viewModel({LoginArgs? args}) {
-      when(() => repository.pendingOperationCount()).thenAnswer((_) async => 0);
+      when(() => repository.devicePendingOperationCount()).thenAnswer((_) async => 0);
       return LoginViewModel(
         signInUseCase: SignInUseCase(repository: repository),
-        getPendingCountUseCase: GetPendingOperationCountUseCase(repository: repository),
+        getDevicePendingCountUseCase: GetDevicePendingOperationCountUseCase(repository: repository),
         args: args,
       );
     }

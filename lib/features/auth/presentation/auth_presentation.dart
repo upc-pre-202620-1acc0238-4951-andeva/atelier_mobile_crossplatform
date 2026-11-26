@@ -1,7 +1,7 @@
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/accept_invitation_use_case.dart';
-import 'package:atelier_mobile_crossplatform/features/auth/application/get_pending_operation_count_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/get_device_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/resend_verification_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/select_branch_use_case.dart';
@@ -23,7 +23,7 @@ void setupAuthPresentation() {
   getIt.registerFactoryParam<LoginViewModel, LoginArgs?, void>(
     (args, _) => LoginViewModel(
       signInUseCase: getIt<SignInUseCase>(),
-      getPendingCountUseCase: getIt<GetPendingOperationCountUseCase>(),
+      getDevicePendingCountUseCase: getIt<GetDevicePendingOperationCountUseCase>(),
       args: args,
     ),
   );

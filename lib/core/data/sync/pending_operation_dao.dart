@@ -208,6 +208,13 @@ class PendingOperationDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.userId.equals(userId))).go();
   }
 
+  /// Conteo neutro del dispositivo, de todos los usuarios: el login avisa sin exponer de quién son (US04).
+  Future<int> countAll() {
+    final count = pendingOperations.id.count();
+    final query = selectOnly(pendingOperations)..addColumns([count]);
+    return query.map((row) => row.read(count)!).getSingle();
+  }
+
   Stream<int> watchPendingCount(String userId) {
     final count = pendingOperations.id.count();
     final query = selectOnly(pendingOperations)

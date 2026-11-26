@@ -16,6 +16,12 @@ class ProfileUiState {
   /// Versión de la app (`pubspec.yaml`); vacía hasta leerla.
   final String version;
 
+  /// Hoja de confirmación de "Cerrar sesión" abierta (US04).
+  final bool confirmingSignOut;
+
+  /// Cerrando sesión: evita un segundo cierre mientras se revocan los tokens.
+  final bool signingOut;
+
   const ProfileUiState({
     this.fullName = '',
     this.email = '',
@@ -29,6 +35,8 @@ class ProfileUiState {
     this.pendingCount = 0,
     this.unreadNotificationsCount = 0,
     this.version = '',
+    this.confirmingSignOut = false,
+    this.signingOut = false,
   });
 
   bool get hasPlan => planTier.isNotEmpty && planTier.toLowerCase() != 'none';
@@ -46,6 +54,8 @@ class ProfileUiState {
     int? pendingCount,
     int? unreadNotificationsCount,
     String? version,
+    bool? confirmingSignOut,
+    bool? signingOut,
   }) {
     return ProfileUiState(
       fullName: fullName ?? this.fullName,
@@ -60,6 +70,8 @@ class ProfileUiState {
       pendingCount: pendingCount ?? this.pendingCount,
       unreadNotificationsCount: unreadNotificationsCount ?? this.unreadNotificationsCount,
       version: version ?? this.version,
+      confirmingSignOut: confirmingSignOut ?? this.confirmingSignOut,
+      signingOut: signingOut ?? this.signingOut,
     );
   }
 }

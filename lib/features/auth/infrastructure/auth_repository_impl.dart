@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
@@ -7,9 +8,12 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/session/auth_refre
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/authenticated_user_dto.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_maintenance_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart';
+import 'package:atelier_mobile_crossplatform/core/media/temp_cache_cleaner.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/device_token_registrar.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/accept_invitation.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/auth_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/invalid_invitation_exception.dart';
@@ -24,6 +28,12 @@ import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/remote
 import 'package:atelier_mobile_crossplatform/features/auth/infrastructure/remote/verify_email_request_dto.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
+  /// Presupuestos independientes (US04): un refresh vencido al borrar el token del dispositivo no debe
+  /// consumir el tiempo de revocar el refresh token, ni dejar al usuario esperando sin red.
+  static const preSignOutFlushTimeout = Duration(milliseconds: 1500);
+  static const deviceTokenClearTimeout = Duration(seconds: 2);
+  static const remoteSignOutTimeout = Duration(seconds: 4);
+
   final AuthApi api;
   final EmployeeApi employeeApi;
   final AuthRefreshApi refreshApi;
@@ -32,6 +42,13 @@ class AuthRepositoryImpl implements AuthRepository {
   final CacheMaintenanceDao cacheDao;
   final PendingOperationDao pendingDao;
   final void Function() requestSync;
+
+  /// Empaqueta lo capturado por el usuario saliente antes de borrar su sesión (US19).
+  final PreSyncHookRegistry? preSyncHooks;
+
+  /// Avisos recibidos en este teléfono: no deben verse en la sesión del siguiente usuario.
+  final PushInbox? pushInbox;
+  final TempCacheCleaner? tempCacheCleaner;
 
   const AuthRepositoryImpl({
     required this.api,
@@ -42,6 +59,9 @@ class AuthRepositoryImpl implements AuthRepository {
     required this.cacheDao,
     required this.pendingDao,
     required this.requestSync,
+    this.preSyncHooks,
+    this.pushInbox,
+    this.tempCacheCleaner,
   });
 
   @override
@@ -125,26 +145,57 @@ class AuthRepositoryImpl implements AuthRepository {
     return pendingDao.watchPendingCount(userId).first;
   }
 
-  /// Orden de docs/07-roadmap.md (paso 2). A diferencia de Android, `ApiClient` lanza en vez de
-  /// devolver el error: nada de la red debe impedir salir.
+  @override
+  Future<int> devicePendingOperationCount() => pendingDao.countAll();
+
+  /// Orden de docs/07-roadmap.md (paso 2) y US04/US19: empaquetar lecturas del usuario saliente (1,5 s) →
+  /// token FCM (2 s) → revocar refresh token (4 s) → avisos, archivos temporales y cachés → sesión. A diferencia
+  /// de Android, `ApiClient` lanza en vez de devolver el error: nada de la red debe impedir salir. La cola
+  /// `pending_operations` se conserva y se envía cuando su dueño vuelva a entrar.
   @override
   Future<void> signOut() async {
     try {
-      await _bestEffort('borrar el token del dispositivo', deviceTokens.clear);
+      final departingUserId = await session.getUserId();
+      final hooks = preSyncHooks;
+      if (departingUserId != null && hooks != null) {
+        await _withinBudget(
+          'empaquetar lo capturado sin enviar',
+          preSignOutFlushTimeout,
+          () => hooks.runAll(departingUserId, forceFlushAll: true),
+        );
+      }
+      await _withinBudget(
+        'borrar el token del dispositivo',
+        deviceTokenClearTimeout,
+        () => _bestEffort('borrar el token del dispositivo', deviceTokens.clear),
+      );
       // Después del PUT: su 401 puede renovar y rotar el token, y revocar el viejo dejaría vivo el nuevo.
       final refreshToken = await session.getRefreshToken();
       if (refreshToken != null) {
-        await _bestEffort(
+        await _withinBudget(
           'revocar el refresh token',
-          () => refreshApi.signOut(refreshToken),
+          remoteSignOutTimeout,
+          () => _bestEffort('revocar el refresh token', () => refreshApi.signOut(refreshToken)),
         );
       }
     } finally {
       try {
+        pushInbox?.clear();
+        await tempCacheCleaner?.clearSensitiveTempFiles();
         await cacheDao.clearCaches();
       } finally {
         await session.clear();
       }
+    }
+  }
+
+  /// Sin red una llamada puede tardar el timeout completo del cliente: pasado [budget] se sigue sin ella.
+  /// Los errores de red ya los absorbe [_bestEffort]; un error inesperado se propaga tras limpiar la sesión.
+  Future<void> _withinBudget(String what, Duration budget, Future<void> Function() call) async {
+    try {
+      await call().timeout(budget);
+    } on TimeoutException {
+      log('No se pudo $what a tiempo: se sigue cerrando la sesión', name: 'AuthRepository');
     }
   }
 

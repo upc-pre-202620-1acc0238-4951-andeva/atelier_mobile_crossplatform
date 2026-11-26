@@ -4,6 +4,7 @@ import 'package:atelier_mobile_crossplatform/features/attendance/application/obs
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/is_notification_permission_granted_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/request_notification_permission_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/sign_out_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_obd_devices_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/discard_pending_operation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/mark_all_push_notifications_read_use_case.dart';
@@ -106,6 +107,7 @@ void setupMainPresentation() {
       observePendingCount: getIt<ObservePendingOperationCountUseCase>(),
       observePushHistory: getIt<ObservePushHistoryUseCase>(),
       getBranches: getIt<GetSelectableBranchesUseCase>(),
+      signOut: getIt<SignOutUseCase>(),
       loadVersion: () async => (await PackageInfo.fromPlatform()).version,
     ),
   );

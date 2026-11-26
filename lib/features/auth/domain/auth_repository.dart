@@ -25,6 +25,12 @@ abstract class AuthRepository {
   /// Operaciones de la cola del usuario actual que aún no se enviaron. Sin sesión, 0.
   Future<int> pendingOperationCount();
 
-  /// Nunca falla por la red: sin conexión igual se sale. La cola se conserva (06 §3).
+  /// Operaciones guardadas en el dispositivo, de cualquier usuario y sin necesitar sesión: el login avisa
+  /// que hay trabajo local tras un cierre o una sesión vencida (US04).
+  Future<int> devicePendingOperationCount();
+
+  /// Cierre seguro (US04 E1). Nunca falla por la red: sin conexión igual se sale. Empaqueta lo capturado
+  /// por el usuario saliente, revoca el token del dispositivo y el refresh token, borra cachés, avisos y
+  /// archivos temporales, y al final la sesión. La cola se conserva (06 §3).
   Future<void> signOut();
 }
