@@ -32,6 +32,10 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
   static const batchSize = 200;
   static const _readingsRetention = Duration(days: 7);
 
+  /// Encolar y marcar filas no se intercala dentro del motor (como el `Mutex` de Android): el muestreo, el
+  /// cierre de sesión y el pre-sync pueden pedirlo a la vez.
+  static Future<void> _batchChain = Future<void>.value();
+
   final IotApi api;
   final TelemetryReadingDao readingDao;
   final VehicleFaultDao faultDao;
@@ -134,6 +138,8 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
   }) async {
     final engineTemp = sample.engineTempCelsius;
     if (engineTemp == null) return false;
+    // Dueño de la lectura (US19): en un terminal compartido no viaja con la sesión del siguiente técnico.
+    final userId = await session.getUserId();
     return readingDao.insertReading(
       TelemetryReadingsCompanion.insert(
         id: const Uuid().v4(),
@@ -146,20 +152,48 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
         fuelPercentage: Value(sample.fuelPercentage),
         latitude: Value(latitude),
         longitude: Value(longitude),
+        userId: Value(userId),
       ),
     );
   }
 
   /// Si el lote ya estaba en cola (se cortó entre encolar y marcar las filas) se reutiliza su operación por la
   /// `dedupe_key`, así ninguna lectura queda sin lote ni viaja dos veces.
+  ///
+  /// Solo las lecturas de [userId] (o del usuario con sesión) y las sin dueño. Con [minIdle] los remanentes de
+  /// menos de 200 solo se empaquetan si la última muestra del vehículo tiene al menos esa antigüedad: así el
+  /// pre-sync no parte en micro-lotes un vehículo que sigue transmitiendo (US19).
   @override
-  Future<int> enqueueUnbatchedReadings({required bool onlyFull}) async {
-    if (await session.getSession() == null) return 0;
+  Future<int> enqueueUnbatchedReadings({
+    required bool onlyFull,
+    String? userId,
+    Duration minIdle = Duration.zero,
+  }) {
+    final result = _batchChain.then((_) => _enqueueUnbatched(onlyFull, userId, minIdle));
+    _batchChain = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
+  Future<int> _enqueueUnbatched(bool onlyFull, String? userId, Duration minIdle) async {
+    final current = await session.getSession();
+    final targetUserId = userId ?? current?.userId;
+    if (current == null || targetUserId == null) return 0;
+    // Sin `iot:telemetry:ingest` (p. ej. Mecánico Jefe, H22) el lote daría 403: se queda en el teléfono.
+    if (!current.has(Permission.telemetryIngest)) return 0;
+    final nowMillis = _nowMillis;
     var batches = 0;
-    for (final vehicleId in await readingDao.vehiclesWithUnbatched()) {
+    for (final vehicleId in await readingDao.vehiclesWithUnbatchedForUser(targetUserId)) {
       while (true) {
-        final rows = await readingDao.unbatched(vehicleId, batchSize);
-        if (rows.isEmpty || (onlyFull && rows.length < batchSize)) break;
+        final rows = await readingDao.unbatchedForUser(vehicleId, targetUserId, batchSize);
+        if (rows.isEmpty) break;
+        if (rows.length < batchSize) {
+          if (onlyFull) break;
+          if (minIdle > Duration.zero) {
+            final last =
+                await readingDao.maxTimestampUnbatchedForUser(vehicleId, targetUserId) ?? rows.last.timestamp;
+            if (nowMillis - last < minIdle.inMilliseconds) break;
+          }
+        }
         final dedupeKey = DiagnosticsDedupeKeys.telemetryBatch(
           vehicleId,
           rows.first.timestamp,

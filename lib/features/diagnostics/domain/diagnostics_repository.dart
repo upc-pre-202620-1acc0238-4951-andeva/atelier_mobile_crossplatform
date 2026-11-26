@@ -44,8 +44,15 @@ abstract class DiagnosticsRepository {
   });
 
   /// Arma `TELEMETRY_BATCH` de hasta 200 lecturas sin lote. Con [onlyFull] solo los lotes completos
-  /// (durante el muestreo); sin él, también el resto (al iniciar y al cerrar). Devuelve cuántos encoló.
-  Future<int> enqueueUnbatchedReadings({required bool onlyFull});
+  /// (durante el muestreo); sin él, también el resto (al iniciar, al cerrar y en el pre-sync del worker).
+  /// [userId] aísla las lecturas del técnico que las capturó (US19); [minIdle] exige que la última muestra
+  /// del vehículo tenga al menos esa antigüedad para empaquetar un remanente de menos de 200.
+  /// Devuelve cuántos lotes encoló.
+  Future<int> enqueueUnbatchedReadings({
+    required bool onlyFull,
+    String? userId,
+    Duration minIdle = Duration.zero,
+  });
 
   /// Borra las lecturas ya confirmadas con más de 7 días (06 §6).
   Future<void> purgeConfirmedReadings();

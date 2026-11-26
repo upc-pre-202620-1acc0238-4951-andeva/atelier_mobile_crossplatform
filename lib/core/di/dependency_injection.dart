@@ -21,6 +21,7 @@ import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.da
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_queue.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_upload_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_scheduler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_triggers.dart';
@@ -114,6 +115,7 @@ void setupDependencies() {
   getIt.registerLazySingleton<OperationHandlerRegistry>(
     () => OperationHandlerRegistry(),
   );
+  getIt.registerLazySingleton<PreSyncHookRegistry>(() => PreSyncHookRegistry());
   getIt.registerLazySingleton<SyncScheduler>(() => SyncScheduler());
   getIt.registerLazySingleton<SyncProcessor>(
     () => SyncProcessor(
@@ -124,6 +126,7 @@ void setupDependencies() {
       scheduler: getIt<SyncScheduler>(),
       maxAttemptsMessage: strings().syncFailedMaxAttempts,
       ensureFreshToken: getIt<TokenRefresher>().ensureFresh,
+      preSyncHooks: getIt<PreSyncHookRegistry>(),
     ),
   );
   getIt.registerLazySingleton<PendingOperationQueue>(

@@ -105,13 +105,17 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: stepByStep(
       from1To2: (m, schema) async {
         await m.addColumn(schema.tasks, schema.tasks.pendingSuspensionRequestedAt);
+      },
+      // US19: dueño de cada lectura de telemetría (terminal compartido en la fosa).
+      from2To3: (m, schema) async {
+        await m.addColumn(schema.telemetryReadings, schema.telemetryReadings.userId);
       },
     ),
   );

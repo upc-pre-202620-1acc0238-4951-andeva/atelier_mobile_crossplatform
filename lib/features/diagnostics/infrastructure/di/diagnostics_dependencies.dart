@@ -8,6 +8,7 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dar
 import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_queue.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/location_provider.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/acknowledge_predictive_alert_use_case.dart';
@@ -58,6 +59,7 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/local/vehicle_fault_dao.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/iot_api.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/session/live_diagnostic_session.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/sync/diagnostics_pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/sync/register_fault_handler.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/sync/resolve_fault_handler.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/sync/telemetry_batch_handler.dart';
@@ -78,6 +80,11 @@ void setupDiagnosticsDependencies() {
   );
 
   getIt.registerLazySingleton<IotApi>(() => IotApi(client: getIt<ApiClient>()));
+
+  // US19: antes de cada envío (UI o worker) y al cerrar sesión, lo capturado en la fosa sin lote entra a la cola.
+  getIt<PreSyncHookRegistry>().register(
+    () => DiagnosticsPreSyncHook(repository: getIt<DiagnosticsRepository>()),
+  );
 
   final handlers = getIt<OperationHandlerRegistry>();
   handlers.register(

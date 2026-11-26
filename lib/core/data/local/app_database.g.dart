@@ -9663,6 +9663,15 @@ class $TelemetryReadingsTable extends TelemetryReadings
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9676,6 +9685,7 @@ class $TelemetryReadingsTable extends TelemetryReadings
     latitude,
     longitude,
     batchOperationId,
+    userId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9772,6 +9782,12 @@ class $TelemetryReadingsTable extends TelemetryReadings
         ),
       );
     }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
@@ -9825,6 +9841,10 @@ class $TelemetryReadingsTable extends TelemetryReadings
         DriftSqlType.string,
         data['${effectivePrefix}batch_operation_id'],
       ),
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -9847,6 +9867,7 @@ class TelemetryReadingEntity extends DataClass
   final double? latitude;
   final double? longitude;
   final String? batchOperationId;
+  final String? userId;
   const TelemetryReadingEntity({
     required this.id,
     required this.vehicleId,
@@ -9859,6 +9880,7 @@ class TelemetryReadingEntity extends DataClass
     this.latitude,
     this.longitude,
     this.batchOperationId,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9887,6 +9909,9 @@ class TelemetryReadingEntity extends DataClass
     }
     if (!nullToAbsent || batchOperationId != null) {
       map['batch_operation_id'] = Variable<String>(batchOperationId);
+    }
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
     }
     return map;
   }
@@ -9918,6 +9943,9 @@ class TelemetryReadingEntity extends DataClass
       batchOperationId: batchOperationId == null && nullToAbsent
           ? const Value.absent()
           : Value(batchOperationId),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -9938,6 +9966,7 @@ class TelemetryReadingEntity extends DataClass
       latitude: serializer.fromJson<double?>(json['latitude']),
       longitude: serializer.fromJson<double?>(json['longitude']),
       batchOperationId: serializer.fromJson<String?>(json['batchOperationId']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
@@ -9955,6 +9984,7 @@ class TelemetryReadingEntity extends DataClass
       'latitude': serializer.toJson<double?>(latitude),
       'longitude': serializer.toJson<double?>(longitude),
       'batchOperationId': serializer.toJson<String?>(batchOperationId),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
@@ -9970,6 +10000,7 @@ class TelemetryReadingEntity extends DataClass
     Value<double?> latitude = const Value.absent(),
     Value<double?> longitude = const Value.absent(),
     Value<String?> batchOperationId = const Value.absent(),
+    Value<String?> userId = const Value.absent(),
   }) => TelemetryReadingEntity(
     id: id ?? this.id,
     vehicleId: vehicleId ?? this.vehicleId,
@@ -9988,6 +10019,7 @@ class TelemetryReadingEntity extends DataClass
     batchOperationId: batchOperationId.present
         ? batchOperationId.value
         : this.batchOperationId,
+    userId: userId.present ? userId.value : this.userId,
   );
   TelemetryReadingEntity copyWithCompanion(TelemetryReadingsCompanion data) {
     return TelemetryReadingEntity(
@@ -10010,6 +10042,7 @@ class TelemetryReadingEntity extends DataClass
       batchOperationId: data.batchOperationId.present
           ? data.batchOperationId.value
           : this.batchOperationId,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -10026,7 +10059,8 @@ class TelemetryReadingEntity extends DataClass
           ..write('fuelPercentage: $fuelPercentage, ')
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
-          ..write('batchOperationId: $batchOperationId')
+          ..write('batchOperationId: $batchOperationId, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
@@ -10044,6 +10078,7 @@ class TelemetryReadingEntity extends DataClass
     latitude,
     longitude,
     batchOperationId,
+    userId,
   );
   @override
   bool operator ==(Object other) =>
@@ -10059,7 +10094,8 @@ class TelemetryReadingEntity extends DataClass
           other.fuelPercentage == this.fuelPercentage &&
           other.latitude == this.latitude &&
           other.longitude == this.longitude &&
-          other.batchOperationId == this.batchOperationId);
+          other.batchOperationId == this.batchOperationId &&
+          other.userId == this.userId);
 }
 
 class TelemetryReadingsCompanion
@@ -10075,6 +10111,7 @@ class TelemetryReadingsCompanion
   final Value<double?> latitude;
   final Value<double?> longitude;
   final Value<String?> batchOperationId;
+  final Value<String?> userId;
   final Value<int> rowid;
   const TelemetryReadingsCompanion({
     this.id = const Value.absent(),
@@ -10088,6 +10125,7 @@ class TelemetryReadingsCompanion
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
     this.batchOperationId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TelemetryReadingsCompanion.insert({
@@ -10102,6 +10140,7 @@ class TelemetryReadingsCompanion
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
     this.batchOperationId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        vehicleId = Value(vehicleId),
@@ -10119,6 +10158,7 @@ class TelemetryReadingsCompanion
     Expression<double>? latitude,
     Expression<double>? longitude,
     Expression<String>? batchOperationId,
+    Expression<String>? userId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10133,6 +10173,7 @@ class TelemetryReadingsCompanion
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (batchOperationId != null) 'batch_operation_id': batchOperationId,
+      if (userId != null) 'user_id': userId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10149,6 +10190,7 @@ class TelemetryReadingsCompanion
     Value<double?>? latitude,
     Value<double?>? longitude,
     Value<String?>? batchOperationId,
+    Value<String?>? userId,
     Value<int>? rowid,
   }) {
     return TelemetryReadingsCompanion(
@@ -10163,6 +10205,7 @@ class TelemetryReadingsCompanion
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       batchOperationId: batchOperationId ?? this.batchOperationId,
+      userId: userId ?? this.userId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10203,6 +10246,9 @@ class TelemetryReadingsCompanion
     if (batchOperationId.present) {
       map['batch_operation_id'] = Variable<String>(batchOperationId.value);
     }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10223,6 +10269,7 @@ class TelemetryReadingsCompanion
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
           ..write('batchOperationId: $batchOperationId, ')
+          ..write('userId: $userId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16461,6 +16508,7 @@ typedef $$TelemetryReadingsTableCreateCompanionBuilder =
       Value<double?> latitude,
       Value<double?> longitude,
       Value<String?> batchOperationId,
+      Value<String?> userId,
       Value<int> rowid,
     });
 typedef $$TelemetryReadingsTableUpdateCompanionBuilder =
@@ -16476,6 +16524,7 @@ typedef $$TelemetryReadingsTableUpdateCompanionBuilder =
       Value<double?> latitude,
       Value<double?> longitude,
       Value<String?> batchOperationId,
+      Value<String?> userId,
       Value<int> rowid,
     });
 
@@ -16540,6 +16589,11 @@ class $$TelemetryReadingsTableFilterComposer
 
   ColumnFilters<String> get batchOperationId => $composableBuilder(
     column: $table.batchOperationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16607,6 +16661,11 @@ class $$TelemetryReadingsTableOrderingComposer
     column: $table.batchOperationId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TelemetryReadingsTableAnnotationComposer
@@ -16658,6 +16717,9 @@ class $$TelemetryReadingsTableAnnotationComposer
     column: $table.batchOperationId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 }
 
 class $$TelemetryReadingsTableTableManager
@@ -16711,6 +16773,7 @@ class $$TelemetryReadingsTableTableManager
                 Value<double?> latitude = const Value.absent(),
                 Value<double?> longitude = const Value.absent(),
                 Value<String?> batchOperationId = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TelemetryReadingsCompanion(
                 id: id,
@@ -16724,6 +16787,7 @@ class $$TelemetryReadingsTableTableManager
                 latitude: latitude,
                 longitude: longitude,
                 batchOperationId: batchOperationId,
+                userId: userId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16739,6 +16803,7 @@ class $$TelemetryReadingsTableTableManager
                 Value<double?> latitude = const Value.absent(),
                 Value<double?> longitude = const Value.absent(),
                 Value<String?> batchOperationId = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TelemetryReadingsCompanion.insert(
                 id: id,
@@ -16752,6 +16817,7 @@ class $$TelemetryReadingsTableTableManager
                 latitude: latitude,
                 longitude: longitude,
                 batchOperationId: batchOperationId,
+                userId: userId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

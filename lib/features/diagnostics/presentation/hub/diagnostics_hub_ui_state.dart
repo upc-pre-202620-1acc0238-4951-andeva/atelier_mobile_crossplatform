@@ -2,6 +2,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/predictive_alert.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/vehicle.dart';
 
 enum DiagnosticsHubTab { scanner, devices, alerts }
@@ -115,6 +116,9 @@ class DiagnosticsHubUiState {
   final AlertsScope alertsScope;
   final List<PredictiveAlert> tenantAlerts;
   final List<PredictiveAlert> vehicleAlerts;
+
+  /// Lecturas y fallas del vehículo elegido que esperan señal en el teléfono (US19 E1).
+  final DiagnosticsSyncState vehicleSyncState;
   final bool isLoadingAlerts;
   final PredictiveAlert? convertingAlert;
   final String convertAlertDateText;
@@ -175,6 +179,7 @@ class DiagnosticsHubUiState {
     this.alertsScope = AlertsScope.tenant,
     this.tenantAlerts = const [],
     this.vehicleAlerts = const [],
+    this.vehicleSyncState = const DiagnosticsSyncState(pendingReadings: 0, pendingFaults: 0),
     this.isLoadingAlerts = false,
     this.convertingAlert,
     this.convertAlertDateText = '',
@@ -292,6 +297,7 @@ class DiagnosticsHubUiState {
     AlertsScope? alertsScope,
     List<PredictiveAlert>? tenantAlerts,
     List<PredictiveAlert>? vehicleAlerts,
+    DiagnosticsSyncState? vehicleSyncState,
     bool? isLoadingAlerts,
     PredictiveAlert? convertingAlert,
     bool clearConvertingAlert = false,
@@ -355,6 +361,7 @@ class DiagnosticsHubUiState {
       alertsScope: alertsScope ?? this.alertsScope,
       tenantAlerts: tenantAlerts ?? this.tenantAlerts,
       vehicleAlerts: vehicleAlerts ?? this.vehicleAlerts,
+      vehicleSyncState: vehicleSyncState ?? this.vehicleSyncState,
       isLoadingAlerts: isLoadingAlerts ?? this.isLoadingAlerts,
       convertingAlert: clearConvertingAlert ? null : (convertingAlert ?? this.convertingAlert),
       convertAlertDateText: convertAlertDateText ?? this.convertAlertDateText,

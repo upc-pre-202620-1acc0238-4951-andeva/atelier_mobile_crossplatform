@@ -47,6 +47,7 @@ void setupDiagnosticsPresentation() {
 
   getIt.registerFactoryParam<DiagnosticsHubViewModel, String?, void>(
     (initialVehicleId, _) => DiagnosticsHubViewModel(
+      observeDiagnosticsSyncState: getIt<ObserveDiagnosticsSyncStateUseCase>(),
       observeSession: getIt<ObserveSessionUseCase>(),
       observePendingCount: getIt<ObservePendingOperationCountUseCase>(),
       connectivity: getIt<ConnectivityObserver>(),

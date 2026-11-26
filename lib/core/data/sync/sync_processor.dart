@@ -7,6 +7,7 @@ import 'package:atelier_mobile_crossplatform/core/data/local/cross_isolate_lock.
 import 'package:atelier_mobile_crossplatform/core/data/local/session_store.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_scheduler.dart';
 
 enum SyncOutcome {
@@ -38,6 +39,9 @@ class SyncProcessor {
   final SyncScheduler scheduler;
   final String maxAttemptsMessage;
   final Future<String?> Function() ensureFreshToken;
+
+  /// Lo que las features empaquetan en la cola antes de cada envío (US19: telemetría sin lote).
+  final PreSyncHookRegistry? preSyncHooks;
   final DateTime Function() now;
 
   SyncProcessor({
@@ -48,6 +52,7 @@ class SyncProcessor {
     required this.scheduler,
     required this.maxAttemptsMessage,
     required this.ensureFreshToken,
+    this.preSyncHooks,
     this.now = DateTime.now,
   });
 
@@ -115,6 +120,10 @@ class SyncProcessor {
 
   Future<SyncOutcome> _process(String userId, Duration? budget) async {
     if (await ensureFreshToken() == null) return SyncOutcome.noSession;
+
+    // Dentro del bloqueo `sync`: lo que quedó sin encolar (p. ej. lecturas de la fosa tras matar la app)
+    // entra a la cola antes de leerla, y nunca a la vez que otro motor la envía.
+    await preSyncHooks?.runAll(userId);
 
     await dao.resetSyncing(userId);
     final start = now();
