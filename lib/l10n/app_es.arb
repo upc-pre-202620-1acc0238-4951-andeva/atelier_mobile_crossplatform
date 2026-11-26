@@ -3712,32 +3712,6 @@
   "invReceiveErrNumber": "Ingresa el número del comprobante.",
   "invReceiveErrDate": "La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.",
   "invReceiveErrNotReceivable": "Solo se pueden recibir órdenes emitidas.",
-  "profitabilityTitle": "Rentabilidad",
-  "profitabilityHint": "Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).",
-  "profitabilityCalculate": "Calcular rentabilidad",
-  "profitabilityRefresh": "Actualizar",
-  "profitabilityNeedsConnection": "Requiere conexión a internet.",
-  "profitabilityRevenue": "Ingreso por repuestos",
-  "profitabilityCost": "Costo de ventas (FIFO)",
-  "profitabilityGross": "Ganancia bruta",
-  "profitabilityLabor": "Mano de obra",
-  "profitabilityLines": "Por repuesto",
-  "profitabilityLineUnknown": "Repuesto",
-  "profitabilityLineDetail": "{qty} u. · ingreso {revenue} · costo {cost}",
-  "@profitabilityLineDetail": {
-    "placeholders": {
-      "qty": {
-        "type": "String"
-      },
-      "revenue": {
-        "type": "String"
-      },
-      "cost": {
-        "type": "String"
-      }
-    }
-  },
-  "profitabilityNoTax": "Importes sin IGV.",
   "diagReportPdfTitle": "Informe en PDF",
   "diagReportPdfHint": "Semáforo de salud por subsistema, riesgos y acciones recomendadas.",
   "reportsFleetSelected": "Cliente: {name}",

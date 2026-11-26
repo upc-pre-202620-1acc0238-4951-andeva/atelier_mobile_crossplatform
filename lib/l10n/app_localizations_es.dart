@@ -6699,48 +6699,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo se pueden recibir órdenes emitidas.';
 
   @override
-  String get profitabilityTitle => 'Rentabilidad';
-
-  @override
-  String get profitabilityHint =>
-      'Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).';
-
-  @override
-  String get profitabilityCalculate => 'Calcular rentabilidad';
-
-  @override
-  String get profitabilityRefresh => 'Actualizar';
-
-  @override
-  String get profitabilityNeedsConnection => 'Requiere conexión a internet.';
-
-  @override
-  String get profitabilityRevenue => 'Ingreso por repuestos';
-
-  @override
-  String get profitabilityCost => 'Costo de ventas (FIFO)';
-
-  @override
-  String get profitabilityGross => 'Ganancia bruta';
-
-  @override
-  String get profitabilityLabor => 'Mano de obra';
-
-  @override
-  String get profitabilityLines => 'Por repuesto';
-
-  @override
-  String get profitabilityLineUnknown => 'Repuesto';
-
-  @override
-  String profitabilityLineDetail(String qty, String revenue, String cost) {
-    return '$qty u. · ingreso $revenue · costo $cost';
-  }
-
-  @override
-  String get profitabilityNoTax => 'Importes sin IGV.';
-
-  @override
   String get diagReportPdfTitle => 'Informe en PDF';
 
   @override
