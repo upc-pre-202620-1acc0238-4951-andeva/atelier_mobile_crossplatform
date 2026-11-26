@@ -116,6 +116,7 @@ dependencies:
   share_plus: ^13.3.1             # ➕ compartir PDFs
   sqlite3: ^3.9.0                 # ➕ soporte SQLite en pruebas/FFI de Drift
   mobile_scanner: ^7.5.0          # ➕ escáner de código de barras/QR de SKU
+  app_links: ^7.2.2               # ➕ App Links / Universal Links de auth (US01/US05)
 
 dev_dependencies:
   flutter_test:

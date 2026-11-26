@@ -41,6 +41,25 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- App Links para restablecer contraseña (US05) y aceptar invitación (US01), como la app nativa -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="atelier.andeva.tech"
+                    android:pathPrefix="/auth/reset-password" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="atelier.andeva.tech"
+                    android:pathPrefix="/auth/accept-invitation" />
+            </intent-filter>
         </activity>
         <!-- Sesión OBD-II en vivo (docs/04-mobile-integration.md §4). stopWithTask: si se quita la
              app de recientes muere el motor con la sesión, así que el servicio tampoco debe quedar. -->
@@ -51,6 +70,10 @@
             android:exported="false" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- Los enlaces los publica `app_links` en AuthDeepLinkInbox; Flutter no debe enrutarlos como rutas. -->
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="false" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
