@@ -103,8 +103,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// `DateRangePicker` de Material 3 en un diálogo, con el periodo vigente preseleccionado.
   Future<void> _openRangePicker() async {
-    if (!mounted || _pickerOpen || !viewModel.state.showCustomRangePicker)
+    if (!mounted || _pickerOpen || !viewModel.state.showCustomRangePicker) {
       return;
+    }
     _pickerOpen = true;
     final strings = AppLocalizations.of(context);
     final period = viewModel.state.period;

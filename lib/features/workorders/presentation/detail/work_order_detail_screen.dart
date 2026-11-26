@@ -67,10 +67,12 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
 
   void _feedback() {
     final state = viewModel.state;
-    if (state.notice != null && !identical(state.notice, _lastNotice))
+    if (state.notice != null && !identical(state.notice, _lastNotice)) {
       _haptics.confirm();
-    if (state.error != null && !identical(state.error, _lastError))
+    }
+    if (state.error != null && !identical(state.error, _lastError)) {
       _haptics.reject();
+    }
     _lastNotice = state.notice;
     _lastError = state.error;
   }
@@ -1079,8 +1081,9 @@ class WorkOrderDetailContent extends StatelessWidget {
 
   /// Movimientos de repuestos (US33 E2) y rentabilidad con costo FIFO (US35 E2), cada uno con su permiso.
   List<Widget> _costs(BuildContext context, AppLocalizations strings) {
-    if (!state.canReadPartMovements && !state.canReadProfitability)
+    if (!state.canReadPartMovements && !state.canReadProfitability) {
       return const [];
+    }
     final workOrderId =
         (state.detail?.workOrder.id ?? state.cachedOrder?.id)?.value;
     return [

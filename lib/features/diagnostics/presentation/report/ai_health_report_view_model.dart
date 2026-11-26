@@ -91,8 +91,9 @@ class AiHealthReportViewModel extends ChangeNotifier {
     if (!state.planIncludesAi ||
         !state.canRead ||
         vehicleId.trim().isEmpty ||
-        state.isLoading)
+        state.isLoading) {
       return;
+    }
     _update(_state.copyWith(isLoading: true, clearError: true));
     try {
       final latest = await getLatestHealthReport.execute(vehicleId);
@@ -130,8 +131,9 @@ class AiHealthReportViewModel extends ChangeNotifier {
 
   void openGenerateSheet() {
     final state = _state;
-    if (!state.planIncludesAi || !state.canGenerate || state.isGenerating)
+    if (!state.planIncludesAi || !state.canGenerate || state.isGenerating) {
       return;
+    }
     _update(_state.copyWith(generateSheetOpen: true, clearError: true));
   }
 
