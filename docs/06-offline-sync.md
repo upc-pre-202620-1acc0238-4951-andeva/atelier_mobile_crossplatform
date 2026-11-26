@@ -917,6 +917,14 @@ Lecturas en vivo → telemetry_readings (una fila por muestra, unique vehicle_id
 
 Las lecturas confirmadas se borran a los 7 días (la app no es el histórico; el backend sí).
 
+**Sprint 3 (US19, esquema v3):**
+
+- Cada lectura guarda `user_id` (quien la capturó). Un lote solo lleva lecturas de un mismo usuario (y las sin dueño, anteriores a la v3): en un terminal compartido nada viaja con la sesión del siguiente técnico.
+- `SyncProcessor` corre los `PreSyncHook` registrados **dentro del bloqueo `sync`** y antes de leer la cola, en la UI y en el worker. `DiagnosticsPreSyncHook` empaqueta los remanentes de menos de 200 lecturas que quedaron tras matar la app en la fosa, solo si la última muestra del vehículo tiene más de 60 s (un vehículo que sigue transmitiendo no se parte en micro-lotes). El worker no ve la sesión Bluetooth de la UI: la ventana de inactividad la reemplaza.
+- `signOut` corre los mismos ganchos con `forceFlushAll` (sin ventana) antes de borrar la sesión: lo capturado queda en la cola del usuario saliente y se envía cuando vuelva a entrar.
+- Sin `iot:telemetry:ingest` no se arma ningún lote (daría 403, H22); las lecturas quedan en el teléfono.
+- El hub muestra "N lecturas pendientes de sincronizar" del vehículo elegido (lecturas sin lote o con el lote aún en cola + fallas `local-*`). Cada lectura conserva su `timestamp` de captura en el lote (US19 E2).
+
 ---
 
 ## 7. Requisitos del backend para que la cola sea segura

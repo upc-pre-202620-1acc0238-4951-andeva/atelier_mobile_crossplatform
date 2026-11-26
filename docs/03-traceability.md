@@ -25,10 +25,10 @@ Las notificaciones push (FCM) llevan `data.type`; sus tipos están en [04-mobile
 | US02 E2 OTP incorrecto o caducado | `POST /auth/verify-email` → 400; `POST /auth/resend-verification` | público | ✅ |
 | US03 E1 Login y contexto de sede | `POST /auth/sign-in` (permisos, taller, `membershipId`) → `GET /hr/employees/membership/{membershipId}` (sede y turno; 404 si el usuario no tiene perfil laboral → entra sin sede) → `GET /branches` (lo carga `attendance`, Paso 4, con la caché `branches`) | público · `hr:attendance:read_own` · `iam:branches:read` | ✅ |
 | US03 E2 Credenciales inválidas | `POST /auth/sign-in` → **401**; correo sin verificar → **403 `EMAIL_NOT_VERIFIED`** (iam.md también lo lista bajo 401: la app decide por el `code`) | público | ✅ |
-| US04 E1 Cierre de sesión | `PUT /users/me/device-token { fcmToken: null }` → `POST /auth/sign-out { refreshToken }` → `CacheMaintenanceDao.clearCaches()` → `SessionManager.clear()` (la red nunca impide salir) | autenticado | ✅ |
+| US04 E1 Cierre de sesión | Empaquetar telemetría del usuario saliente (`PreSyncHook`, 1,5 s) → `PUT /users/me/device-token { fcmToken: null }` (2 s) → `POST /auth/sign-out { refreshToken }` (4 s) → `PushInbox.clear()` + `<temp>/pdfs` y `<temp>/capture` → `CacheMaintenanceDao.clearCaches()` → `SessionManager.clear()` (la red nunca impide salir; la cola se conserva y el login avisa con un conteo neutro del dispositivo) | autenticado | ✅ |
 | US04 E2 Expiración del token | 401 → `POST /auth/refresh` (rotación); si falla → Login | público | ✅ |
 | US05 E1 Solicitud de recuperación | `POST /auth/forgot-password { email }` (correo con token, 2 h) | público | ✅ |
-| US05 E2 Token expirado o adulterado | `POST /auth/reset-password` → 400 | público | ✅ |
+| US05 E2 Token expirado o adulterado | `POST /auth/reset-password` → 400 (el backend real responde 404 si el token no existe: ambos muestran "enlace vencido" y no cambian la contraseña) | público | ✅ |
 
 ## EP02 — Control de asistencia satelital y turnos
 
@@ -73,8 +73,8 @@ Las notificaciones push (FCM) llevan `data.type`; sus tipos están en [04-mobile
 | US17 E2 Sin averías | Modo 03 vacío → la app muestra "sin códigos"; `GET /iot/faults/vehicle/{vehicleId}/active` vacío | `iot:faults:read` | 📱 |
 | US18 E1 Telemetría en vivo y umbrales | PIDs en vivo en la app (RPM, temperatura, voltaje…), umbrales en la app; se encola para el lote | — | 📱 |
 | US18 E2 Congelar muestra | Snapshot local; se envía dentro del lote de telemetría | `iot:telemetry:ingest` | 📱 |
-| US19 E1 Guardado local sin red | Drift (tabla de lecturas pendientes) | — | 📱 |
-| US19 E2 Sincronización en bloque | `SyncProcessor` con red (primer plano o `workmanager`) → `POST /iot/telemetry/batch { vehicleId, readings[] }` (lecturas repetidas por `timestamp` se ignoran) | `iot:telemetry:ingest` | ✅ |
+| US19 E1 Guardado local sin red | Drift `telemetry_readings` con `user_id` (v3) + `REGISTER_FAULT` en cola; el hub muestra lo pendiente del vehículo | — | 📱 |
+| US19 E2 Sincronización en bloque | `SyncProcessor` con red (primer plano o `workmanager`) → `DiagnosticsPreSyncHook` empaqueta remanentes (60 s sin muestras) → `POST /iot/telemetry/batch { vehicleId, readings[] }` con el `timestamp` original (lecturas repetidas por `timestamp` se ignoran) | `iot:telemetry:ingest` | ✅ |
 | US20 E1 Borrado de fallas | Modo 04 OBD-II en la app → re-lectura modo 03 → `POST /iot/faults/{id}/resolve` por cada DTC borrado | `iot:faults:resolve` | 📱 + ✅ |
 | US20 E2 Falla persistente | La re-lectura vuelve a traer el DTC → no se resuelve (o se registra de nuevo con `POST /iot/faults`) | `iot:telemetry:ingest` | 📱 + ✅ |
 | US21 E1 Dictamen predictivo con IA | `POST /iot/health-reports/generate?vehicleId= { daysToAnalyze: 7–90 }` (o `/generate-async`) → `GET /iot/health-reports/{reportId}` | `iot:health_reports:generate`, `iot:health_reports:read` | ✅ |
