@@ -59,7 +59,7 @@ Auditoría completa de los 207 archivos de UI en `atelier-mobile-android` (`core
 | `features/attendance/presentation/AttendanceScreen.kt` | `features/attendance/presentation/attendance_screen.dart` | ✅ igual | Flutter añade parámetro `embedded: bool` para embeberse en `AdminAttendanceScreen`; UI y acciones iguales. |
 | `features/attendance/presentation/AttendanceUiState.kt` | `features/attendance/presentation/attendance_ui_state.dart` | ✅ igual | Campos y reglas iguales. |
 | `features/attendance/presentation/AttendanceViewModel.kt` | `features/attendance/presentation/attendance_view_model.dart` | ✅ igual | Geolocalización, reloj, justificación y manejo de errores iguales. |
-| `features/attendance/presentation/dashboard/FloorHubScreen.kt` | `features/attendance/presentation/dashboard/floor_hub_screen.dart` | ✅ igual | Mismas tarjetas y acciones salvo exclusiones: omite `stockAlerts` (US34), checkout va a `workOrderDetail` (US37–39), omite `Bays` en `FloorShortcutsCard` (US40), subtítulo OBD usa `floorHubQuickObdSubNoLive` (US18). |
+| `features/attendance/presentation/dashboard/FloorHubScreen.kt` | `features/attendance/presentation/dashboard/floor_hub_screen.dart` | ✅ igual | Mismas tarjetas y acciones salvo exclusiones: omite `stockAlerts` (US34), las órdenes listas abren `workOrderCheckout` (US37–39), omite `Bays` en `FloorShortcutsCard` (US40), subtítulo OBD usa `floorHubQuickObdSubNoLive` (US18). |
 | `features/attendance/presentation/dashboard/FloorHubUiState.kt` | `features/attendance/presentation/dashboard/floor_hub_ui_state.dart` | ✅ igual | Omite campos de US34/US40 y los no usados `deviceLocation`/`previewLocation`. |
 | `features/attendance/presentation/dashboard/FloorHubViewModel.kt` | `features/attendance/presentation/dashboard/floor_hub_view_model.dart` | ⚠️ diferencias | Omite carga de `stockAlerts` (US34), `bays` (US40) y métodos no usados de location preview. |
 | `features/attendance/presentation/navigation/AttendanceNavGraph.kt` | `features/attendance/presentation/navigation/attendance_nav_graph.dart` + `attendance_presentation.dart` | ✅ igual | Rutas `attendanceHome` y `attendanceDetail` iguales. |
@@ -67,19 +67,19 @@ Auditoría completa de los 207 archivos de UI en `atelier-mobile-android` (`core
 | `features/auth/presentation/branch/BranchSelectionScreen.kt` | `features/auth/presentation/branch/branch_selection_screen.dart` | ✅ igual | Selección de sede igual. |
 | `features/auth/presentation/branch/BranchSelectionUiState.kt` | `features/auth/presentation/branch/branch_selection_ui_state.dart` | ✅ igual | Campos y helpers iguales. |
 | `features/auth/presentation/branch/BranchSelectionViewModel.kt` | `features/auth/presentation/branch/branch_selection_view_model.dart` | ✅ igual | Lógica igual. |
-| `features/auth/presentation/forgot/ForgotPasswordScreen.kt` | — | ⛔ excluido (US05) | Excluido intencionalmente (recuperación de contraseña US05). |
-| `features/auth/presentation/forgot/ForgotPasswordUiState.kt` | — | ⛔ excluido (US05) | Excluido intencionalmente. |
-| `features/auth/presentation/forgot/ForgotPasswordViewModel.kt` | — | ⛔ excluido (US05) | Excluido intencionalmente. |
-| `features/auth/presentation/login/LoginScreen.kt` | `features/auth/presentation/login/login_screen.dart` | ✅ igual | Omite link `onForgotPassword` (US05); todo lo demás (email/password, Google Sign-In, invitación) igual. |
+| `features/auth/presentation/forgot/ForgotPasswordScreen.kt` | `features/auth/presentation/forgot/forgot_password_screen.dart` | ✅ igual | Sprint 3 (US05): formulario, confirmación genérica, "Ya tengo el enlace" y "Pedir otro enlace". |
+| `features/auth/presentation/forgot/ForgotPasswordUiState.kt` | `features/auth/presentation/forgot/forgot_password_ui_state.dart` | ✅ igual | Sprint 3 (US05). |
+| `features/auth/presentation/forgot/ForgotPasswordViewModel.kt` | `features/auth/presentation/forgot/forgot_password_view_model.dart` | ✅ igual | Sprint 3 (US05). |
+| `features/auth/presentation/login/LoginScreen.kt` | `features/auth/presentation/login/login_screen.dart` | ✅ igual | Sprint 3: enlace "¿Olvidaste tu contraseña?" (US05) y aviso neutro de pendientes del dispositivo (US04). |
 | `features/auth/presentation/login/LoginUiState.kt` | `features/auth/presentation/login/login_ui_state.dart` | ✅ igual | Campos iguales. |
 | `features/auth/presentation/login/LoginViewModel.kt` | `features/auth/presentation/login/login_view_model.dart` | ✅ igual | Manejo de sesión/pending ops/errores igual. |
-| `features/auth/presentation/navigation/AuthNavGraph.kt` | `features/auth/presentation/auth_nav_graph.dart` + `auth_presentation.dart` | ✅ igual | Omite rutas forgot/reset (US05) y deep links ajenos a invitación. |
+| `features/auth/presentation/navigation/AuthNavGraph.kt` | `features/auth/presentation/auth_nav_graph.dart` + `auth_presentation.dart` | ✅ igual | Sprint 3 (US05): rutas `forgotPassword` / `resetPassword` y consumo de `ResetPasswordDeepLink`. Sin plugin de App Links: el enlace se pega (H1). |
 | `features/auth/presentation/register/RegisterScreen.kt` | `features/auth/presentation/register/register_screen.dart` | ✅ igual | Registro con token de invitación igual. |
 | `features/auth/presentation/register/RegisterUiState.kt` | `features/auth/presentation/register/register_ui_state.dart` | ✅ igual | Igual. |
 | `features/auth/presentation/register/RegisterViewModel.kt` | `features/auth/presentation/register/register_view_model.dart` | ✅ igual | Igual. |
-| `features/auth/presentation/reset/ResetPasswordScreen.kt` | — | ⛔ excluido (US05) | Excluido intencionalmente (US05). |
-| `features/auth/presentation/reset/ResetPasswordUiState.kt` | — | ⛔ excluido (US05) | Excluido intencionalmente. |
-| `features/auth/presentation/reset/ResetPasswordViewModel.kt` | — | ⛔ excluido (US05) | Excluido intencionalmente. |
+| `features/auth/presentation/reset/ResetPasswordScreen.kt` | `features/auth/presentation/reset/reset_password_screen.dart` | ✅ igual | Sprint 3 (US05): enlace o código, reglas de contraseña, aviso de enlace vencido y confirmación al descartar (`PopScope` en lugar de `BackHandler`). |
+| `features/auth/presentation/reset/ResetPasswordUiState.kt` | `features/auth/presentation/reset/reset_password_ui_state.dart` | ✅ igual | Sprint 3 (US05). |
+| `features/auth/presentation/reset/ResetPasswordViewModel.kt` | `features/auth/presentation/reset/reset_password_view_model.dart` | ✅ igual | Sprint 3 (US05): 400 y 404 = enlace vencido o inválido. |
 | `features/auth/presentation/verifyemail/VerifyEmailScreen.kt` | `features/auth/presentation/verifyemail/verify_email_screen.dart` | ✅ igual | Verificación OTP 6 dígitos y reenvío iguales. |
 | `features/auth/presentation/verifyemail/VerifyEmailUiState.kt` | `features/auth/presentation/verifyemail/verify_email_ui_state.dart` | ✅ igual | Igual. |
 | `features/auth/presentation/verifyemail/VerifyEmailViewModel.kt` | `features/auth/presentation/verifyemail/verify_email_view_model.dart` | ✅ igual | Igual. |
@@ -90,10 +90,10 @@ Auditoría completa de los 207 archivos de UI en `atelier-mobile-android` (`core
 | `features/cashier/presentation/CashierComponents.kt` | — | ⛔ excluido (US37–39) | Excluido intencionalmente (checkout/comprobantes US37–39). |
 | `features/cashier/presentation/CashierForms.kt` | — | ⛔ excluido (US37–39) | Excluido intencionalmente (US37–39). |
 | `features/cashier/presentation/CashierLabels.kt` | `features/cashier/presentation/cashier_labels.dart` + `cashier_formats.dart` | ✅ igual | Mapeo de errores/labels de caja igual; omite labels de comprobantes (US37). |
-| `features/cashier/presentation/checkout/CheckoutSheets.kt` | — | ⛔ excluido (US37–39) | Excluido intencionalmente (cobro/checkout US37–39). |
-| `features/cashier/presentation/checkout/WorkOrderCheckoutScreen.kt` | — | ⛔ excluido (US37–39) | Excluido intencionalmente. |
-| `features/cashier/presentation/checkout/WorkOrderCheckoutUiState.kt` | — | ⛔ excluido (US37–39) | Excluido intencionalmente. |
-| `features/cashier/presentation/checkout/WorkOrderCheckoutViewModel.kt` | — | ⛔ excluido (US37–39) | Excluido intencionalmente. |
+| `features/cashier/presentation/checkout/CheckoutSheets.kt` | `features/cashier/presentation/checkout/checkout_sheets.dart` | ✅ igual | Sprint 3: hojas de emitir/anular/NC (US37), registrar cobro (US38) y entregar (US39). |
+| `features/cashier/presentation/checkout/WorkOrderCheckoutScreen.kt` | `features/cashier/presentation/checkout/work_order_checkout_screen.dart` | ✅ igual | Sprint 3: riel de 4 etapas, pasos 1 (US37), 2 cobros con historial (US38), 3 pase de salida y 4 entrega (US39). |
+| `features/cashier/presentation/checkout/WorkOrderCheckoutUiState.kt` | `features/cashier/presentation/checkout/work_order_checkout_ui_state.dart` | ✅ igual | Sprint 3: `PaymentForm`, `PaymentCheckoutSheet`, `DeliverCheckoutSheet`, `canMarkPaid`. |
+| `features/cashier/presentation/checkout/WorkOrderCheckoutViewModel.kt` | `features/cashier/presentation/checkout/work_order_checkout_view_model.dart` | ✅ igual | Sprint 3: cobros sin reintento ciego (H28), marcar pagada, pase de salida y entrega. |
 | `features/cashier/presentation/dailycash/DailyCashScreen.kt` | `features/cashier/presentation/dailycash/daily_cash_screen.dart` | ✅ igual | Caja diaria igual salvo omisión de acceso rápido `vouchers-shortcut` (US37). |
 | `features/cashier/presentation/dailycash/DailyCashUiState.kt` | `features/cashier/presentation/dailycash/daily_cash_ui_state.dart` | ✅ igual | Igual. |
 | `features/cashier/presentation/dailycash/DailyCashViewModel.kt` | `features/cashier/presentation/dailycash/daily_cash_view_model.dart` | ✅ igual | Igual. |
@@ -156,9 +156,9 @@ Auditoría completa de los 207 archivos de UI en `atelier-mobile-android` (`core
 | `features/main/presentation/notifications/NotificationsScreen.kt` | `features/main/presentation/notifications/notifications_screen.dart` | ✅ igual | Lista push y marcar todo leído igual. |
 | `features/main/presentation/notifications/NotificationsUiState.kt` | `features/main/presentation/notifications/notifications_ui_state.dart` | ✅ igual | Igual. |
 | `features/main/presentation/notifications/NotificationsViewModel.kt` | `features/main/presentation/notifications/notifications_view_model.dart` | ✅ igual | Igual. |
-| `features/main/presentation/profile/ProfileScreen.kt` | `features/main/presentation/profile/profile_screen.dart` | ✅ igual | Omite botón y diálogo de `Cerrar sesión` (US04). |
-| `features/main/presentation/profile/ProfileUiState.kt` | `features/main/presentation/profile/profile_ui_state.dart` | ✅ igual | Omite flags de sign-out (US04). |
-| `features/main/presentation/profile/ProfileViewModel.kt` | `features/main/presentation/profile/profile_view_model.dart` | ✅ igual | Omite `SignOutUseCase` (US04). |
+| `features/main/presentation/profile/ProfileScreen.kt` | `features/main/presentation/profile/profile_screen.dart` | ✅ igual | Sprint 3 (US04): sección "Seguridad y sesión" y hoja de confirmación de `Cerrar sesión`. |
+| `features/main/presentation/profile/ProfileUiState.kt` | `features/main/presentation/profile/profile_ui_state.dart` | ✅ igual | Sprint 3 (US04): `confirmingSignOut` y `signingOut`. |
+| `features/main/presentation/profile/ProfileViewModel.kt` | `features/main/presentation/profile/profile_view_model.dart` | ✅ igual | Sprint 3 (US04): `SignOutUseCase`. |
 | `features/main/presentation/sync/PendingOperationsScreen.kt` | `features/main/presentation/sync/pending_operations_screen.dart` | ✅ igual | Cola, reintentar/descartar por fila y "Sincronizar ahora" iguales. |
 | `features/main/presentation/sync/PendingOperationsUiState.kt` | `features/main/presentation/sync/pending_operations_ui_state.dart` | ✅ igual | Igual. |
 | `features/main/presentation/sync/PendingOperationsViewModel.kt` | `features/main/presentation/sync/pending_operations_view_model.dart` | ✅ igual | Igual. |
@@ -243,19 +243,22 @@ Se contrastaron permisos, endpoints, casos de uso, repositorios y DAOs entre And
 - **Permisos:** paridad exacta en `lib/core/domain/permission.dart` frente a `Permission.kt`.
 - **`workorders` (agregado en este cierre):** se portaron `DELETE /api/v1/tasks/{taskId}` (`WorkOrderApi.deleteTask`, `RemoveWorkOrderTaskUseCase`) y `DELETE /api/v1/services/{serviceId}` (`ServiceCatalogApi.deleteService`, `DeleteServiceUseCase`), registrados en `workorders_dependencies.dart`.
 - **`core/` y caché Drift:** `AuthenticatedClient` implementa reintento acotado para `GET`/`HEAD` idempotentes (`IdempotentGetRetryInterceptor.kt`) y `WorkOrderRepositoryImpl` limpia de Drift las órdenes cerradas (`PAID`/`CANCELED`, equivalente a `WorkOrderCache.kt`). Sin cambios de esquema Drift respecto al paso 9.
-- **Elementos no portados (todos pertenecientes a US excluidas o variantes no usadas en Android UI):** `TenantService.kt` (`US42`), `TempCacheCleaner.kt` / `GetDevicePendingOperationCountUseCase.kt` (`US04`), `DiagnosticsPreSyncHook.kt` (`US19`), `GetLatestVehicleTelemetryUseCase` / `GetVehicleTelemetryHistoryUseCase` / `ReconnectObdUseCase` (`US18`), `ObservePartBrandsUseCase.kt` (sin campo marca en backend, H35), `PendingSuspensionMonitor.kt` (`US29`), casos de uso de comprobantes/series/checkout/handover (`US37–39`, `US42`) y tablero de bahías (`US40`).
+- **Portados en Sprint 3:** `TempCacheCleaner.kt` / `GetDevicePendingOperationCountUseCase.kt` (`US04`) → `core/media/temp_cache_cleaner.dart` y `get_device_pending_operation_count_use_case.dart`; `PreSyncHook.kt` / `DiagnosticsPreSyncHook.kt` (`US19`) → `core/data/sync/pre_sync_hook.dart` y `diagnostics_pre_sync_hook.dart`.
+- **Elementos no portados (todos pertenecientes a US excluidas o variantes no usadas en Android UI):** `TenantService.kt` (`US42`), `GetLatestVehicleTelemetryUseCase` / `GetVehicleTelemetryHistoryUseCase` / `ReconnectObdUseCase` (`US18`), `ObservePartBrandsUseCase.kt` (sin campo marca en backend, H35), `PendingSuspensionMonitor.kt` (`US29`), casos de uso de comprobantes/series/checkout/handover (`US37–39`, `US42`) y tablero de bahías (`US40`).
 
 ## 4. Verificación de exclusiones (US04, US05, US18, US19, US28–30, US34–43)
 
 Barrido sobre `lib/features/**/presentation/**`, `lib/navigation/**` y `AppRoute`:
 
-- **US04:** `ProfileScreen` y `ProfileViewModel` sin botón, diálogo ni `SignOutUseCase`.
-- **US05:** `LoginScreen` sin enlace "¿Olvidaste tu contraseña?"; `AuthNavGraph` sin rutas `forgot`/`reset`.
-- **US18 / US19:** sin `LiveTelemetryScreen`, sin `AppRoute.liveTelemetry`, sin fila de telemetría en vivo ni contadores/sincronización batch de telemetría en `DiagnosticsHubScreen`. `PendingOperationsScreen` de `main` sí se incluye (paso 3).
+- **US04 (Sprint 3, portada):** `ProfileScreen` con "Cerrar sesión" y hoja de confirmación; `LoginScreen` con aviso de pendientes del dispositivo.
+- **US05 (Sprint 3, portada):** `LoginScreen` con "¿Olvidaste tu contraseña?"; `ForgotPasswordScreen` y `ResetPasswordScreen` registradas en `AuthNavGraph`.
+- **US18:** sin `LiveTelemetryScreen`, sin `AppRoute.liveTelemetry` ni fila de telemetría en vivo. `PendingOperationsScreen` de `main` sí se incluye (paso 3).
+- **US19 (Sprint 3, portada):** `user_id` en `telemetry_readings` (Drift v3), empaquetado por dueño con ventana de inactividad de 60 s en el pre-sync, empaquetado forzado al cerrar sesión y aviso de lecturas/fallas pendientes del vehículo en `DiagnosticsHubScreen`.
 - **US28 / US29 / US30:** `TaskDetailScreen` omite evidencia fotográfica, solicitud/aprobación de suspensión, reanudación y cierre con horas hombre. `WorkOrdersScreen` y `AdminDashboardViewModel` omiten conteos/chips de suspensiones y `app_root.dart` ignora el push `TaskSuspensionReviewDestination`. Solo permanecen etiquetas de solo lectura cuando una tarea ya viene suspendida desde backend.
 - **US34:** sin `StockAlertsScreen`, sin entrada en `FloorHubScreen` ni `ModulesSheet`, `app_root.dart` ignora `LowStockAlertsDestination`, y `PurchaseOrderDetailScreen` omite recepción/foto de OC.
 - **US35 / US36:** `WorkOrderDetailScreen` omite `ProfitabilitySheet` y tarjeta desglose Subtotal/IGV/Total en `QuotationSummarySection`.
-- **US37–39 / US42:** sin pantallas ni rutas de checkout, comprobantes ni series fiscales en `CashierNavGraph` ni `ModulesSheet`; `DailyCashScreen` omite acceso a comprobantes; `FloorHubScreen` navega a `workOrderDetail`. Nota: `BarPrimaryAction.collectPayment` (permisos `invoicesIssueSunat` o `paymentsCreate`) apunta únicamente a `AppRoute.workOrders` / `MainTab.orders` al igual que Android `MainNavigationBar.kt`, sin alcanzar checkout (`US37–39`).
+- **US38 / US39 (Sprint 3, portadas):** pasos 2–4 de `WorkOrderCheckoutScreen`; `FloorHubScreen` abre "Cobrar y entregar" desde las órdenes listas.
+- **US37–39 / US42 (estado anterior al Sprint 3):** sin pantallas ni rutas de checkout, comprobantes ni series fiscales en `CashierNavGraph` ni `ModulesSheet`; `DailyCashScreen` omite acceso a comprobantes; `FloorHubScreen` navega a `workOrderDetail`. Nota: `BarPrimaryAction.collectPayment` (permisos `invoicesIssueSunat` o `paymentsCreate`) apunta únicamente a `AppRoute.workOrders` / `MainTab.orders` al igual que Android `MainNavigationBar.kt`, sin alcanzar checkout (`US37–39`).
 - **US40:** sin `BaysScreen`, sin pestaña ni atajo de bahías; bahía en detalle OT de solo lectura.
 - **US41 / US43:** `ReportsScreen` omite exportación PDF de flujo de caja (`US41`) y bloque Salud de Flota (`US43`); `AiHealthReportScreen` omite acciones Abrir/Compartir PDF (`US43`).
 

@@ -5,14 +5,20 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/deliver_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/download_exit_pass_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_credit_note_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_voucher_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/mark_work_order_paid_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/observe_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/prepare_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/refresh_voucher_status_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/register_payment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/void_voucher_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_errors.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_validation.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher_draft.dart';
@@ -24,10 +30,11 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/get
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_work_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_id.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
-/// ViewModel de facturación electrónica SUNAT de una orden (US37).
-/// Sin acciones de cobro (US38) ni pase de salida/entrega (US39).
+/// "Cobrar y entregar" de una orden: comprobante SUNAT (US37), cobros multi-medio (US38), pase de salida y
+/// entrega en patio (US39). Todo en línea y de una acción a la vez (docs/06-offline-sync.md).
 class WorkOrderCheckoutViewModel extends ChangeNotifier {
   final String workOrderId;
   final ObserveSessionUseCase observeSession;
@@ -39,6 +46,11 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
   final IssueVoucherUseCase issueVoucher;
   final VoidVoucherUseCase voidVoucher;
   final IssueCreditNoteUseCase issueCreditNote;
+  final GetVoucherPaymentsUseCase getPayments;
+  final RegisterPaymentUseCase registerPayment;
+  final MarkWorkOrderPaidUseCase markPaid;
+  final DownloadExitPassUseCase downloadExitPass;
+  final DeliverVehicleUseCase deliverVehicle;
   final ConnectivityObserver connectivity;
   final DownloadVoucherDocumentUseCase? downloadVoucherDocument;
   final RefreshVoucherStatusUseCase? refreshVoucherStatus;
@@ -54,6 +66,11 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
     required this.issueVoucher,
     required this.voidVoucher,
     required this.issueCreditNote,
+    required this.getPayments,
+    required this.registerPayment,
+    required this.markPaid,
+    required this.downloadExitPass,
+    required this.deliverVehicle,
     required this.connectivity,
     this.downloadVoucherDocument,
     this.refreshVoucherStatus,
@@ -91,6 +108,9 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
       _state.copyWith(
         canReadInvoices: canReadInvoices,
         canIssueVoucher: canIssueVoucher,
+        canRegisterPayment: session?.has(Permission.paymentsCreate) == true,
+        canIssueExitPass: session?.has(Permission.exitPassesIssue) == true,
+        canDeliver: session?.has(Permission.vehicleHandoverExecute) == true,
       ),
     );
     if (canReadInvoices && !prevCanRead && !_state.isRefreshing) {
@@ -120,6 +140,8 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
       try {
         final vouchers = await getVouchers.execute(workOrderId);
         _update(_state.copyWith(liveVouchers: vouchers));
+        final active = _state.activeVoucher;
+        if (active != null) await _loadPayments(active.id);
       } on Object catch (e) {
         failure ??= e;
       }
@@ -131,6 +153,16 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
         error: failure == null ? null : toCashierText(failure),
       ),
     );
+  }
+
+  /// Historial de cobros (US38). Si falla se conserva el anterior: el saldo sale del comprobante.
+  Future<void> _loadPayments(String voucherId) async {
+    try {
+      final payments = await getPayments.execute(voucherId);
+      _update(_state.copyWith(payments: payments));
+    } on Object {
+      // Sin historial nuevo: el saldo del comprobante sigue siendo la fuente.
+    }
   }
 
   void _mergeOrder(WorkOrder next) {
@@ -459,6 +491,158 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
       actionError: UiText.resource((s) => s.cashierExitPassNoApp),
     ),
   );
+
+  // region Cobros (US38)
+
+  /// Abre la hoja con el saldo pendiente del comprobante como monto sugerido (pago íntegro, E1); el cajero
+  /// puede bajarlo para un abono parcial (E2).
+  void onOpenPayment() {
+    final voucher = _state.activeVoucher;
+    if (voucher == null || !_state.canRegisterPayment || !_canAct || voucher.pending <= Decimal.zero) return;
+    _update(
+      _state.copyWith(
+        sheet: PaymentCheckoutSheet(
+          PaymentForm(voucher: voucher, amount: voucher.pending.toStringAsFixed(2)),
+        ),
+        sheetError: null,
+        notice: null,
+        actionError: null,
+      ),
+    );
+  }
+
+  void onPaymentAmount(String value) => _updatePayment((form) => form.copyWith(amount: value));
+
+  void onPaymentMethod(PaymentMethod method) => _updatePayment((form) => form.copyWith(method: method));
+
+  void onPaymentReference(String value) {
+    final clipped = value.length > PaymentForm.maxReference ? value.substring(0, PaymentForm.maxReference) : value;
+    _updatePayment((form) => form.copyWith(reference: clipped));
+  }
+
+  void _updatePayment(PaymentForm Function(PaymentForm) change) {
+    final current = _state.sheet;
+    if (current is! PaymentCheckoutSheet) return;
+    _update(_state.copyWith(sheet: PaymentCheckoutSheet(change(current.form)), sheetError: null));
+  }
+
+  /// `POST /invoicing/payments`. Nunca se reintenta solo (H28): si no se sabe si cobró, se cierra la hoja y se
+  /// relee el historial para que el cajero lo vea antes de volver a cobrar.
+  Future<void> onConfirmPayment() async {
+    final current = _state.sheet;
+    if (current is! PaymentCheckoutSheet) return;
+    final form = current.form;
+    final amount = form.parsedAmount;
+    if (amount == null || !form.canSubmit || !_canAct) return;
+    _update(_state.copyWith(busy: CheckoutAction.paying, sheetError: null));
+    try {
+      final reference = form.reference.trim();
+      await registerPayment.execute(
+        form.voucher.id,
+        amount,
+        form.method,
+        transactionReference: reference.isEmpty ? null : reference,
+      );
+      _update(
+        _state.copyWith(sheet: null, notice: UiText.resource((s) => s.cashierPaymentDone)),
+      );
+      await _load();
+    } on PaymentOutcomeUnknownException catch (e) {
+      _update(_state.copyWith(sheet: null, actionError: toCashierText(e)));
+      await _load();
+    } on Object catch (e) {
+      _update(_state.copyWith(sheetError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  /// `POST /work-orders/{id}/mark-as-paid` (US39 E2). El backend rechaza si queda saldo: se muestra su `message`.
+  Future<void> onMarkPaid() async {
+    if (!_state.canMarkPaid || !_canAct) return;
+    _update(_state.copyWith(busy: CheckoutAction.markingPaid, actionError: null, notice: null));
+    try {
+      final order = await markPaid.execute(WorkOrderId(workOrderId));
+      _mergeOrder(order);
+      _update(_state.copyWith(notice: UiText.resource((s) => s.cashierMarkPaidDone)));
+    } on Object catch (e) {
+      _update(_state.copyWith(actionError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  // endregion
+
+  // region Pase de salida y entrega (US39)
+
+  /// `GET /work-orders/{id}/exit-pass/pdf`. Solo con la orden `PAID`; si no, el backend responde 422 (E3).
+  Future<void> onDownloadExitPass([
+    CheckoutDocumentActionMode mode = CheckoutDocumentActionMode.open,
+  ]) async {
+    if (!_state.canIssueExitPass || !_state.isOrderPaid || !_canAct) return;
+    _update(
+      _state.copyWith(
+        busy: CheckoutAction.exitPass,
+        exitPassActionMode: mode,
+        actionError: null,
+        notice: null,
+      ),
+    );
+    try {
+      final file = await downloadExitPass.execute(WorkOrderId(workOrderId));
+      _update(_state.copyWith(exitPass: file));
+    } on Object catch (e) {
+      _update(_state.copyWith(actionError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  void onOpenExitPass() => onDownloadExitPass(CheckoutDocumentActionMode.open);
+
+  void onShareExitPass() => onDownloadExitPass(CheckoutDocumentActionMode.share);
+
+  void onExitPassHandled() => _update(_state.copyWith(exitPass: null));
+
+  void onExitPassOpenFailed() => _update(
+    _state.copyWith(exitPass: null, actionError: UiText.resource((s) => s.cashierExitPassNoApp)),
+  );
+
+  void onOpenDeliver() {
+    if (!_state.canDeliver || !_state.isOrderPaid || _state.delivered || !_canAct) return;
+    _update(
+      _state.copyWith(
+        sheet: const DeliverCheckoutSheet(),
+        sheetError: null,
+        notice: null,
+        actionError: null,
+      ),
+    );
+  }
+
+  /// `POST /work-orders/{id}/deliver`: entrega el vehículo y libera la bahía. Sin firma del cliente (H29).
+  Future<void> onConfirmDeliver() async {
+    if (_state.sheet is! DeliverCheckoutSheet || !_canAct) return;
+    _update(_state.copyWith(busy: CheckoutAction.delivering, sheetError: null));
+    try {
+      final order = await deliverVehicle.execute(WorkOrderId(workOrderId));
+      _mergeOrder(order);
+      _update(
+        _state.copyWith(
+          sheet: null,
+          delivered: true,
+          notice: UiText.resource((s) => s.cashierDeliverDone),
+        ),
+      );
+    } on Object catch (e) {
+      _update(_state.copyWith(sheetError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  // endregion
 
   void onDismissSheet() {
     if (_state.busy != null) return;

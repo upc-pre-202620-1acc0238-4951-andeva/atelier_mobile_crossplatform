@@ -379,13 +379,14 @@ void main() {
   });
 
   group('ProfileContent', () {
-    ProfileContent content(ProfileUiState state, {VoidCallback? onBack}) {
+    ProfileContent content(ProfileUiState state, {VoidCallback? onBack, VoidCallback? onSignOut}) {
       return ProfileContent(
         state: state,
         onBack: onBack,
         onSelectBranch: () {},
         onOpenSyncQueue: () {},
         onOpenNotifications: () {},
+        onSignOutClick: onSignOut ?? () {},
       );
     }
 
@@ -402,7 +403,7 @@ void main() {
       version: '0.10.0',
     );
 
-    testWidgets('como pestaña: identidad, taller, plan y sin cerrar sesión', (tester) async {
+    testWidgets('como pestaña: identidad, taller, plan y cerrar sesión (US04)', (tester) async {
       await _pump(tester, content(loaded));
 
       expect(find.text('Carlos Mendoza Rivas'), findsOneWidget);
@@ -412,7 +413,18 @@ void main() {
       expect(find.text('2 registros pendientes de sincronizar'), findsOneWidget);
       expect(find.text('3 avisos sin leer'), findsOneWidget);
       expect(find.text('Atelier Workshop Mobile · versión 0.10.0'), findsOneWidget);
-      expect(find.text('Cerrar sesión'), findsNothing);
+      expect(find.text('Seguridad y sesión'), findsOneWidget);
+      expect(find.text('Cerrar sesión'), findsOneWidget);
+      expect(find.text('Salir de Atelier en este teléfono'), findsOneWidget);
+      await _teardown(tester);
+    });
+
+    testWidgets('tocar Cerrar sesión pide confirmación (US04)', (tester) async {
+      var taps = 0;
+      await _pump(tester, content(loaded, onSignOut: () => taps++));
+
+      await tester.tap(find.text('Cerrar sesión'));
+      expect(taps, 1);
       await _teardown(tester);
     });
 

@@ -1,14 +1,16 @@
 import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/branch/branch_selection_screen.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/presentation/forgot/forgot_password_screen.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/login/login_screen.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/register/register_screen.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/presentation/reset/reset_password_screen.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/verifyemail/verify_email_screen.dart';
 import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
 
-/// Registra los destinos de `auth` (equivale a `authNavGraph` y `branchSelectionDestination` de Android).
-/// Forgot/reset password (US05) no existen. Al iniciar sesión o aceptar la invitación no se navega desde
-/// aquí: `AppRoot` cambia de grafo cuando `SessionManager` guarda la sesión.
+/// Registra los destinos de `auth` (equivale a `authNavGraph` y `branchSelectionDestination` de Android),
+/// incluida la recuperación de contraseña (US05). Al iniciar sesión o aceptar la invitación no se navega
+/// desde aquí: `AppRoot` cambia de grafo cuando `SessionManager` guarda la sesión.
 void registerAuthDestinations({AuthDeepLinkInbox? Function()? deepLinks}) {
   AppNavigator.register(
     AppRoute.authGraph,
@@ -20,6 +22,40 @@ void registerAuthDestinations({AuthDeepLinkInbox? Function()? deepLinks}) {
       args: args as LoginArgs?,
       onHaveInvitation: () => AppNavigator.push(context, AppRoute.register, const RegisterArgs()),
       onVerifyEmail: (email) => AppNavigator.push(context, AppRoute.verifyEmail, VerifyEmailArgs(email)),
+      onForgotPassword: () => AppNavigator.push(context, AppRoute.forgotPassword),
+    ),
+  );
+  AppNavigator.register(
+    AppRoute.forgotPassword,
+    (context, args) => ForgotPasswordScreen(
+      onBack: () => Navigator.of(context).maybePop(),
+      onHaveToken: () => AppNavigator.push(context, AppRoute.resetPassword, const ResetPasswordArgs()),
+    ),
+  );
+  AppNavigator.register(
+    AppRoute.resetPassword,
+    (context, args) => ResetPasswordScreen(
+      args: args as ResetPasswordArgs?,
+      // `pop` y no `maybePop`: la pantalla ya confirmó descartar lo escrito.
+      onBack: () {
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) navigator.pop();
+      },
+      onRequestNewLink: () {
+        // Vuelve a la solicitud sin apilar otra copia.
+        final navigator = Navigator.of(context);
+        var found = false;
+        navigator.popUntil((route) {
+          if (route.settings.name == AppRoute.forgotPassword.name) found = true;
+          return found || route.isFirst;
+        });
+        if (!found) AppNavigator.push(context, AppRoute.forgotPassword);
+      },
+      // Vuelve al login (que reemplaza al anterior) con el aviso de contraseña actualizada.
+      onDone: () {
+        if (!context.mounted) return;
+        AppNavigator.pushAndClear(context, AppRoute.login, const LoginArgs(passwordReset: true));
+      },
     ),
   );
   AppNavigator.register(
@@ -55,9 +91,10 @@ void registerAuthDestinations({AuthDeepLinkInbox? Function()? deepLinks}) {
   );
 }
 
-/// Grafo sin sesión: login → registro por invitación → verificar correo. Es un `Navigator` propio, así el
-/// cambio de sesión lo descarta entero (como el `navigation<AuthNavGraphRoute>` de Android).
-/// Consume los enlaces de invitación: con uno pendiente abre el registro con su token.
+/// Grafo sin sesión: login → registro por invitación → verificar correo, y login → recuperar → nueva
+/// contraseña (US05). Es un `Navigator` propio, así el cambio de sesión lo descarta entero (como el
+/// `navigation<AuthNavGraphRoute>` de Android). Consume los enlaces del correo: con uno pendiente abre el
+/// registro o el restablecimiento con su token.
 class AuthNavGraph extends StatefulWidget {
   final AuthDeepLinkInbox? deepLinks;
 
@@ -94,10 +131,15 @@ class _AuthNavGraphState extends State<AuthNavGraph> {
     final navigator = _navigatorKey.currentState;
     if (!mounted || navigator == null) return;
     final link = widget.deepLinks?.consume();
-    if (link is! AcceptInvitationDeepLink) return;
-    // Un solo registro a la vez: el enlace nuevo reemplaza lo que hubiera abierto.
+    if (link == null) return;
+    // Un solo flujo a la vez: el enlace nuevo reemplaza lo que hubiera abierto.
     navigator.popUntil((route) => route.isFirst);
-    navigator.push(AppNavigator.routeOf(AppRoute.register, RegisterArgs(token: link.token)));
+    switch (link) {
+      case ResetPasswordDeepLink(:final token):
+        navigator.push(AppNavigator.routeOf(AppRoute.resetPassword, ResetPasswordArgs(token: token)));
+      case AcceptInvitationDeepLink(:final token):
+        navigator.push(AppNavigator.routeOf(AppRoute.register, RegisterArgs(token: token)));
+    }
   }
 
   @override

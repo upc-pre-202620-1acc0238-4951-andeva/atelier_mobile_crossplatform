@@ -14,6 +14,8 @@ Este plan levanta la regla 7 de [07-roadmap.md](07-roadmap.md): ahora sí se con
 
 US04, US05, US18, US19, US28, US29, US30, US34, US35, US36, US37, US38, US39, US40, US41, US42, US43.
 
+> **Sprint 3:** US04, US05, US19, US38 y US39 ya se portaron (ver [08-presentation-parity.md](08-presentation-parity.md) §4); US36, US37 y US41 también. La tabla de abajo queda como registro de la primera versión.
+
 Regla: **no** se construye la UI de esas historias ni sus puntos de entrada (botones, ítems de menú, pestañas, tarjetas del dashboard, rutas de push). El código de `domain`/`application`/`infrastructure` que ya existe para ellas **se deja como está** (no se borra). Si una pantalla mezcla historias incluidas y excluidas, se construye la pantalla y se omite solo la parte excluida, sin dejar huecos visuales (el layout se cierra como si esa sección no existiera).
 
 | Historia | Qué se omite en la UI (Android → Flutter) |

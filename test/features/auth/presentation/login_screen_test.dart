@@ -1,7 +1,7 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
-import 'package:atelier_mobile_crossplatform/features/auth/application/get_pending_operation_count_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/get_device_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/sign_in_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/auth_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/login/login_screen.dart';
@@ -34,7 +34,7 @@ Widget _content(LoginUiState state) => LoginContent(
 
 void main() {
   group('LoginContent', () {
-    testWidgets('estado inicial: textos de Android, sin enlace de recuperar contraseña', (tester) async {
+    testWidgets('estado inicial: textos de Android; sin callback no hay enlace de recuperar contraseña', (tester) async {
       for (final dark in [false, true]) {
         await tester.pumpWidget(_host(_content(const LoginUiState()), dark: dark));
         await tester.pumpAndSettle();
@@ -46,9 +46,30 @@ void main() {
         expect(find.text('Iniciar sesión'), findsOneWidget);
         expect(find.text('o'), findsOneWidget);
         expect(find.text('Tengo un enlace de invitación'), findsOneWidget);
-        // US05 queda fuera: ni el enlace ni su texto.
+        // Sin `onForgotPassword` (como en Android) no se dibuja el enlace.
         expect(find.textContaining('Olvidaste'), findsNothing);
       }
+    });
+
+    testWidgets('US05: "¿Olvidaste tu contraseña?" abre la recuperación', (tester) async {
+      var opened = 0;
+      await tester.pumpWidget(
+        _host(
+          LoginContent(
+            state: const LoginUiState(),
+            onEmailChange: (_) {},
+            onPasswordChange: (_) {},
+            onPasswordVisibleChange: (_) {},
+            onSubmit: () {},
+            onHaveInvitation: () {},
+            onForgotPassword: () => opened++,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('¿Olvidaste tu contraseña?'));
+      expect(opened, 1);
     });
 
     testWidgets('con correo y contraseña válidos el botón principal se habilita', (tester) async {
@@ -102,10 +123,10 @@ void main() {
     late _MockAuthRepository repository;
 
     LoginViewModel viewModel({LoginArgs? args}) {
-      when(() => repository.pendingOperationCount()).thenAnswer((_) async => 0);
+      when(() => repository.devicePendingOperationCount()).thenAnswer((_) async => 0);
       return LoginViewModel(
         signInUseCase: SignInUseCase(repository: repository),
-        getPendingCountUseCase: GetPendingOperationCountUseCase(repository: repository),
+        getDevicePendingCountUseCase: GetDevicePendingOperationCountUseCase(repository: repository),
         args: args,
       );
     }

@@ -68,9 +68,6 @@ class DiagnosticsHubUiState {
 
   /// `iot:telemetry:read` (no basta con leer fallas): ver la última lectura remota (US18).
   final bool canReadRemoteTelemetry;
-
-  /// Pendientes de sincronizar del vehículo elegido.
-  final DiagnosticsSyncState? vehicleSyncState;
   final bool canUseAiDiagnostics;
   final bool canReadAiReports;
   final bool canReadDevices;
@@ -122,6 +119,9 @@ class DiagnosticsHubUiState {
   final AlertsScope alertsScope;
   final List<PredictiveAlert> tenantAlerts;
   final List<PredictiveAlert> vehicleAlerts;
+
+  /// Lecturas y fallas del vehículo elegido que esperan señal en el teléfono (US19 E1).
+  final DiagnosticsSyncState vehicleSyncState;
   final bool isLoadingAlerts;
   final PredictiveAlert? convertingAlert;
   final String convertAlertDateText;
@@ -137,7 +137,6 @@ class DiagnosticsHubUiState {
     this.canUseTelemetry = false,
     this.canReadTelemetry = false,
     this.canReadRemoteTelemetry = false,
-    this.vehicleSyncState,
     this.canUseAiDiagnostics = false,
     this.canReadAiReports = false,
     this.canReadDevices = false,
@@ -184,6 +183,7 @@ class DiagnosticsHubUiState {
     this.alertsScope = AlertsScope.tenant,
     this.tenantAlerts = const [],
     this.vehicleAlerts = const [],
+    this.vehicleSyncState = const DiagnosticsSyncState(pendingReadings: 0, pendingFaults: 0),
     this.isLoadingAlerts = false,
     this.convertingAlert,
     this.convertAlertDateText = '',
@@ -246,8 +246,6 @@ class DiagnosticsHubUiState {
     bool? canUseTelemetry,
     bool? canReadTelemetry,
     bool? canReadRemoteTelemetry,
-    DiagnosticsSyncState? vehicleSyncState,
-    bool clearVehicleSyncState = false,
     bool? canUseAiDiagnostics,
     bool? canReadAiReports,
     bool? canReadDevices,
@@ -304,6 +302,7 @@ class DiagnosticsHubUiState {
     AlertsScope? alertsScope,
     List<PredictiveAlert>? tenantAlerts,
     List<PredictiveAlert>? vehicleAlerts,
+    DiagnosticsSyncState? vehicleSyncState,
     bool? isLoadingAlerts,
     PredictiveAlert? convertingAlert,
     bool clearConvertingAlert = false,
@@ -320,7 +319,6 @@ class DiagnosticsHubUiState {
       canUseTelemetry: canUseTelemetry ?? this.canUseTelemetry,
       canReadTelemetry: canReadTelemetry ?? this.canReadTelemetry,
       canReadRemoteTelemetry: canReadRemoteTelemetry ?? this.canReadRemoteTelemetry,
-      vehicleSyncState: clearVehicleSyncState ? null : vehicleSyncState ?? this.vehicleSyncState,
       canUseAiDiagnostics: canUseAiDiagnostics ?? this.canUseAiDiagnostics,
       canReadAiReports: canReadAiReports ?? this.canReadAiReports,
       canReadDevices: canReadDevices ?? this.canReadDevices,
@@ -369,6 +367,7 @@ class DiagnosticsHubUiState {
       alertsScope: alertsScope ?? this.alertsScope,
       tenantAlerts: tenantAlerts ?? this.tenantAlerts,
       vehicleAlerts: vehicleAlerts ?? this.vehicleAlerts,
+      vehicleSyncState: vehicleSyncState ?? this.vehicleSyncState,
       isLoadingAlerts: isLoadingAlerts ?? this.isLoadingAlerts,
       convertingAlert: clearConvertingAlert ? null : (convertingAlert ?? this.convertingAlert),
       convertAlertDateText: convertAlertDateText ?? this.convertAlertDateText,

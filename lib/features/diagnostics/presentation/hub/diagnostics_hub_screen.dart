@@ -629,12 +629,15 @@ class _ScannerTabContent extends StatelessWidget {
                 ),
               ],
             ),
-            if ((state.vehicleSyncState?.pendingReadings ?? 0) > 0)
+            // US19 E1: lo capturado sin señal queda en cola con estado pendiente hasta recuperar la red.
+            if (!state.vehicleSyncState.isSynced)
               Align(
                 alignment: Alignment.centerLeft,
                 child: AtelierChip(
-                  text: strings.diagLiveSyncPending(state.vehicleSyncState!.pendingReadings),
-                  kind: ChipKind.wait,
+                  text: strings.diagLiveSyncPending(
+                    state.vehicleSyncState.pendingReadings + state.vehicleSyncState.pendingFaults,
+                  ),
+                  kind: ChipKind.idle,
                 ),
               ),
             if (state.planIncludesTelemetry && (state.canReadDevices || state.canManageInstallations)) ...[

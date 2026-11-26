@@ -16,7 +16,6 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/ge
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/install_obd_device_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_diagnostics_sync_state_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_live_telemetry_use_case.dart';
-import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_predictive_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/refresh_predictive_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/register_obd_device_use_case.dart';
@@ -27,6 +26,7 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/diagnos
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/diagnostics_validation.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/predictive_alert.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/diagnostics_ui_formatters.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/hub/diagnostics_hub_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
@@ -83,12 +83,14 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
   final ConnectObdUseCase connectObd;
   final DisconnectObdUseCase disconnectObd;
   final ObserveLiveTelemetryUseCase observeLiveTelemetry;
-  final ObserveDiagnosticsSyncStateUseCase? observeSyncState;
   final GetTenantPredictiveAlertsUseCase getTenantPredictiveAlerts;
   final RefreshPredictiveAlertsUseCase refreshPredictiveAlerts;
   final ObservePredictiveAlertsUseCase observePredictiveAlerts;
   final AcknowledgePredictiveAlertUseCase acknowledgePredictiveAlert;
   final ConvertAlertToAppointmentUseCase convertAlertToAppointment;
+
+  /// Lecturas y fallas del vehículo elegido que esperan señal (US19 E1). Opcional para las pruebas.
+  final ObserveDiagnosticsSyncStateUseCase? observeDiagnosticsSyncState;
   final String? initialVehicleId;
   final DateTime Function() now;
 
@@ -114,12 +116,12 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     required this.connectObd,
     required this.disconnectObd,
     required this.observeLiveTelemetry,
-    this.observeSyncState,
     required this.getTenantPredictiveAlerts,
     required this.refreshPredictiveAlerts,
     required this.observePredictiveAlerts,
     required this.acknowledgePredictiveAlert,
     required this.convertAlertToAppointment,
+    this.observeDiagnosticsSyncState,
     this.initialVehicleId,
     this.now = DateTime.now,
   }) : _state = DiagnosticsHubUiState(
@@ -170,7 +172,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     );
     connectivity.addListener(_onConnectivity);
     _watchVehicleAlerts(initialVehicleId);
-    _watchSyncState(initialVehicleId);
+    _watchVehicleSync(initialVehicleId);
     loadPairedAdapters();
   }
 
@@ -179,7 +181,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
 
   final List<StreamSubscription<Object?>> _subscriptions = [];
   StreamSubscription<List<PredictiveAlert>>? _vehicleAlertsSubscription;
-  StreamSubscription<DiagnosticsSyncState>? _syncSubscription;
+  StreamSubscription<DiagnosticsSyncState>? _vehicleSyncSubscription;
   String? _selectedVehicleId;
   List<VehicleWithOwner> _vehicles = const [];
   List<Task> _tasks = const [];
@@ -201,17 +203,20 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     if (vehicleId == _selectedVehicleId) return;
     _selectedVehicleId = vehicleId;
     _watchVehicleAlerts(vehicleId);
-    _watchSyncState(vehicleId);
+    _watchVehicleSync(vehicleId);
   }
 
-  /// US18: lecturas y fallas del vehículo elegido que aún no llegan al backend.
-  void _watchSyncState(String? vehicleId) {
-    _syncSubscription?.cancel();
-    _syncSubscription = null;
-    final observe = observeSyncState;
-    _update(_state.copyWith(clearVehicleSyncState: true));
-    if (observe == null || vehicleId == null || vehicleId.isEmpty) return;
-    _syncSubscription = observe
+  /// US19 E1: cuántas lecturas y fallas del vehículo siguen solo en el teléfono, en vivo desde Drift.
+  void _watchVehicleSync(String? vehicleId) {
+    _vehicleSyncSubscription?.cancel();
+    _vehicleSyncSubscription = null;
+    const synced = DiagnosticsSyncState(pendingReadings: 0, pendingFaults: 0);
+    final observe = observeDiagnosticsSyncState;
+    if (observe == null || vehicleId == null || vehicleId.isEmpty) {
+      _update(_state.copyWith(vehicleSyncState: synced));
+      return;
+    }
+    _vehicleSyncSubscription = observe
         .execute(vehicleId)
         .listen((sync) => _update(_state.copyWith(vehicleSyncState: sync)));
   }
@@ -936,7 +941,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
     _disposed = true;
     connectivity.removeListener(_onConnectivity);
     _vehicleAlertsSubscription?.cancel();
-    _syncSubscription?.cancel();
+    _vehicleSyncSubscription?.cancel();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }

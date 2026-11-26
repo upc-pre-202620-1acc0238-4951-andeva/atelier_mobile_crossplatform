@@ -1,19 +1,24 @@
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_grouped_card.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_main_top_bar.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_navigation_bar.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_panels.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_sheet.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_surface.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/motion.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_shapes.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.dart';
 import 'package:atelier_mobile_crossplatform/features/main/presentation/profile/profile_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/main/presentation/profile/profile_view_model.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
 
-/// Perfil de la cuenta: quién es, su taller y sede, el plan y la sincronización. Se abre desde "Más" con Atrás.
-/// La app no conoce el nombre del rol, así que no muestra ninguno. No incluye "Cerrar sesión" (US04).
+/// Perfil de la cuenta: quién es, su taller y sede, el plan, la sincronización y la sesión. Se abre desde "Más"
+/// con Atrás. La app no conoce el nombre del rol, así que no muestra ninguno. Cerrar sesión (US04) se confirma
+/// en hoja inferior.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -23,6 +28,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final ProfileViewModel viewModel = getIt<ProfileViewModel>();
+  final AtelierHaptics _haptics = rememberAtelierHaptics();
 
   @override
   void dispose() {
@@ -35,14 +41,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
-    return ListenableBuilder(
+    return StateSheetHost<bool>(
       listenable: viewModel,
-      builder: (context, _) => ProfileContent(
-        state: viewModel.state,
-        onBack: canPop ? () => Navigator.of(context).maybePop() : null,
-        onSelectBranch: () => _open(AppRoute.branchSelection),
-        onOpenSyncQueue: () => _open(AppRoute.pendingOperations),
-        onOpenNotifications: () => _open(AppRoute.notifications),
+      value: () => viewModel.state.confirmingSignOut ? true : null,
+      onDismiss: viewModel.onSignOutDismiss,
+      sheetBuilder: (context, _) => SignOutSheet(
+        pendingCount: viewModel.state.pendingCount,
+        onConfirm: () {
+          _haptics.confirm();
+          viewModel.onSignOutConfirm();
+        },
+        onDismiss: viewModel.onSignOutDismiss,
+      ),
+      child: ListenableBuilder(
+        listenable: viewModel,
+        builder: (context, _) => ProfileContent(
+          state: viewModel.state,
+          onBack: canPop ? () => Navigator.of(context).maybePop() : null,
+          onSelectBranch: () => _open(AppRoute.branchSelection),
+          onOpenSyncQueue: () => _open(AppRoute.pendingOperations),
+          onOpenNotifications: () => _open(AppRoute.notifications),
+          onSignOutClick: viewModel.onSignOutClick,
+        ),
       ),
     );
   }
@@ -54,6 +74,7 @@ class ProfileContent extends StatelessWidget {
   final VoidCallback onSelectBranch;
   final VoidCallback onOpenSyncQueue;
   final VoidCallback onOpenNotifications;
+  final VoidCallback onSignOutClick;
 
   const ProfileContent({
     super.key,
@@ -62,6 +83,7 @@ class ProfileContent extends StatelessWidget {
     required this.onSelectBranch,
     required this.onOpenSyncQueue,
     required this.onOpenNotifications,
+    required this.onSignOutClick,
   });
 
   @override
@@ -121,6 +143,19 @@ class ProfileContent extends StatelessWidget {
                               : null,
                           trailingBadgeColor: colors.infoContainer,
                           onClick: onOpenNotifications,
+                        ),
+                      ],
+                    ),
+                    AtelierGroupedCard(
+                      title: strings.profileSectionSession,
+                      children: [
+                        AtelierGroupedRow(
+                          title: strings.profileSignOut,
+                          subtitle: strings.profileSignOutSub,
+                          icon: Icons.logout_outlined,
+                          iconContainerColor: colors.badContainer,
+                          iconTint: colors.bad,
+                          onClick: state.signingOut ? null : onSignOutClick,
                         ),
                       ],
                     ),
@@ -281,5 +316,45 @@ class _WorkshopCard extends StatelessWidget {
       if (state.aiDiagnosticsEnabled) strings.profileModuleAi,
     ];
     return modules.isEmpty ? strings.profileModuleNone : modules.join(' · ');
+  }
+}
+
+/// Confirmación de "Cerrar sesión" (US04 E1). Con registros sin sincronizar avisa que se conservan en el teléfono.
+class SignOutSheet extends StatelessWidget {
+  final int pendingCount;
+  final VoidCallback onConfirm;
+  final VoidCallback onDismiss;
+
+  const SignOutSheet({
+    super.key,
+    required this.pendingCount,
+    required this.onConfirm,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    return AtelierBottomSheet(
+      title: strings.profileSignOutTitle,
+      actions: [
+        AtelierButton(
+          text: strings.profileSignOut,
+          onClick: onConfirm,
+          style: AtelierButtonStyle.destructiveFilled,
+        ),
+        AtelierButton(
+          text: strings.commonCancel,
+          onClick: onDismiss,
+          style: AtelierButtonStyle.text,
+        ),
+      ],
+      content: [
+        Text(
+          pendingCount > 0 ? strings.profileSignOutMessage : strings.profileSignOutPlain,
+          style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface),
+        ),
+      ],
+    );
   }
 }

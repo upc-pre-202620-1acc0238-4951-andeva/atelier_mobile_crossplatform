@@ -14,6 +14,9 @@ class TelemetryReadings extends Table {
   RealColumn get latitude => real().nullable()();
   RealColumn get longitude => real().nullable()();
   TextColumn get batchOperationId => text().nullable()();  // id del TELEMETRY_BATCH que la lleva
+  // Técnico que capturó la lectura (US19): en un terminal compartido no se envía bajo la sesión de otro.
+  // Nulo en filas anteriores a la v3: las envía quien esté con sesión.
+  TextColumn get userId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

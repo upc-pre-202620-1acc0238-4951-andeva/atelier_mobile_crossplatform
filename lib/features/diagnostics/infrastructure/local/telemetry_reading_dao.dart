@@ -28,6 +28,40 @@ class TelemetryReadingDao extends DatabaseAccessor<AppDatabase>
     return query.map((row) => row.read(telemetryReadings.vehicleId)!).get();
   }
 
+  /// Vehículos con lecturas sin lote de [userId] (o sin dueño, anteriores a la v3).
+  Future<List<String>> vehiclesWithUnbatchedForUser(String userId) {
+    final query = selectOnly(telemetryReadings, distinct: true)
+      ..addColumns([telemetryReadings.vehicleId])
+      ..where(telemetryReadings.batchOperationId.isNull() & _ownedBy(userId));
+    return query.map((row) => row.read(telemetryReadings.vehicleId)!).get();
+  }
+
+  /// Instante de la última lectura sin lote del vehículo: sirve para saber si sigue transmitiendo.
+  Future<int?> maxTimestampUnbatchedForUser(String vehicleId, String userId) {
+    final maxTimestamp = telemetryReadings.timestamp.max();
+    final query = selectOnly(telemetryReadings)
+      ..addColumns([maxTimestamp])
+      ..where(
+        telemetryReadings.vehicleId.equals(vehicleId) &
+            telemetryReadings.batchOperationId.isNull() &
+            _ownedBy(userId),
+      );
+    return query.map((row) => row.read(maxTimestamp)).getSingle();
+  }
+
+  Future<List<TelemetryReadingEntity>> unbatchedForUser(String vehicleId, String userId, int limit) {
+    return (select(telemetryReadings)
+          ..where(
+            (t) => t.vehicleId.equals(vehicleId) & t.batchOperationId.isNull() & _ownedBy(userId),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.timestamp)])
+          ..limit(limit))
+        .get();
+  }
+
+  Expression<bool> _ownedBy(String userId) =>
+      telemetryReadings.userId.equals(userId) | telemetryReadings.userId.isNull();
+
   Future<List<TelemetryReadingEntity>> unbatched(String vehicleId, int limit) {
     return (select(telemetryReadings)
           ..where(

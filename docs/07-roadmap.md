@@ -380,7 +380,7 @@ Se portó la capa visual de `atelier-mobile-android` (`core/designsystem`, `core
 - **Design system y helpers de presentación:** 34 equivalentes de `core/designsystem/` (colores claro/oscuro, tipografía `Satoshi` / `PlusJakartaSans` / `JetBrainsMono` / `AlbertSans`, formas, tema, íconos vectoriales, componentes `Atelier*`, háptica/animación reducida) y `core/presentation/` (`date_format.dart`, `lima_time_format.dart`, `money_format.dart`, `document_intents.dart`, `state_sheet_host.dart`).
 - **Navegación raíz y push:** `AppRoot`, `AppNavigator`, `RootNavigator` y `AppNavHostViewModel`, con soporte de `Navigator` + `MaterialPageRoute`, barras de pestañas por permiso (`MainTab`) y despacho push excluyendo destinos de US29 y US34.
 - **Pantallas por feature:**
-  - `auth`: `LoginScreen` (sin "¿Olvidaste tu contraseña?"), `RegisterScreen`, `VerifyEmailScreen`, `BranchSelectionScreen`.
+  - `auth`: `LoginScreen`, `RegisterScreen`, `VerifyEmailScreen`, `BranchSelectionScreen` y, desde el Sprint 3, `ForgotPasswordScreen` / `ResetPasswordScreen` (US05).
   - `main`: `MainShell` + `MainNavigationBar`, `AdminDashboardScreen`, `AdminAttendanceScreen`, `ModulesSheet`, `NotificationsScreen`, `PendingOperationsScreen`, `ProfileScreen` (sin cerrar sesión).
   - `attendance`: `AttendanceScreen`, `FloorHubScreen`.
   - `tasks`: `MyTasksScreen`, `TaskDetailScreen` con cronómetro, repuestos y pausa mecánica.
@@ -398,6 +398,13 @@ Se portó la capa visual de `atelier-mobile-android` (`core/designsystem`, `core
   - `US40` (`BaysScreen`, pestaña y atajo de bahías; solo queda lectura de bahía asignada en detalle OT).
   - `US41` (exportación PDF de flujo de caja) y `US43` (sección/PDF de Salud de Flota en `ReportsScreen` y botones Abrir/Compartir PDF en `AiHealthReportScreen`).
 - **Auditoría de paridad:** documentada archivo por archivo (207 archivos Kotlin → Dart) en [08-presentation-parity.md](08-presentation-parity.md).
+
+### Sprint 3 — US04, US05, US19, US38 y US39 ✅
+
+- **US04 (cierre seguro):** "Cerrar sesión" en Perfil con hoja de confirmación; `signOut` empaqueta la telemetría del usuario saliente, revoca el token FCM (2 s) y el refresh token (4 s) con presupuestos independientes, limpia `PushInbox`, `<temp>/pdfs` y `<temp>/capture`, cachés y sesión; la cola se conserva. El login avisa con un conteo neutro del dispositivo (`GetDevicePendingOperationCountUseCase`). E2 (token vencido) ya lo cubría `TokenRefresher`.
+- **US05 (restablecer contraseña):** `ForgotPasswordScreen` → `ResetPasswordScreen` (enlace o código; 400/404 = enlace vencido). `AuthDeepLinkInbox` reconoce `/auth/reset-password`; falta un plugin de App Links que publique el enlace (H1: se pega).
+- **US19 (fosa sin señal):** `telemetry_readings.user_id` (Drift **v3**, `from2To3`), `PreSyncHookRegistry` en `SyncProcessor` (dentro del bloqueo `sync`, UI y worker) con `DiagnosticsPreSyncHook` (remanentes < 200 tras 60 s sin muestras), empaquetado solo con `iot:telemetry:ingest` y aviso de pendientes del vehículo en el hub.
+- **US38 / US39 (caja y entrega):** pasos 2–4 de "Cobrar y entregar" (riel, cobros con historial, marcar pagada, pase de salida abrir/compartir y entrega) y acceso directo desde `FloorHubScreen`.
 
 Comprobado y sin comprobar:
 

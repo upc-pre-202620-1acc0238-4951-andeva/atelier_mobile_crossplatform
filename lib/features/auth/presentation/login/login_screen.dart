@@ -14,11 +14,12 @@ import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
 
 /// A5 Iniciar sesión. Con sesión guardada `AppRoot` cambia de grafo solo.
-/// Sin enlace "¿Olvidaste tu contraseña?" (US05 queda fuera).
+/// "¿Olvidaste tu contraseña?" abre A6 (US05).
 class LoginScreen extends StatefulWidget {
   final LoginArgs? args;
   final VoidCallback onHaveInvitation;
   final ValueChanged<String> onVerifyEmail;
+  final VoidCallback? onForgotPassword;
 
   /// Solo para pruebas: si no se pasa, la pantalla crea el suyo con `get_it` y lo libera.
   final LoginViewModel? viewModel;
@@ -28,6 +29,7 @@ class LoginScreen extends StatefulWidget {
     this.args,
     required this.onHaveInvitation,
     required this.onVerifyEmail,
+    this.onForgotPassword,
     this.viewModel,
   });
 
@@ -69,6 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
         onPasswordVisibleChange: _viewModel.onPasswordVisibleChange,
         onSubmit: _viewModel.onSubmit,
         onHaveInvitation: widget.onHaveInvitation,
+        onForgotPassword: widget.onForgotPassword,
       ),
     );
   }
@@ -81,6 +84,7 @@ class LoginContent extends StatelessWidget {
   final ValueChanged<bool> onPasswordVisibleChange;
   final VoidCallback onSubmit;
   final VoidCallback onHaveInvitation;
+  final VoidCallback? onForgotPassword;
 
   const LoginContent({
     super.key,
@@ -90,12 +94,14 @@ class LoginContent extends StatelessWidget {
     required this.onPasswordVisibleChange,
     required this.onSubmit,
     required this.onHaveInvitation,
+    this.onForgotPassword,
   });
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final atelier = context.atelier;
+    final forgot = onForgotPassword;
     final error = state.error;
     return Scaffold(
       body: SafeArea(
@@ -158,6 +164,18 @@ class LoginContent extends StatelessWidget {
                               imeAction: TextInputAction.done,
                               onImeAction: onSubmit,
                             ),
+                            if (forgot != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Transform.translate(
+                                  offset: const Offset(-12, 0),
+                                  child: AtelierButton(
+                                    text: strings.authForgotPassword,
+                                    onClick: forgot,
+                                    style: AtelierButtonStyle.text,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),

@@ -6,12 +6,16 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/auth_refresh_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/cache_maintenance_dao.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
+import 'package:atelier_mobile_crossplatform/core/media/temp_cache_cleaner.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/device_token_registrar.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/notification_permission_requester.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/accept_invitation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/forgot_password_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/get_device_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/google_sign_in_use_case.dart';
@@ -48,6 +52,9 @@ void setupAuthDependencies() {
       cacheDao: getIt<CacheMaintenanceDao>(),
       pendingDao: getIt<PendingOperationDao>(),
       requestSync: getIt<SyncProcessor>().runDetached,
+      preSyncHooks: getIt<PreSyncHookRegistry>(),
+      pushInbox: getIt<PushInbox>(),
+      tempCacheCleaner: getIt<TempCacheCleaner>(),
     ),
   );
   getIt.registerLazySingleton<BranchChoiceRepository>(
@@ -97,6 +104,9 @@ void setupAuthDependencies() {
   );
   getIt.registerLazySingleton<GetPendingOperationCountUseCase>(
     () => GetPendingOperationCountUseCase(repository: getIt<AuthRepository>()),
+  );
+  getIt.registerLazySingleton<GetDevicePendingOperationCountUseCase>(
+    () => GetDevicePendingOperationCountUseCase(repository: getIt<AuthRepository>()),
   );
   getIt.registerLazySingleton<SignOutUseCase>(
     () => SignOutUseCase(repository: getIt<AuthRepository>()),

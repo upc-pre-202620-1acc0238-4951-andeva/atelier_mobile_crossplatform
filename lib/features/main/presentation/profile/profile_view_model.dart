@@ -2,18 +2,21 @@ import 'dart:async';
 
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/sign_out_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/presentation/profile/profile_ui_state.dart';
 import 'package:flutter/foundation.dart';
 
-/// Perfil de la cuenta. Sin "Cerrar sesión" (US04): no es parte de esta versión.
+/// Perfil de la cuenta y cierre seguro de la sesión (US04): se confirma en una hoja inferior que avisa si
+/// quedan registros sin sincronizar en el teléfono.
 class ProfileViewModel extends ChangeNotifier {
   final ObserveSessionUseCase observeSession;
   final ObservePendingOperationCountUseCase observePendingCount;
   final ObservePushHistoryUseCase observePushHistory;
   final GetSelectableBranchesUseCase getBranches;
+  final SignOutUseCase signOut;
 
   /// Versión de la app, de `PackageInfo`; detrás de una función para que el ViewModel no dependa del plugin.
   final Future<String> Function() loadVersion;
@@ -23,6 +26,7 @@ class ProfileViewModel extends ChangeNotifier {
     required this.observePendingCount,
     required this.observePushHistory,
     required this.getBranches,
+    required this.signOut,
     required this.loadVersion,
   }) {
     _subscriptions.add(observeSession.execute().listen(_onSession));
@@ -87,6 +91,28 @@ class ProfileViewModel extends ChangeNotifier {
       );
     } on Object {
       // Se conserva lo último que se supo.
+    }
+  }
+
+  void onSignOutClick() {
+    if (_state.signingOut) return;
+    _update(_state.copyWith(confirmingSignOut: true));
+  }
+
+  void onSignOutDismiss() {
+    if (!_state.confirmingSignOut) return;
+    _update(_state.copyWith(confirmingSignOut: false));
+  }
+
+  /// Al borrarse la sesión `AppRoot` cambia al grafo de autenticación: aquí no se navega.
+  Future<void> onSignOutConfirm() async {
+    if (_state.signingOut) return;
+    _update(_state.copyWith(confirmingSignOut: false, signingOut: true));
+    try {
+      await signOut.execute();
+    } on Object {
+      // `signOut` nunca falla por la red; si algo local falló, se deja volver a intentarlo.
+      _update(_state.copyWith(signingOut: false));
     }
   }
 

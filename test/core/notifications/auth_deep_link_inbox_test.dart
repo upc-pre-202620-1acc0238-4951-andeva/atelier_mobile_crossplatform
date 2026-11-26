@@ -50,11 +50,22 @@ void main() {
       expect(AuthDeepLinkInbox.parseUri(null), isNull);
     });
 
-    test('el restablecer contraseña (US05) no se porta', () {
+    test('el enlace de restablecer contraseña (US05) trae su token', () {
       expect(
         AuthDeepLinkInbox.parseUri(
           Uri.parse('https://atelier.andeva.tech/auth/reset-password?token=a'),
         ),
+        const ResetPasswordDeepLink('a'),
+      );
+      expect(
+        AuthDeepLinkInbox.parseUri(
+          Uri.parse('https://atelier.andeva.tech/auth/reset-password'),
+        ),
+        const ResetPasswordDeepLink(''),
+      );
+      // Otro host: no es nuestro, aunque la ruta coincida.
+      expect(
+        AuthDeepLinkInbox.parseUri(Uri.parse('https://evil.test/auth/reset-password?token=a')),
         isNull,
       );
     });

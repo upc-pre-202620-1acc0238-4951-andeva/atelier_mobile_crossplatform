@@ -10,10 +10,14 @@ import 'package:decimal/decimal.dart';
 
 const _keep = Object();
 
-/// Qué acción fiscal está en vuelo en checkout (US37); deshabilita las demás y pone el botón en carga.
+/// Qué acción de la pantalla está en vuelo; deshabilita las demás y pone el botón en carga.
 enum CheckoutAction {
   preparing,
   issuing,
+  paying,
+  markingPaid,
+  exitPass,
+  delivering,
   voiding,
   issuingCreditNote,
   refreshingSunat,
@@ -198,8 +202,60 @@ class IssueForm {
   );
 }
 
+/// Cobro en edición (US38). [amount] es texto para no perder lo que el cajero escribe.
+class PaymentForm {
+  static final minPayment = Decimal.parse('0.01');
+  static const maxReference = 100;
+
+  final VoucherView voucher;
+  final String amount;
+  final PaymentMethod method;
+  final String reference;
+
+  const PaymentForm({
+    required this.voucher,
+    required this.amount,
+    this.method = PaymentMethod.cash,
+    this.reference = '',
+  });
+
+  /// El monto escrito, o `null` si no es un número con hasta 2 decimales entre 0.01 y el saldo.
+  Decimal? get parsedAmount {
+    final value = Decimal.tryParse(amount.trim().replaceAll(',', '.'));
+    if (value == null) return null;
+    if (value < minPayment || value.scale > 2 || value > voucher.pending) return null;
+    return value;
+  }
+
+  /// Tarjeta, transferencia o billetera digital llevan el código de operación bancario (US38 E1).
+  bool get requiresReference => method != PaymentMethod.cash;
+
+  bool get referenceValid =>
+      !requiresReference || (reference.trim().isNotEmpty && reference.trim().length <= maxReference);
+
+  bool get canSubmit => parsedAmount != null && referenceValid;
+
+  PaymentForm copyWith({String? amount, PaymentMethod? method, String? reference}) => PaymentForm(
+    voucher: voucher,
+    amount: amount ?? this.amount,
+    method: method ?? this.method,
+    reference: reference ?? this.reference,
+  );
+}
+
 sealed class CheckoutSheet {
   const CheckoutSheet();
+}
+
+class PaymentCheckoutSheet extends CheckoutSheet {
+  final PaymentForm form;
+
+  const PaymentCheckoutSheet(this.form);
+}
+
+/// Confirmar la entrega en patio (US39 E2).
+class DeliverCheckoutSheet extends CheckoutSheet {
+  const DeliverCheckoutSheet();
 }
 
 class IssueCheckoutSheet extends CheckoutSheet {
@@ -222,13 +278,16 @@ class CreditNoteCheckoutSheet extends CheckoutSheet {
   const CreditNoteCheckoutSheet({required this.voucher, required this.form});
 }
 
-/// Estado de emisión y gestión de comprobantes SUNAT de una orden (US37).
-/// Sin pasos de cobro (US38) ni pase de salida/entrega (US39).
+/// "Cobrar y entregar": una orden `COMPLETED` pasa por comprobante (US37), cobros (US38), pase de salida y
+/// entrega (US39). Todo es en línea (docs/06-offline-sync.md); sin red solo se ve lo que hay en Drift.
 class WorkOrderCheckoutUiState {
   final String workOrderId;
   final WorkOrder? order;
   final List<VoucherSummary> cachedVouchers;
   final List<Voucher>? liveVouchers;
+
+  /// Historial de cobros del comprobante vigente (US38), en línea.
+  final List<Payment> payments;
   final bool hasLoaded;
   final bool isRefreshing;
   final bool isOnline;
@@ -238,15 +297,26 @@ class WorkOrderCheckoutUiState {
   final UiText? sheetError;
   final UiText? actionError;
   final UiText? notice;
+
+  /// El vehículo ya se entregó en esta pantalla (US39 E2): la orden `PAID` sale de la caché de la sede.
+  final bool delivered;
+
+  /// PDF del pase de salida recién descargado; la pantalla lo abre o comparte según [exitPassActionMode].
+  final File? exitPass;
+  final CheckoutDocumentActionMode exitPassActionMode;
   final PendingDocumentFile? pendingDocument;
   final bool canReadInvoices;
   final bool canIssueVoucher;
+  final bool canRegisterPayment;
+  final bool canIssueExitPass;
+  final bool canDeliver;
 
   const WorkOrderCheckoutUiState({
     required this.workOrderId,
     this.order,
     this.cachedVouchers = const [],
     this.liveVouchers,
+    this.payments = const [],
     this.hasLoaded = false,
     this.isRefreshing = false,
     this.isOnline = true,
@@ -256,9 +326,15 @@ class WorkOrderCheckoutUiState {
     this.sheetError,
     this.actionError,
     this.notice,
+    this.delivered = false,
+    this.exitPass,
+    this.exitPassActionMode = CheckoutDocumentActionMode.open,
     this.pendingDocument,
     this.canReadInvoices = false,
     this.canIssueVoucher = false,
+    this.canRegisterPayment = false,
+    this.canIssueExitPass = false,
+    this.canDeliver = false,
   });
 
   List<VoucherView> get vouchers => liveVouchers != null
@@ -285,13 +361,22 @@ class WorkOrderCheckoutUiState {
 
   bool get isCompleted => order?.status == WorkOrderStatus.completed;
   bool get isOrderPaid => order?.status == WorkOrderStatus.paid;
-  bool get hasAnyAccess => canReadInvoices || canIssueVoucher;
+
+  /// El comprobante está saldado pero la orden todavía no figura pagada (US39 E2).
+  bool get canMarkPaid =>
+      canRegisterPayment && !isOrderPaid && activeVoucher?.paymentStatus == VoucherPaymentStatus.paid;
+
+  bool get hasAnyAccess =>
+      canReadInvoices || canIssueVoucher || canRegisterPayment || canIssueExitPass || canDeliver;
+
+  /// Sin comprobantes en pantalla y todavía leyéndolos: esqueleto. Con caché se pinta Drift y basta la barra.
   bool get showSkeleton => !hasLoaded && vouchers.isEmpty && error == null;
 
   WorkOrderCheckoutUiState copyWith({
     Object? order = _keep,
     List<VoucherSummary>? cachedVouchers,
     Object? liveVouchers = _keep,
+    List<Payment>? payments,
     bool? hasLoaded,
     bool? isRefreshing,
     bool? isOnline,
@@ -301,9 +386,15 @@ class WorkOrderCheckoutUiState {
     Object? sheetError = _keep,
     Object? actionError = _keep,
     Object? notice = _keep,
+    bool? delivered,
+    Object? exitPass = _keep,
+    CheckoutDocumentActionMode? exitPassActionMode,
     Object? pendingDocument = _keep,
     bool? canReadInvoices,
     bool? canIssueVoucher,
+    bool? canRegisterPayment,
+    bool? canIssueExitPass,
+    bool? canDeliver,
   }) => WorkOrderCheckoutUiState(
     workOrderId: workOrderId,
     order: identical(order, _keep) ? this.order : order as WorkOrder?,
@@ -311,6 +402,7 @@ class WorkOrderCheckoutUiState {
     liveVouchers: identical(liveVouchers, _keep)
         ? this.liveVouchers
         : liveVouchers as List<Voucher>?,
+    payments: payments ?? this.payments,
     hasLoaded: hasLoaded ?? this.hasLoaded,
     isRefreshing: isRefreshing ?? this.isRefreshing,
     isOnline: isOnline ?? this.isOnline,
@@ -320,10 +412,16 @@ class WorkOrderCheckoutUiState {
     sheetError: identical(sheetError, _keep) ? this.sheetError : sheetError as UiText?,
     actionError: identical(actionError, _keep) ? this.actionError : actionError as UiText?,
     notice: identical(notice, _keep) ? this.notice : notice as UiText?,
+    delivered: delivered ?? this.delivered,
+    exitPass: identical(exitPass, _keep) ? this.exitPass : exitPass as File?,
+    exitPassActionMode: exitPassActionMode ?? this.exitPassActionMode,
     pendingDocument: identical(pendingDocument, _keep)
         ? this.pendingDocument
         : pendingDocument as PendingDocumentFile?,
     canReadInvoices: canReadInvoices ?? this.canReadInvoices,
     canIssueVoucher: canIssueVoucher ?? this.canIssueVoucher,
+    canRegisterPayment: canRegisterPayment ?? this.canRegisterPayment,
+    canIssueExitPass: canIssueExitPass ?? this.canIssueExitPass,
+    canDeliver: canDeliver ?? this.canDeliver,
   );
 }

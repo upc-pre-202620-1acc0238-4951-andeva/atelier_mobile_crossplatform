@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Enlace web entrante de autenticación. Solo aceptar invitación (US01): el de restablecer
-/// contraseña (US05) no se porta.
+/// Enlace web entrante de autenticación (US05 restablecer contraseña / US01 aceptar invitación).
 sealed class AuthDeepLink {
   final String token;
 
@@ -13,6 +12,10 @@ sealed class AuthDeepLink {
 
   @override
   int get hashCode => Object.hash(runtimeType, token);
+}
+
+final class ResetPasswordDeepLink extends AuthDeepLink {
+  const ResetPasswordDeepLink(super.token);
 }
 
 final class AcceptInvitationDeepLink extends AuthDeepLink {
@@ -54,6 +57,9 @@ class AuthDeepLinkInbox extends ChangeNotifier {
     if (uri.host.toLowerCase() != expectedHost) return null;
     var token = (uri.queryParameters['token'] ?? '').trim();
     if (token.length > maxTokenLength) token = token.substring(0, maxTokenLength);
+    if (uri.path.startsWith('/auth/reset-password')) {
+      return ResetPasswordDeepLink(token);
+    }
     if (uri.path.startsWith('/auth/accept-invitation')) {
       return AcceptInvitationDeepLink(token);
     }

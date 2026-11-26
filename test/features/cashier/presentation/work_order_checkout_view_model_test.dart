@@ -4,13 +4,18 @@ import 'dart:io';
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/deliver_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/download_exit_pass_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_credit_note_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_voucher_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/mark_work_order_paid_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/observe_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/prepare_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/refresh_voucher_status_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/register_payment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/void_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher_draft.dart';
@@ -47,6 +52,16 @@ class _MockIssueCreditNote extends Mock implements IssueCreditNoteUseCase {}
 class _MockDownloadDoc extends Mock implements DownloadVoucherDocumentUseCase {}
 
 class _MockRefreshSunat extends Mock implements RefreshVoucherStatusUseCase {}
+
+class _MockGetPayments extends Mock implements GetVoucherPaymentsUseCase {}
+
+class _MockRegisterPayment extends Mock implements RegisterPaymentUseCase {}
+
+class _MockMarkPaid extends Mock implements MarkWorkOrderPaidUseCase {}
+
+class _MockDownloadExitPass extends Mock implements DownloadExitPassUseCase {}
+
+class _MockDeliver extends Mock implements DeliverVehicleUseCase {}
 
 class _FakeVoucherDraft extends Fake implements VoucherDraft {}
 
@@ -118,6 +133,7 @@ void main() {
   late _MockIssueCreditNote issueCreditNote;
   late _MockDownloadDoc downloadDoc;
   late _MockRefreshSunat refreshSunat;
+  late _MockGetPayments getPayments;
   late StreamController<Session?> sessions;
   late StreamController<WorkOrder?> orders;
   late StreamController<List<VoucherSummary>> cachedVouchers;
@@ -137,6 +153,8 @@ void main() {
     issueCreditNote = _MockIssueCreditNote();
     downloadDoc = _MockDownloadDoc();
     refreshSunat = _MockRefreshSunat();
+    getPayments = _MockGetPayments();
+    when(() => getPayments.execute(any())).thenAnswer((_) async => []);
     sessions = StreamController<Session?>.broadcast();
     orders = StreamController<WorkOrder?>.broadcast();
     cachedVouchers = StreamController<List<VoucherSummary>>.broadcast();
@@ -181,6 +199,11 @@ void main() {
     issueVoucher: issueVoucher,
     voidVoucher: voidVoucher,
     issueCreditNote: issueCreditNote,
+    getPayments: getPayments,
+    registerPayment: _MockRegisterPayment(),
+    markPaid: _MockMarkPaid(),
+    downloadExitPass: _MockDownloadExitPass(),
+    deliverVehicle: _MockDeliver(),
     connectivity: connectivity,
     downloadVoucherDocument: downloadDoc,
     refreshVoucherStatus: refreshSunat,
