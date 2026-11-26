@@ -435,6 +435,26 @@ Comprobado y sin comprobar:
 
 ---
 
+## Paridad con Android 1.0.0 (rama `feature/full-parity`)
+
+Corrige lo señalado en [08-presentation-parity.md](08-presentation-parity.md). Una migración Drift no hizo falta (la marca de repuesto sigue siendo el hueco H35). Dependencia añadida: `app_links` (enlaces de correo).
+
+**Hecho.**
+
+- **US01/US05:** App Links de invitación y restablecimiento (`AuthDeepLinkSource`, manifiesto, `Runner.entitlements`; iOS sin comprobar).
+- **US40:** pestaña Bahías en `MainTab`, resumen de ocupación, FAB, reasignar el mecánico de cada tarea desde la hoja de la bahía (`BayOccupant.tasks`) y permisos de leer órdenes, asignar y liberar por separado.
+- **US42:** perfil fiscal del taller (`TenantApi`, `GetTenantFiscalProfileUseCase`, `UpdateTenantFiscalProfileUseCase`), tarjeta PSE, detalle de serie con confirmación y reglas por tipo (F, B y nota de crédito).
+- **US18:** telemetría calibrada de 8 PIDs, historial por hora (`GET iot/telemetry/vehicle/{id}/history`, documentado en `docs/api/iot.md`), `ReconnectObdUseCase`, hoja de muestra congelada y barra inferior; se quitó el diálogo de salida propio.
+- **US28/US30:** tipo y nota con contador en la sección de evidencia, hoja de foto fallida (reintentar o descartar), confirmación al salir con nota sin guardar y foto de Montaje obligatoria al cerrar.
+- **US29:** filas de decisión en la tarea y en la orden; el push de revisión abre la orden.
+- **US34:** KPI de stock y bahías en "Hoy", sección de stock en notificaciones, tarjeta de stock del "Turno" y bandeja de alertas con FAB de orden de compra y barra métrica.
+- **P2:** módulos (orden y textos), rentabilidad en hoja, recepción de OC sin fecha propia, PDF de salud en la barra, hoja de salud de flota, límite de 200 caracteres en líneas de comprobante, chips de bahía en el detalle de la orden y monitor de suspensiones acotado (15 órdenes en curso, 3 a la vez).
+- **P3:** dock de tarea con fila de ancho igual, formas Material desde `AtelierShapes` y fuentes sin uso retiradas.
+
+**No hecho.** Caché con TTL y flujo observable del monitor de suspensiones (necesita un bus de eventos de la caché que Flutter no tiene); marca de repuesto (H35: el backend no la documenta); páginas del PDF de la proforma como imagen con descripción accesible (exige un rasterizador de PDF como dependencia nativa); iOS.
+
+---
+
 ## Pendientes y riesgos conocidos
 
 | Tema | Detalle | Afecta |
