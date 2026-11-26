@@ -13,6 +13,8 @@ enum AppRoute {
   login, // LoginArgs?
   register, // RegisterArgs?
   verifyEmail, // VerifyEmailArgs
+  forgotPassword, // A6 paso 1 (US05)
+  resetPassword, // ResetPasswordArgs? (US05)
   branchSelection,
   // attendance
   attendanceHome, // FloorHub (raíz de la pestaña Turno)
@@ -75,6 +77,13 @@ class VerifyEmailArgs {
   final String email;
 
   const VerifyEmailArgs(this.email);
+}
+
+/// A6, paso 2. [token] llega del enlace del correo (App Link); si no, se pega el enlace o el código (H1).
+class ResetPasswordArgs {
+  final String? token;
+
+  const ResetPasswordArgs({this.token});
 }
 
 class TaskDetailArgs {
