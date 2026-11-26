@@ -45,7 +45,7 @@ enum MoreDestination {
     myAttendance => (AppRoute.attendanceDetail, null),
     myTasks => (AppRoute.myTasks, MainTab.tasks),
     workOrders => (AppRoute.workOrders, MainTab.orders),
-    bays => (AppRoute.bays, null),
+    bays => (AppRoute.bays, MainTab.bays),
     reception => (AppRoute.vehicleSearch, MainTab.reception),
     services => (AppRoute.servicesCatalog, null),
     dailyCash => (AppRoute.dailyCash, MainTab.cash),
