@@ -8,6 +8,9 @@ import 'package:atelier_mobile_crossplatform/features/cashier/application/delive
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_exit_pass_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_branch_series_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/get_tenant_fiscal_profile_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/update_tenant_fiscal_profile_use_case.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/tenant/tenant_api.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_daily_cash_summary_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_vouchers_use_case.dart';
@@ -33,6 +36,7 @@ void setupCashierDependencies() {
   getIt.registerLazySingleton<VoucherDao>(
     () => getIt<AppDatabase>().voucherDao,
   );
+  getIt.registerLazySingleton<TenantApi>(() => TenantApi(client: getIt<ApiClient>()));
   getIt.registerLazySingleton<CashierApi>(
     () => CashierApi(client: getIt<ApiClient>()),
   );
@@ -41,6 +45,7 @@ void setupCashierDependencies() {
       api: getIt<CashierApi>(),
       voucherDao: getIt<VoucherDao>(),
       session: getIt<SessionManager>(),
+      tenantApi: getIt<TenantApi>(),
       pdfDownloader: getIt.isRegistered<PdfDownloader>() ? getIt<PdfDownloader>() : null,
     ),
   );
@@ -91,6 +96,12 @@ void setupCashierDependencies() {
   );
   getIt.registerLazySingleton<SetSeriesActiveUseCase>(
     () => SetSeriesActiveUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<GetTenantFiscalProfileUseCase>(
+    () => GetTenantFiscalProfileUseCase(repository: getIt<CashierRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateTenantFiscalProfileUseCase>(
+    () => UpdateTenantFiscalProfileUseCase(repository: getIt<CashierRepository>()),
   );
   getIt.registerLazySingleton<GetVouchersUseCase>(
     () => GetVouchersUseCase(repository: getIt<CashierRepository>()),

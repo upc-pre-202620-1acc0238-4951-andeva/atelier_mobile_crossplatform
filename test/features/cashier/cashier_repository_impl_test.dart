@@ -467,6 +467,60 @@ void main() {
     });
   });
 
+  group('perfil fiscal del taller (US42)', () {
+    const tenant = 'GET /api/v1/tenants/current';
+    const update = 'PUT /api/v1/tenants/current';
+    Map<String, dynamic> tenantJson({String name = 'Taller Suárez'}) => {
+      'id': 't1',
+      'name': name,
+      'legalName': 'Suárez Automotriz S.A.C.',
+      'taxId': '20123456789',
+      'status': 'ACTIVE',
+    };
+
+    test('lee el perfil y deja el nombre comercial en la sesión', () async {
+      env.responses[tenant] = (_) => json(tenantJson());
+      final profile = await env.cashier.getTenantFiscalProfile();
+      expect(profile.legalName, 'Suárez Automotriz S.A.C.');
+      expect(profile.taxId, '20123456789');
+      expect((await env.session.getSession())?.tenantName, 'Taller Suárez');
+    });
+
+    test('guarda recortando espacios y envía solo nombre y razón social', () async {
+      env.responses[update] = (request) {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body, {'name': 'Nuevo', 'legalName': 'Nueva S.A.C.'});
+        return json(tenantJson(name: 'Nuevo'));
+      };
+      final profile = await env.cashier.updateTenantFiscalProfile('  Nuevo ', ' Nueva S.A.C.  ');
+      expect(profile.name, 'Nuevo');
+      expect((await env.session.getSession())?.tenantName, 'Nuevo');
+    });
+
+    test('nombre vacío o de más de 100 y razón social de más de 150 no llaman', () async {
+      for (final (name, legal, field) in [
+        ('', 'Razón', 'tenantName'),
+        ('x' * 101, 'Razón', 'tenantName'),
+        ('Nombre', '  ', 'tenantLegalName'),
+        ('Nombre', 'y' * 151, 'tenantLegalName'),
+      ]) {
+        await expectLater(
+          env.cashier.updateTenantFiscalProfile(name, legal),
+          throwsA(isA<InvalidCashierInputException>().having((e) => e.field, 'field', field)),
+        );
+      }
+      expect(env.requested('PUT', '/api/v1/tenants/current'), isEmpty);
+    });
+
+    test('el 403 llega con el mensaje del backend', () async {
+      env.responses[update] = (_) => apiError(403, 'Falta iam:tenants:update');
+      await expectLater(
+        env.cashier.updateTenantFiscalProfile('Nuevo', 'Nueva'),
+        throwsA(isA<ApiException>().having((e) => e.httpStatus, 'status', 403)),
+      );
+    });
+  });
+
   group('entrega (workorders)', () {
     test('pagar y entregar sacan la orden de la caché; el pase sin pagar da el 422', () async {
       env.responses['POST /api/v1/work-orders/wo1/mark-as-paid'] = (_) =>

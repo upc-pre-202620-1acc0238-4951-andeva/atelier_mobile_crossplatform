@@ -4168,24 +4168,6 @@ abstract class AppLocalizations {
   /// **'Cabina de pintura'**
   String get bayTypePaintBooth;
 
-  /// No description provided for @bayStatusOccupiedDesc.
-  ///
-  /// In es, this message translates to:
-  /// **'En intervención técnica · Trabajo en curso'**
-  String get bayStatusOccupiedDesc;
-
-  /// No description provided for @bayStatusAvailableDesc.
-  ///
-  /// In es, this message translates to:
-  /// **'Bahía libre · Lista para recibir vehículo'**
-  String get bayStatusAvailableDesc;
-
-  /// No description provided for @bayStatusMaintenanceDesc.
-  ///
-  /// In es, this message translates to:
-  /// **'Fuera de servicio · En mantenimiento'**
-  String get bayStatusMaintenanceDesc;
-
   /// No description provided for @bayStatusAvailable.
   ///
   /// In es, this message translates to:
@@ -10990,29 +10972,11 @@ abstract class AppLocalizations {
   /// **'Esa bahía no está libre. Elige otra.'**
   String get baysUnavailableError;
 
-  /// No description provided for @baysMovedNotice.
-  ///
-  /// In es, this message translates to:
-  /// **'Orden movida a {p1}.'**
-  String baysMovedNotice(String p1);
-
-  /// No description provided for @baysAssignedNotice.
-  ///
-  /// In es, this message translates to:
-  /// **'Orden ingresada a {p1}.'**
-  String baysAssignedNotice(String p1);
-
   /// No description provided for @baysNoAssignableOrders.
   ///
   /// In es, this message translates to:
   /// **'No hay órdenes activas sin bahía.'**
   String get baysNoAssignableOrders;
-
-  /// No description provided for @baysNoFreeTargets.
-  ///
-  /// In es, this message translates to:
-  /// **'No hay otras bahías registradas.'**
-  String get baysNoFreeTargets;
 
   /// No description provided for @baysNameError.
   ///
@@ -11872,30 +11836,6 @@ abstract class AppLocalizations {
   /// **'Stock {current} · mínimo {minimum} · faltan {missing}'**
   String stockAlertsDetail(String current, String minimum, String missing);
 
-  /// No description provided for @moreHStockAlerts.
-  ///
-  /// In es, this message translates to:
-  /// **'Alertas de stock'**
-  String get moreHStockAlerts;
-
-  /// No description provided for @moreHStockAlertsSub.
-  ///
-  /// In es, this message translates to:
-  /// **'Repuestos bajo el mínimo'**
-  String get moreHStockAlertsSub;
-
-  /// No description provided for @moreHFiscalSeries.
-  ///
-  /// In es, this message translates to:
-  /// **'Series SUNAT'**
-  String get moreHFiscalSeries;
-
-  /// No description provided for @moreHFiscalSeriesSub.
-  ///
-  /// In es, this message translates to:
-  /// **'Series de facturas y boletas'**
-  String get moreHFiscalSeriesSub;
-
   /// No description provided for @invReceiveBtn.
   ///
   /// In es, this message translates to:
@@ -11991,126 +11931,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Solo se pueden recibir órdenes emitidas.'**
   String get invReceiveErrNotReceivable;
-
-  /// No description provided for @fiscalSeriesTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Series de comprobantes'**
-  String get fiscalSeriesTitle;
-
-  /// No description provided for @fiscalSeriesContext.
-  ///
-  /// In es, this message translates to:
-  /// **'Facturación electrónica'**
-  String get fiscalSeriesContext;
-
-  /// No description provided for @fiscalSeriesCaption.
-  ///
-  /// In es, this message translates to:
-  /// **'series activas en la sede'**
-  String get fiscalSeriesCaption;
-
-  /// No description provided for @fiscalSeriesFigFactura.
-  ///
-  /// In es, this message translates to:
-  /// **'facturas'**
-  String get fiscalSeriesFigFactura;
-
-  /// No description provided for @fiscalSeriesFigBoleta.
-  ///
-  /// In es, this message translates to:
-  /// **'boletas'**
-  String get fiscalSeriesFigBoleta;
-
-  /// No description provided for @fiscalSeriesNoPermission.
-  ///
-  /// In es, this message translates to:
-  /// **'Tu perfil no tiene permiso para configurar series de comprobantes.'**
-  String get fiscalSeriesNoPermission;
-
-  /// No description provided for @fiscalSeriesPse.
-  ///
-  /// In es, this message translates to:
-  /// **'La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.'**
-  String get fiscalSeriesPse;
-
-  /// No description provided for @fiscalSeriesListHeader.
-  ///
-  /// In es, this message translates to:
-  /// **'Series de la sede'**
-  String get fiscalSeriesListHeader;
-
-  /// No description provided for @fiscalSeriesAdd.
-  ///
-  /// In es, this message translates to:
-  /// **'Agregar serie'**
-  String get fiscalSeriesAdd;
-
-  /// No description provided for @fiscalSeriesEmpty.
-  ///
-  /// In es, this message translates to:
-  /// **'Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.'**
-  String get fiscalSeriesEmpty;
-
-  /// No description provided for @fiscalSeriesRowSub.
-  ///
-  /// In es, this message translates to:
-  /// **'{type} · correlativo actual {number}'**
-  String fiscalSeriesRowSub(String type, String number);
-
-  /// No description provided for @fiscalSeriesActive.
-  ///
-  /// In es, this message translates to:
-  /// **'Activa'**
-  String get fiscalSeriesActive;
-
-  /// No description provided for @fiscalSeriesInactive.
-  ///
-  /// In es, this message translates to:
-  /// **'Inactiva'**
-  String get fiscalSeriesInactive;
-
-  /// No description provided for @fiscalSeriesToggleLabel.
-  ///
-  /// In es, this message translates to:
-  /// **'Activar o desactivar la serie {serie}'**
-  String fiscalSeriesToggleLabel(String serie);
-
-  /// No description provided for @fiscalSeriesCreatedOk.
-  ///
-  /// In es, this message translates to:
-  /// **'Serie {serie} ({type}) activada para esta sede.'**
-  String fiscalSeriesCreatedOk(String serie, String type);
-
-  /// No description provided for @fiscalSeriesSheetTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Agregar serie'**
-  String get fiscalSeriesSheetTitle;
-
-  /// No description provided for @fiscalSeriesSheetBody.
-  ///
-  /// In es, this message translates to:
-  /// **'Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.'**
-  String get fiscalSeriesSheetBody;
-
-  /// No description provided for @fiscalSeriesSerieLabel.
-  ///
-  /// In es, this message translates to:
-  /// **'Serie'**
-  String get fiscalSeriesSerieLabel;
-
-  /// No description provided for @fiscalSeriesInitialLabel.
-  ///
-  /// In es, this message translates to:
-  /// **'Correlativo inicial (opcional)'**
-  String get fiscalSeriesInitialLabel;
-
-  /// No description provided for @fiscalSeriesSave.
-  ///
-  /// In es, this message translates to:
-  /// **'Activar serie'**
-  String get fiscalSeriesSave;
 
   /// No description provided for @profitabilityTitle.
   ///

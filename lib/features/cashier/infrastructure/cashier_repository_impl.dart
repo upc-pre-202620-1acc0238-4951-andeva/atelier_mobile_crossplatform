@@ -3,12 +3,15 @@ import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/pdf_downloader.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/tenant/tenant_api.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/tenant/tenant_dtos.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/missing_branch_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_errors.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_repository.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_validation.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/domain/tenant_fiscal_profile.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher_draft.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/cashier_mappers.dart';
@@ -24,6 +27,7 @@ class CashierRepositoryImpl implements CashierRepository {
   final CashierApi api;
   final VoucherDao voucherDao;
   final SessionManager session;
+  final TenantApi? tenantApi;
   final PdfDownloader? pdfDownloader;
   final DateTime Function() now;
 
@@ -34,6 +38,7 @@ class CashierRepositoryImpl implements CashierRepository {
     required this.api,
     required this.voucherDao,
     required this.session,
+    this.tenantApi,
     this.pdfDownloader,
     this.now = DateTime.now,
   });
@@ -373,7 +378,10 @@ class CashierRepositoryImpl implements CashierRepository {
     int? initialCorrelative,
   ) async {
     final cleanSerie = serie.trim();
-    if (!CashierValidation.isSeriesFor(type, cleanSerie)) {
+    final validSerie = type == VoucherType.notaCredito
+        ? CashierValidation.isCreditNoteSeries(cleanSerie)
+        : CashierValidation.isSeriesFor(type, cleanSerie);
+    if (!validSerie) {
       throw const InvalidCashierInputException('serie');
     }
     if (initialCorrelative != null && initialCorrelative < 0) {
@@ -394,6 +402,47 @@ class CashierRepositoryImpl implements CashierRepository {
   @override
   Future<void> setSeriesActive(String id, bool active) {
     return api.setSeriesActive(id, active);
+  }
+
+  @override
+  Future<TenantFiscalProfile> getTenantFiscalProfile() async {
+    final tenants = tenantApi ?? (throw StateError('TenantApi no configurado en CashierRepositoryImpl'));
+    return _saveTenantName(_toProfile(await tenants.getCurrent()));
+  }
+
+  @override
+  Future<TenantFiscalProfile> updateTenantFiscalProfile(String name, String legalName) async {
+    final trimmedName = name.trim();
+    final trimmedLegalName = legalName.trim();
+    if (trimmedName.isEmpty || trimmedName.length > CashierValidation.maxTenantNameLength) {
+      throw const InvalidCashierInputException('tenantName');
+    }
+    if (trimmedLegalName.isEmpty || trimmedLegalName.length > CashierValidation.maxTenantLegalNameLength) {
+      throw const InvalidCashierInputException('tenantLegalName');
+    }
+    final tenants = tenantApi ?? (throw StateError('TenantApi no configurado en CashierRepositoryImpl'));
+    final dto = await tenants.updateCurrent(
+      UpdateTenantProfileRequestDto(name: trimmedName, legalName: trimmedLegalName),
+    );
+    return _saveTenantName(_toProfile(dto));
+  }
+
+  TenantFiscalProfile _toProfile(TenantDto dto) => TenantFiscalProfile(
+    id: dto.id,
+    name: dto.name ?? '',
+    legalName: dto.legalName ?? '',
+    taxId: dto.taxId ?? '',
+    status: dto.status,
+  );
+
+  /// El nombre comercial también se ve en la sesión (Perfil); de mejor esfuerzo.
+  Future<TenantFiscalProfile> _saveTenantName(TenantFiscalProfile profile) async {
+    if (profile.name.isNotEmpty) {
+      try {
+        await session.updateTenantName(profile.name);
+      } catch (_) {}
+    }
+    return profile;
   }
 
   Future<String> _branchId() async {

@@ -1368,9 +1368,6 @@
   "bayTypeWashBay": "Bahía de lavado",
   "bayTypeAlignment": "Estación de alineación",
   "bayTypePaintBooth": "Cabina de pintura",
-  "bayStatusOccupiedDesc": "En intervención técnica · Trabajo en curso",
-  "bayStatusAvailableDesc": "Bahía libre · Lista para recibir vehículo",
-  "bayStatusMaintenanceDesc": "Fuera de servicio · En mantenimiento",
   "bayStatusAvailable": "Libre",
   "bayStatusOccupied": "Ocupada",
   "bayStatusMaintenance": "Mantenimiento",
@@ -3491,12 +3488,7 @@
   },
   "baysTapToAssign": "Toca para ingresar una orden",
   "baysUnavailableError": "Esa bahía no está libre. Elige otra.",
-  "baysMovedNotice": "Orden movida a {p1}.",
-  "@baysMovedNotice": {"placeholders": {"p1": {"type": "String"}}},
-  "baysAssignedNotice": "Orden ingresada a {p1}.",
-  "@baysAssignedNotice": {"placeholders": {"p1": {"type": "String"}}},
   "baysNoAssignableOrders": "No hay órdenes activas sin bahía.",
-  "baysNoFreeTargets": "No hay otras bahías registradas.",
   "baysNameError": "Escribe un nombre de hasta 100 caracteres.",
   "baysMechanicsSection": "Mecánicos y faenas en bahía",
   "notifTitle": "Notificaciones",
@@ -3750,10 +3742,6 @@
       }
     }
   },
-  "moreHStockAlerts": "Alertas de stock",
-  "moreHStockAlertsSub": "Repuestos bajo el mínimo",
-  "moreHFiscalSeries": "Series SUNAT",
-  "moreHFiscalSeriesSub": "Series de facturas y boletas",
   "invReceiveBtn": "Recibir compra",
   "invReceiveTitle": "Recibir compra",
   "invReceiveBody": "Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.",
@@ -3770,53 +3758,6 @@
   "invReceiveErrNumber": "Ingresa el número del comprobante.",
   "invReceiveErrDate": "La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.",
   "invReceiveErrNotReceivable": "Solo se pueden recibir órdenes emitidas.",
-  "fiscalSeriesTitle": "Series de comprobantes",
-  "fiscalSeriesContext": "Facturación electrónica",
-  "fiscalSeriesCaption": "series activas en la sede",
-  "fiscalSeriesFigFactura": "facturas",
-  "fiscalSeriesFigBoleta": "boletas",
-  "fiscalSeriesNoPermission": "Tu perfil no tiene permiso para configurar series de comprobantes.",
-  "fiscalSeriesPse": "La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.",
-  "fiscalSeriesListHeader": "Series de la sede",
-  "fiscalSeriesAdd": "Agregar serie",
-  "fiscalSeriesEmpty": "Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.",
-  "fiscalSeriesRowSub": "{type} · correlativo actual {number}",
-  "@fiscalSeriesRowSub": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "number": {
-        "type": "String"
-      }
-    }
-  },
-  "fiscalSeriesActive": "Activa",
-  "fiscalSeriesInactive": "Inactiva",
-  "fiscalSeriesToggleLabel": "Activar o desactivar la serie {serie}",
-  "@fiscalSeriesToggleLabel": {
-    "placeholders": {
-      "serie": {
-        "type": "String"
-      }
-    }
-  },
-  "fiscalSeriesCreatedOk": "Serie {serie} ({type}) activada para esta sede.",
-  "@fiscalSeriesCreatedOk": {
-    "placeholders": {
-      "serie": {
-        "type": "String"
-      },
-      "type": {
-        "type": "String"
-      }
-    }
-  },
-  "fiscalSeriesSheetTitle": "Agregar serie",
-  "fiscalSeriesSheetBody": "Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.",
-  "fiscalSeriesSerieLabel": "Serie",
-  "fiscalSeriesInitialLabel": "Correlativo inicial (opcional)",
-  "fiscalSeriesSave": "Activar serie",
   "profitabilityTitle": "Rentabilidad",
   "profitabilityHint": "Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).",
   "profitabilityCalculate": "Calcular rentabilidad",

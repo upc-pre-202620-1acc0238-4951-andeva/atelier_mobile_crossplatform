@@ -2343,17 +2343,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get bayTypePaintBooth => 'Cabina de pintura';
 
   @override
-  String get bayStatusOccupiedDesc =>
-      'En intervención técnica · Trabajo en curso';
-
-  @override
-  String get bayStatusAvailableDesc =>
-      'Bahía libre · Lista para recibir vehículo';
-
-  @override
-  String get bayStatusMaintenanceDesc => 'Fuera de servicio · En mantenimiento';
-
-  @override
   String get bayStatusAvailable => 'Libre';
 
   @override
@@ -6253,20 +6242,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get baysUnavailableError => 'Esa bahía no está libre. Elige otra.';
 
   @override
-  String baysMovedNotice(String p1) {
-    return 'Orden movida a $p1.';
-  }
-
-  @override
-  String baysAssignedNotice(String p1) {
-    return 'Orden ingresada a $p1.';
-  }
-
-  @override
   String get baysNoAssignableOrders => 'No hay órdenes activas sin bahía.';
-
-  @override
-  String get baysNoFreeTargets => 'No hay otras bahías registradas.';
 
   @override
   String get baysNameError => 'Escribe un nombre de hasta 100 caracteres.';
@@ -6771,20 +6747,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String stockAlertsDetail(String current, String minimum, String missing) {
-    return 'Stock ${current} · mínimo ${minimum} · faltan ${missing}';
+    return 'Stock $current · mínimo $minimum · faltan $missing';
   }
-
-  @override
-  String get moreHStockAlerts => 'Alertas de stock';
-
-  @override
-  String get moreHStockAlertsSub => 'Repuestos bajo el mínimo';
-
-  @override
-  String get moreHFiscalSeries => 'Series SUNAT';
-
-  @override
-  String get moreHFiscalSeriesSub => 'Series de facturas y boletas';
 
   @override
   String get invReceiveBtn => 'Recibir compra';
@@ -6840,76 +6804,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo se pueden recibir órdenes emitidas.';
 
   @override
-  String get fiscalSeriesTitle => 'Series de comprobantes';
-
-  @override
-  String get fiscalSeriesContext => 'Facturación electrónica';
-
-  @override
-  String get fiscalSeriesCaption => 'series activas en la sede';
-
-  @override
-  String get fiscalSeriesFigFactura => 'facturas';
-
-  @override
-  String get fiscalSeriesFigBoleta => 'boletas';
-
-  @override
-  String get fiscalSeriesNoPermission =>
-      'Tu perfil no tiene permiso para configurar series de comprobantes.';
-
-  @override
-  String get fiscalSeriesPse =>
-      'La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.';
-
-  @override
-  String get fiscalSeriesListHeader => 'Series de la sede';
-
-  @override
-  String get fiscalSeriesAdd => 'Agregar serie';
-
-  @override
-  String get fiscalSeriesEmpty =>
-      'Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.';
-
-  @override
-  String fiscalSeriesRowSub(String type, String number) {
-    return '${type} · correlativo actual ${number}';
-  }
-
-  @override
-  String get fiscalSeriesActive => 'Activa';
-
-  @override
-  String get fiscalSeriesInactive => 'Inactiva';
-
-  @override
-  String fiscalSeriesToggleLabel(String serie) {
-    return 'Activar o desactivar la serie ${serie}';
-  }
-
-  @override
-  String fiscalSeriesCreatedOk(String serie, String type) {
-    return 'Serie ${serie} (${type}) activada para esta sede.';
-  }
-
-  @override
-  String get fiscalSeriesSheetTitle => 'Agregar serie';
-
-  @override
-  String get fiscalSeriesSheetBody =>
-      'Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.';
-
-  @override
-  String get fiscalSeriesSerieLabel => 'Serie';
-
-  @override
-  String get fiscalSeriesInitialLabel => 'Correlativo inicial (opcional)';
-
-  @override
-  String get fiscalSeriesSave => 'Activar serie';
-
-  @override
   String get profitabilityTitle => 'Rentabilidad';
 
   @override
@@ -6945,7 +6839,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String profitabilityLineDetail(String qty, String revenue, String cost) {
-    return '${qty} u. · ingreso ${revenue} · costo ${cost}';
+    return '$qty u. · ingreso $revenue · costo $cost';
   }
 
   @override
@@ -6960,7 +6854,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String reportsFleetSelected(String name) {
-    return 'Cliente: ${name}';
+    return 'Cliente: $name';
   }
 
   @override

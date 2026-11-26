@@ -1,98 +1,153 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/domain/cashier_validation.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/domain/tenant_fiscal_profile.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
 
-/// Series de comprobantes de la sede (US42) y el formulario para agregar una.
-class FiscalSeriesUiState {
-  final List<FiscalSeries> series;
-  final bool isLoading;
-  final bool isOnline;
-  final bool canManage;
-  final UiText? error;
-  final UiText? banner;
-  final UiText? actionError;
-
-  /// Id de la serie que se activa o desactiva en este momento.
-  final String? togglingId;
-
-  // Hoja "Agregar serie"
-  final bool showSheet;
+/// Serie nueva en edición; [initial] es texto para no perder lo que se escribe.
+class SeriesForm {
   final VoucherType type;
   final String serie;
-  final String initialCorrelative;
-  final UiText? serieError;
-  final UiText? initialError;
-  final UiText? formError;
+  final String initial;
+
+  const SeriesForm({this.type = VoucherType.boleta, this.serie = '', this.initial = ''});
+
+  bool get serieValid => type == VoucherType.notaCredito
+      ? CashierValidation.isCreditNoteSeries(serie)
+      : CashierValidation.isSeriesFor(type, serie);
+
+  /// Vacío es válido (el backend parte de 0); si hay texto, un entero no negativo.
+  int? get initialCorrelative {
+    final value = int.tryParse(initial);
+    return value != null && value >= 0 ? value : null;
+  }
+
+  bool get initialValid => initial.isEmpty || initialCorrelative != null;
+
+  bool get canSubmit => serieValid && initialValid;
+
+  SeriesForm copyWith({VoucherType? type, String? serie, String? initial}) =>
+      SeriesForm(type: type ?? this.type, serie: serie ?? this.serie, initial: initial ?? this.initial);
+}
+
+/// Datos fiscales del taller en edición (US42). [taxId] es solo lectura desde el perfil del tenant.
+class TenantProfileForm {
+  final String name;
+  final String legalName;
+  final String taxId;
+
+  const TenantProfileForm({this.name = '', this.legalName = '', this.taxId = ''});
+
+  bool get nameValid => name.trim().isNotEmpty && name.trim().length <= CashierValidation.maxTenantNameLength;
+
+  bool get legalNameValid =>
+      legalName.trim().isNotEmpty && legalName.trim().length <= CashierValidation.maxTenantLegalNameLength;
+
+  bool get canSubmit => nameValid && legalNameValid;
+
+  TenantProfileForm copyWith({String? name, String? legalName}) =>
+      TenantProfileForm(name: name ?? this.name, legalName: legalName ?? this.legalName, taxId: taxId);
+}
+
+/// Hoja abierta de la pantalla de series.
+sealed class SeriesSheet {
+  const SeriesSheet();
+}
+
+final class CreateSeriesSheet extends SeriesSheet {
+  final SeriesForm form;
+
+  const CreateSeriesSheet(this.form);
+}
+
+final class SeriesDetailSheet extends SeriesSheet {
+  final FiscalSeries series;
+
+  const SeriesDetailSheet(this.series);
+}
+
+final class EditTenantSheet extends SeriesSheet {
+  final TenantProfileForm form;
+
+  const EditTenantSheet(this.form);
+}
+
+/// Perfil fiscal del taller y series SUNAT de la sede (US42). Solo en línea y sin caché.
+class FiscalSeriesUiState {
+  final List<FiscalSeries> series;
+  final TenantFiscalProfile? tenantProfile;
+  final bool hasLoaded;
+  final bool isRefreshing;
+  final bool isOnline;
+  final UiText? error;
+  final bool canManage;
+  final bool canReadTenant;
+  final bool canUpdateTenant;
+  final SeriesSheet? sheet;
   final bool isSaving;
+  final UiText? sheetError;
+  final UiText? notice;
+
+  /// Sube con cada aviso o error de una hoja para disparar la respuesta háptica.
   final int hapticEvent;
   final bool hapticIsError;
 
   const FiscalSeriesUiState({
     this.series = const [],
-    this.isLoading = true,
+    this.tenantProfile,
+    this.hasLoaded = false,
+    this.isRefreshing = false,
     this.isOnline = true,
-    this.canManage = true,
     this.error,
-    this.banner,
-    this.actionError,
-    this.togglingId,
-    this.showSheet = false,
-    this.type = VoucherType.factura,
-    this.serie = '',
-    this.initialCorrelative = '',
-    this.serieError,
-    this.initialError,
-    this.formError,
+    this.canManage = false,
+    this.canReadTenant = false,
+    this.canUpdateTenant = false,
+    this.sheet,
     this.isSaving = false,
+    this.sheetError,
+    this.notice,
     this.hapticEvent = 0,
     this.hapticIsError = false,
   });
 
-  /// Solo se configuran facturas y boletas; las notas de crédito salen de otra numeración.
-  static const configurableTypes = [VoucherType.factura, VoucherType.boleta];
+  bool get hasAccess => canManage || canReadTenant || canUpdateTenant;
+
+  bool get showSkeleton => !hasLoaded && series.isEmpty && tenantProfile == null && error == null;
 
   FiscalSeriesUiState copyWith({
     List<FiscalSeries>? series,
-    bool? isLoading,
+    TenantFiscalProfile? tenantProfile,
+    bool? hasLoaded,
+    bool? isRefreshing,
     bool? isOnline,
-    bool? canManage,
     UiText? error,
     bool clearError = false,
-    UiText? banner,
-    bool clearBanner = false,
-    UiText? actionError,
-    bool clearActionError = false,
-    String? togglingId,
-    bool clearTogglingId = false,
-    bool? showSheet,
-    VoucherType? type,
-    String? serie,
-    String? initialCorrelative,
-    UiText? serieError,
-    UiText? initialError,
-    bool clearFieldErrors = false,
-    UiText? formError,
-    bool clearFormError = false,
+    bool? canManage,
+    bool? canReadTenant,
+    bool? canUpdateTenant,
+    SeriesSheet? sheet,
+    bool clearSheet = false,
     bool? isSaving,
+    UiText? sheetError,
+    bool clearSheetError = false,
+    UiText? notice,
+    bool clearNotice = false,
     int? hapticEvent,
     bool? hapticIsError,
   }) {
     return FiscalSeriesUiState(
       series: series ?? this.series,
-      isLoading: isLoading ?? this.isLoading,
+      tenantProfile: tenantProfile ?? this.tenantProfile,
+      hasLoaded: hasLoaded ?? this.hasLoaded,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       isOnline: isOnline ?? this.isOnline,
-      canManage: canManage ?? this.canManage,
       error: clearError ? null : error ?? this.error,
-      banner: clearBanner ? null : banner ?? this.banner,
-      actionError: clearActionError ? null : actionError ?? this.actionError,
-      togglingId: clearTogglingId ? null : togglingId ?? this.togglingId,
-      showSheet: showSheet ?? this.showSheet,
-      type: type ?? this.type,
-      serie: serie ?? this.serie,
-      initialCorrelative: initialCorrelative ?? this.initialCorrelative,
-      serieError: clearFieldErrors ? null : serieError ?? this.serieError,
-      initialError: clearFieldErrors ? null : initialError ?? this.initialError,
-      formError: clearFormError ? null : formError ?? this.formError,
+      canManage: canManage ?? this.canManage,
+      canReadTenant: canReadTenant ?? this.canReadTenant,
+      canUpdateTenant: canUpdateTenant ?? this.canUpdateTenant,
+      sheet: clearSheet ? null : sheet ?? this.sheet,
       isSaving: isSaving ?? this.isSaving,
+      sheetError: clearSheetError ? null : sheetError ?? this.sheetError,
+      notice: clearNotice ? null : notice ?? this.notice,
       hapticEvent: hapticEvent ?? this.hapticEvent,
       hapticIsError: hapticIsError ?? this.hapticIsError,
     );
