@@ -14,7 +14,7 @@ Este plan levanta la regla 7 de [07-roadmap.md](07-roadmap.md): ahora sí se con
 
 US04, US05, US18, US19, US28, US29, US30, US34, US35, US36, US37, US38, US39, US40, US41, US42, US43.
 
-> **Sprint 3:** US04, US05, US19, US38 y US39 ya se portaron (ver [08-presentation-parity.md](08-presentation-parity.md) §4); US36, US37 y US41 también. La tabla de abajo queda como registro de la primera versión.
+> **Sprint 3:** US04, US05, US19, US38 y US39 ya se portaron (ver [08-presentation-parity.md](08-presentation-parity.md) §4); US34, US35, US36, US37, US41, US42 y US43 también. La tabla de abajo queda como registro de la primera versión.
 
 Regla: **no** se construye la UI de esas historias ni sus puntos de entrada (botones, ítems de menú, pestañas, tarjetas del dashboard, rutas de push). El código de `domain`/`application`/`infrastructure` que ya existe para ellas **se deja como está** (no se borra). Si una pantalla mezcla historias incluidas y excluidas, se construye la pantalla y se omite solo la parte excluida, sin dejar huecos visuales (el layout se cierra como si esa sección no existiera).
 
@@ -79,15 +79,15 @@ Recepción: búsqueda de vehículo (+ sheets), registrar cliente, afiliación. �
 
 ### Fase G — `inventory`
 
-Catálogo, detalle de repuesto, órdenes de compra (lista y detalle, sin recepción US34), escáner SKU, proveedores, valorización. Sin alertas (US34).
+Catálogo, detalle de repuesto, órdenes de compra (lista y detalle, con recepción US34), escáner SKU, proveedores, valorización y alertas de stock (US34).
 
 ### Fase H — `diagnostics`
 
-Hub (pestañas dispositivos y alertas, sheets), fallas del vehículo, informe IA (sin PDF, US43). Sin telemetría en vivo (US18) ni captura/lote de telemetría (US19).
+Hub (pestañas dispositivos y alertas, sheets), fallas del vehículo, informe IA (con PDF, US43). Sin telemetría en vivo (US18) ni captura/lote de telemetría (US19).
 
 ### Fase I — `reports`, `team`, `cashier` restante
 
-`ReportsScreen` sin exportación PDF (US41). `team` si tiene UI en Android. `cashier/dailycash` solo si no depende de US37–US39.
+`ReportsScreen` con exportación PDF (US41) y salud de flota (US43). `team` si tiene UI en Android. `cashier/dailycash` solo si no depende de US37–US39.
 
 ### Fase J — Cierre
 

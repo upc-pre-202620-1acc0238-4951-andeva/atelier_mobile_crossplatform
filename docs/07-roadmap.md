@@ -393,10 +393,10 @@ Se portó la capa visual de `atelier-mobile-android` (`core/designsystem`, `core
   - `US04` (botón/diálogo de cierre de sesión en Perfil) y `US05` (recuperación y restablecimiento de contraseña en Auth).
   - `US18` (`LiveTelemetryScreen` y fila "Telemetría en vivo") y `US19` (captura local/envío en lote de telemetría desde el hub OBD-II; `PendingOperationsScreen` de `main` sí se construye).
   - `US28` (evidencia fotográfica en tareas), `US29` (solicitar/aprobar suspensión y reanudar tarea) y `US30` (cerrar tarea con horas hombre).
-  - `US34` (`StockAlertsScreen`, ruta/empuje de alertas de stock y recepción OC con foto), `US35` (rentabilidad/margen FIFO) y `US36` (tarjeta resumen Subtotal/IGV/Total de liquidación en cascada).
-  - `US37`, `US38`, `US39` y `US42` (`WorkOrderCheckoutScreen`, `VouchersScreen`, `FiscalSeriesScreen` y acceso rápido a comprobantes en `DailyCashScreen`).
+  - `US36` (tarjeta resumen Subtotal/IGV/Total de liquidación en cascada). Ya portadas en la presentación (Sprint 3): `US34` (`StockAlertsScreen`, push `LOW_STOCK` y recepción de OC con foto) y `US35` (tarjeta de rentabilidad FIFO).
+  - `US37`, `US38` y `US39` (`WorkOrderCheckoutScreen`, `VouchersScreen`) y `US42` (`FiscalSeriesScreen`, entrada desde Módulos) ya portadas.
   - `US40` (`BaysScreen`, pestaña y atajo de bahías; solo queda lectura de bahía asignada en detalle OT).
-  - `US41` (exportación PDF de flujo de caja) y `US43` (sección/PDF de Salud de Flota en `ReportsScreen` y botones Abrir/Compartir PDF en `AiHealthReportScreen`).
+  - `US41` (exportación PDF de flujo de caja) y `US43` (sección Salud de flota en `ReportsScreen` y Abrir/Compartir PDF en `AiHealthReportScreen`) ya portadas.
 - **Auditoría de paridad:** documentada archivo por archivo (207 archivos Kotlin → Dart) en [08-presentation-parity.md](08-presentation-parity.md).
 
 ### Sprint 3 — US04, US05, US19, US38 y US39 ✅
