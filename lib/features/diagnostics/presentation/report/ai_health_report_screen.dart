@@ -151,12 +151,17 @@ class AiHealthReportContent extends StatelessWidget {
         ? ''
         : '${vehicle.brand} ${vehicle.model}'.trim();
     final condition = state.detail?.diagnosis?.overallCondition;
-    final showBottomBar = state.planIncludesAi && state.canGenerate;
+    final showBottomBar = state.planIncludesAi && (state.canGenerate || (state.canDownloadPdf && state.hasReport));
     return AtelierMinTouchTarget(
       value: AtelierMinTouchTarget.floor,
       child: Scaffold(
         bottomNavigationBar: showBottomBar
-            ? _BottomBar(state: state, onOpenGenerate: onOpenGenerate)
+            ? _BottomBar(
+                state: state,
+                onOpenGenerate: onOpenGenerate,
+                onOpenPdf: onOpenPdf ?? () {},
+                onSharePdf: onSharePdf ?? () {},
+              )
             : null,
         body: Column(
           children: [
@@ -250,12 +255,6 @@ class AiHealthReportContent extends StatelessWidget {
               summary: state.effectiveSummary,
               loading: false,
             ),
-            if (state.canDownloadPdf)
-              _PdfCard(
-                state: state,
-                onOpenPdf: onOpenPdf ?? () {},
-                onSharePdf: onSharePdf ?? () {},
-              ),
             if (diagnosis != null) ...[
               if (diagnosis.subsystemEvaluations.isNotEmpty) ...[
                 AtelierSectionHeader(
@@ -322,8 +321,15 @@ class AiHealthReportContent extends StatelessWidget {
 class _BottomBar extends StatelessWidget {
   final AiHealthReportUiState state;
   final VoidCallback onOpenGenerate;
+  final VoidCallback onOpenPdf;
+  final VoidCallback onSharePdf;
 
-  const _BottomBar({required this.state, required this.onOpenGenerate});
+  const _BottomBar({
+    required this.state,
+    required this.onOpenGenerate,
+    required this.onOpenPdf,
+    required this.onSharePdf,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -344,12 +350,47 @@ class _BottomBar extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: AtelierButton(
-                text: strings.diagReportGenerate,
-                onClick: onOpenGenerate,
-                enabled: state.isOnline && !state.isGenerating,
-                loading: state.isGenerating,
-                icon: Icons.auto_awesome_outlined,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 8,
+                children: [
+                  if (state.canDownloadPdf && state.hasReport)
+                    Row(
+                      spacing: 8,
+                      children: [
+                        Expanded(
+                          child: AtelierButton(
+                            text: strings.diagReportOpenPdf,
+                            onClick: onOpenPdf,
+                            style: AtelierButtonStyle.outlined,
+                            icon: Icons.picture_as_pdf_outlined,
+                            enabled: state.isOnline && state.pdfBusy == null && !state.isGenerating,
+                            loading: state.pdfBusy == HealthPdfMode.open,
+                          ),
+                        ),
+                        Expanded(
+                          child: AtelierButton(
+                            text: strings.diagReportSharePdf,
+                            onClick: onSharePdf,
+                            style: AtelierButtonStyle.outlined,
+                            icon: Icons.share_outlined,
+                            enabled: state.isOnline && state.pdfBusy == null && !state.isGenerating,
+                            loading: state.pdfBusy == HealthPdfMode.share,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (state.pdfError case final err?)
+                    AtelierBanner(message: err.asString(strings), icon: Icons.error_outline),
+                  if (state.canGenerate)
+                    AtelierButton(
+                      text: strings.diagReportGenerate,
+                      onClick: onOpenGenerate,
+                      enabled: state.isOnline && !state.isGenerating,
+                      loading: state.isGenerating,
+                      icon: Icons.auto_awesome_outlined,
+                    ),
+                ],
               ),
             ),
           ],
@@ -900,77 +941,4 @@ ChipKind conditionChipKind(String raw) {
   if (any(['MODERATE', 'WARN', 'MEDIUM', 'FAIR'])) return ChipKind.warn;
   if (any(['LOW', 'GOOD', 'OPTIMAL', 'HEALTHY', 'NORMAL'])) return ChipKind.ok;
   return ChipKind.info;
-}
-
-/// US43 E1: el informe del vehículo como PDF, con el semáforo de salud por subsistema. Abrir o compartir; en línea.
-class _PdfCard extends StatelessWidget {
-  final AiHealthReportUiState state;
-  final VoidCallback onOpenPdf;
-  final VoidCallback onSharePdf;
-
-  const _PdfCard({
-    required this.state,
-    required this.onOpenPdf,
-    required this.onSharePdf,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-    final busy = state.pdfBusy != null;
-    return AtelierSurface(
-      tier: SurfaceTier.elevated,
-      shape: cardLargeShape,
-      contentPadding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 10,
-        children: [
-          Text(
-            strings.diagReportPdfTitle,
-            style: context.text.titleSmall?.copyWith(
-              color: context.scheme.onSurface,
-            ),
-          ),
-          Text(
-            strings.diagReportPdfHint,
-            style: context.text.bodySmall?.copyWith(
-              color: context.atelier.inkSecondary,
-            ),
-          ),
-          Row(
-            spacing: 8,
-            children: [
-              Expanded(
-                child: AtelierButton(
-                  text: strings.reportsOpenPdf,
-                  onClick: onOpenPdf,
-                  style: AtelierButtonStyle.tonal,
-                  icon: Icons.picture_as_pdf_outlined,
-                  enabled: state.isOnline && !busy,
-                  loading: state.pdfBusy == HealthPdfMode.open,
-                ),
-              ),
-              Expanded(
-                child: AtelierButton(
-                  text: strings.reportsSharePdf,
-                  onClick: onSharePdf,
-                  style: AtelierButtonStyle.outlined,
-                  icon: Icons.share_outlined,
-                  enabled: state.isOnline && !busy,
-                  loading: state.pdfBusy == HealthPdfMode.share,
-                ),
-              ),
-            ],
-          ),
-          if (!state.isOnline) const AtelierRequiresConnection(),
-          if (state.pdfError case final err?)
-            AtelierBanner(
-              message: err.asString(strings),
-              icon: Icons.error_outline,
-            ),
-        ],
-      ),
-    );
-  }
 }

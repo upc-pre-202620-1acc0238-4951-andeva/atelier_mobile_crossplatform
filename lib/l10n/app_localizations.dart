@@ -11734,18 +11734,6 @@ abstract class AppLocalizations {
   /// **'Solo se pueden recibir órdenes emitidas.'**
   String get invReceiveErrNotReceivable;
 
-  /// No description provided for @diagReportPdfTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Informe en PDF'**
-  String get diagReportPdfTitle;
-
-  /// No description provided for @diagReportPdfHint.
-  ///
-  /// In es, this message translates to:
-  /// **'Semáforo de salud por subsistema, riesgos y acciones recomendadas.'**
-  String get diagReportPdfHint;
-
   /// No description provided for @reportsFleetSelected.
   ///
   /// In es, this message translates to:

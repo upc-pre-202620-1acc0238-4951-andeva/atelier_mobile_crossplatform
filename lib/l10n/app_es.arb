@@ -3712,8 +3712,6 @@
   "invReceiveErrNumber": "Ingresa el número del comprobante.",
   "invReceiveErrDate": "La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.",
   "invReceiveErrNotReceivable": "Solo se pueden recibir órdenes emitidas.",
-  "diagReportPdfTitle": "Informe en PDF",
-  "diagReportPdfHint": "Semáforo de salud por subsistema, riesgos y acciones recomendadas.",
   "reportsFleetSelected": "Cliente: {name}",
   "@reportsFleetSelected": {
     "placeholders": {

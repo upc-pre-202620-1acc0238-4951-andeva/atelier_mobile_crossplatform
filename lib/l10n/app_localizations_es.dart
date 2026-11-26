@@ -6699,13 +6699,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo se pueden recibir órdenes emitidas.';
 
   @override
-  String get diagReportPdfTitle => 'Informe en PDF';
-
-  @override
-  String get diagReportPdfHint =>
-      'Semáforo de salud por subsistema, riesgos y acciones recomendadas.';
-
-  @override
   String reportsFleetSelected(String name) {
     return 'Cliente: $name';
   }
