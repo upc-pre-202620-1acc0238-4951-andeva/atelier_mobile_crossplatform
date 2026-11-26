@@ -41,7 +41,10 @@ const _session = Session(
 /// Las pantallas reales las registra cada feature: aquí solo importa a cuál cambia la raíz.
 void _registerStubs() {
   for (final route in AppRoute.values) {
-    AppNavigator.register(route, (context, args) => Center(child: Text('destino:${route.name}')));
+    AppNavigator.register(
+      route,
+      (context, args) => Center(child: Text('destino:${route.name}')),
+    );
   }
 }
 
@@ -53,14 +56,18 @@ void main() {
     session = _FakeSession();
   });
 
-  testWidgets('sin sesión muestra el grafo de acceso, en español', (tester) async {
+  testWidgets('sin sesión muestra el grafo de acceso, en español', (
+    tester,
+  ) async {
     await tester.pumpWidget(MainApp(session: session));
     await tester.pumpAndSettle();
 
     expect(find.text('destino:authGraph'), findsOneWidget);
   });
 
-  testWidgets('mientras lee la sesión muestra el fondo, sin spinner', (tester) async {
+  testWidgets('mientras lee la sesión muestra el fondo, sin spinner', (
+    tester,
+  ) async {
     session.gate = Completer();
     await tester.pumpWidget(MainApp(session: session));
     await tester.pump();
@@ -73,7 +80,9 @@ void main() {
     expect(find.text('destino:authGraph'), findsOneWidget);
   });
 
-  testWidgets('si no puede leer la sesión muestra el acceso, sin spinner', (tester) async {
+  testWidgets('si no puede leer la sesión muestra el acceso, sin spinner', (
+    tester,
+  ) async {
     session.unreadable = true;
 
     await tester.pumpWidget(MainApp(session: session));
@@ -91,7 +100,9 @@ void main() {
     expect(find.text('destino:mainShell'), findsOneWidget);
   });
 
-  testWidgets('sin perfil laboral muestra elegir sede, y luego la app', (tester) async {
+  testWidgets('sin perfil laboral muestra elegir sede, y luego la app', (
+    tester,
+  ) async {
     session.current = const Session(
       userId: 'u1',
       email: 'm@taller.pe',
@@ -131,8 +142,12 @@ void main() {
     await tester.pumpWidget(MainApp(session: session));
     await tester.pumpAndSettle();
 
-    final navigator = tester.state<NavigatorState>(find.byType(Navigator).first);
-    unawaited(navigator.push(AppNavigator.routeOf(AppRoute.workOrderDetail, 'wo-1')));
+    final navigator = tester.state<NavigatorState>(
+      find.byType(Navigator).first,
+    );
+    unawaited(
+      navigator.push(AppNavigator.routeOf(AppRoute.workOrderDetail, 'wo-1')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('destino:workOrderDetail'), findsOneWidget);
 
@@ -144,7 +159,9 @@ void main() {
     expect(find.text('destino:authGraph'), findsOneWidget);
   });
 
-  testWidgets('reconstruir no relee ni vuelve al fondo en blanco', (tester) async {
+  testWidgets('reconstruir no relee ni vuelve al fondo en blanco', (
+    tester,
+  ) async {
     session.current = _session;
     await tester.pumpWidget(MainApp(session: session));
     await tester.pumpAndSettle();
@@ -157,7 +174,9 @@ void main() {
     expect(find.text('destino:mainShell'), findsOneWidget);
   });
 
-  testWidgets('al releer mantiene la pantalla hasta tener el dato', (tester) async {
+  testWidgets('al releer mantiene la pantalla hasta tener el dato', (
+    tester,
+  ) async {
     session.current = _session;
     await tester.pumpWidget(MainApp(session: session));
     await tester.pumpAndSettle();
@@ -174,7 +193,9 @@ void main() {
   });
 
   group('push', () {
-    testWidgets('abre el detalle de la orden con la sesión iniciada', (tester) async {
+    testWidgets('abre el detalle de la orden con la sesión iniciada', (
+      tester,
+    ) async {
       session.current = _session;
       final inbox = PushInbox();
       await tester.pumpWidget(MainApp(session: session, pushInbox: inbox));
@@ -187,7 +208,9 @@ void main() {
       expect(inbox.pending, isNull);
     });
 
-    testWidgets('la solicitud de suspensión (US29) abre la tarea', (tester) async {
+    testWidgets('la solicitud de suspensión (US29) abre la tarea', (
+      tester,
+    ) async {
       session.current = _session;
       final inbox = PushInbox();
       await tester.pumpWidget(MainApp(session: session, pushInbox: inbox));
@@ -200,7 +223,9 @@ void main() {
       expect(inbox.pending, isNull);
     });
 
-    testWidgets('las alertas de stock (US34) no navegan a ninguna parte', (tester) async {
+    testWidgets('las alertas de stock (US34) abren la bandeja de alertas', (
+      tester,
+    ) async {
       session.current = _session;
       final inbox = PushInbox();
       await tester.pumpWidget(MainApp(session: session, pushInbox: inbox));
@@ -209,7 +234,7 @@ void main() {
       inbox.post(const LowStockAlertsDestination('item-1'));
       await tester.pumpAndSettle();
 
-      expect(find.text('destino:mainShell'), findsOneWidget);
+      expect(find.text('destino:stockAlerts'), findsOneWidget);
       expect(inbox.pending, isNull);
     });
 

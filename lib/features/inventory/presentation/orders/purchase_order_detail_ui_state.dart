@@ -1,9 +1,11 @@
+import 'dart:io';
+
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
 
-/// Orden de compra con su ciclo: agregar líneas (`DRAFT`), emitir (`ISSUED`) y anular (`CANCELED`). La recepción
-/// con comprobante fotográfico (US34) no está en esta versión.
+/// Orden de compra con su ciclo: agregar líneas (`DRAFT`), emitir (`ISSUED`), recibir con comprobante fotográfico
+/// (US34) y anular (`CANCELED`).
 class PurchaseOrderDetailUiState {
   final PurchaseOrder? order;
 
@@ -15,6 +17,7 @@ class PurchaseOrderDetailUiState {
   final UiText? error;
   final bool canRead;
   final bool canCreate;
+  final bool canReceive;
   final UiText? actionBanner;
   final UiText? actionError;
   final bool isMutating;
@@ -35,6 +38,18 @@ class PurchaseOrderDetailUiState {
   final String cancelReason;
   final UiText? cancelError;
   final bool isCanceling;
+
+  // Hoja recibir compra (ISSUED, US34 E2)
+  final bool showReceiveSheet;
+  final String receiptNumber;
+  final String receiptDate;
+  final File? receiptPhoto;
+  final bool cameraDenied;
+  final UiText? receiptNumberError;
+  final UiText? receiptDateError;
+  final UiText? receiptPhotoError;
+  final UiText? receiveError;
+  final bool isReceiving;
   final int hapticEvent;
   final bool hapticIsError;
 
@@ -47,6 +62,7 @@ class PurchaseOrderDetailUiState {
     this.error,
     this.canRead = true,
     this.canCreate = false,
+    this.canReceive = false,
     this.actionBanner,
     this.actionError,
     this.isMutating = false,
@@ -63,6 +79,16 @@ class PurchaseOrderDetailUiState {
     this.cancelReason = '',
     this.cancelError,
     this.isCanceling = false,
+    this.showReceiveSheet = false,
+    this.receiptNumber = '',
+    this.receiptDate = '',
+    this.receiptPhoto,
+    this.cameraDenied = false,
+    this.receiptNumberError,
+    this.receiptDateError,
+    this.receiptPhotoError,
+    this.receiveError,
+    this.isReceiving = false,
     this.hapticEvent = 0,
     this.hapticIsError = false,
   });
@@ -73,7 +99,9 @@ class PurchaseOrderDetailUiState {
         ? [...catalogParts]
         : [
             for (final part in catalogParts)
-              if (part.name.toLowerCase().contains(q) || part.sku.toLowerCase().contains(q)) part,
+              if (part.name.toLowerCase().contains(q) ||
+                  part.sku.toLowerCase().contains(q))
+                part,
           ];
     matched.sort((a, b) {
       if (a.isOutOfStock != b.isOutOfStock) return a.isOutOfStock ? -1 : 1;
@@ -93,6 +121,7 @@ class PurchaseOrderDetailUiState {
     bool clearError = false,
     bool? canRead,
     bool? canCreate,
+    bool? canReceive,
     UiText? actionBanner,
     bool clearActionBanner = false,
     UiText? actionError,
@@ -115,6 +144,19 @@ class PurchaseOrderDetailUiState {
     UiText? cancelError,
     bool clearCancelError = false,
     bool? isCanceling,
+    bool? showReceiveSheet,
+    String? receiptNumber,
+    String? receiptDate,
+    File? receiptPhoto,
+    bool clearReceiptPhoto = false,
+    bool? cameraDenied,
+    UiText? receiptNumberError,
+    UiText? receiptDateError,
+    UiText? receiptPhotoError,
+    bool clearReceiptErrors = false,
+    UiText? receiveError,
+    bool clearReceiveError = false,
+    bool? isReceiving,
     int? hapticEvent,
     bool? hapticIsError,
   }) {
@@ -127,22 +169,51 @@ class PurchaseOrderDetailUiState {
       error: clearError ? null : error ?? this.error,
       canRead: canRead ?? this.canRead,
       canCreate: canCreate ?? this.canCreate,
-      actionBanner: clearActionBanner ? null : actionBanner ?? this.actionBanner,
+      canReceive: canReceive ?? this.canReceive,
+      actionBanner: clearActionBanner
+          ? null
+          : actionBanner ?? this.actionBanner,
       actionError: clearActionError ? null : actionError ?? this.actionError,
       isMutating: isMutating ?? this.isMutating,
       showAddLineSheet: showAddLineSheet ?? this.showAddLineSheet,
       partQuery: partQuery ?? this.partQuery,
-      selectedPartId: clearSelectedPart ? null : selectedPartId ?? this.selectedPartId,
+      selectedPartId: clearSelectedPart
+          ? null
+          : selectedPartId ?? this.selectedPartId,
       lineQuantity: lineQuantity ?? this.lineQuantity,
       lineUnitCost: lineUnitCost ?? this.lineUnitCost,
       lineQtyError: clearLineErrors ? null : lineQtyError ?? this.lineQtyError,
-      lineCostError: clearLineErrors ? null : lineCostError ?? this.lineCostError,
-      addLineError: clearAddLineError ? null : addLineError ?? this.addLineError,
+      lineCostError: clearLineErrors
+          ? null
+          : lineCostError ?? this.lineCostError,
+      addLineError: clearAddLineError
+          ? null
+          : addLineError ?? this.addLineError,
       isAddingLine: isAddingLine ?? this.isAddingLine,
       showCancelSheet: showCancelSheet ?? this.showCancelSheet,
       cancelReason: cancelReason ?? this.cancelReason,
       cancelError: clearCancelError ? null : cancelError ?? this.cancelError,
       isCanceling: isCanceling ?? this.isCanceling,
+      showReceiveSheet: showReceiveSheet ?? this.showReceiveSheet,
+      receiptNumber: receiptNumber ?? this.receiptNumber,
+      receiptDate: receiptDate ?? this.receiptDate,
+      receiptPhoto: clearReceiptPhoto
+          ? null
+          : receiptPhoto ?? this.receiptPhoto,
+      cameraDenied: cameraDenied ?? this.cameraDenied,
+      receiptNumberError: clearReceiptErrors
+          ? null
+          : receiptNumberError ?? this.receiptNumberError,
+      receiptDateError: clearReceiptErrors
+          ? null
+          : receiptDateError ?? this.receiptDateError,
+      receiptPhotoError: clearReceiptErrors
+          ? null
+          : receiptPhotoError ?? this.receiptPhotoError,
+      receiveError: clearReceiveError
+          ? null
+          : receiveError ?? this.receiveError,
+      isReceiving: isReceiving ?? this.isReceiving,
       hapticEvent: hapticEvent ?? this.hapticEvent,
       hapticIsError: hapticIsError ?? this.hapticIsError,
     );

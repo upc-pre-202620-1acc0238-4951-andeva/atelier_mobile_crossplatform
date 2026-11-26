@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_banner.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_chip.dart';
@@ -22,24 +24,30 @@ import 'package:atelier_mobile_crossplatform/features/inventory/presentation/inv
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/orders/purchase_order_detail_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/orders/purchase_order_detail_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/orders/purchase_orders_screen.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/presentation/orders/receipt_photo_capture.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-/// Orden de compra con su ciclo: agregar líneas (`DRAFT`), emitir (`ISSUED`) y anular (`CANCELED`).
-/// Requiere `PURCHASE_ORDERS_READ`. La recepción con comprobante fotográfico (US34) no está en esta versión.
+/// Orden de compra con su ciclo: agregar líneas (`DRAFT`), emitir (`ISSUED`), recibir con comprobante fotográfico
+/// (US34, `inventory:batches:receive`) y anular (`CANCELED`). Requiere `PURCHASE_ORDERS_READ`.
 class PurchaseOrderDetailScreen extends StatefulWidget {
   final String orderId;
+  final TakeReceiptPhoto takePhoto;
 
-  const PurchaseOrderDetailScreen({super.key, required this.orderId});
+  const PurchaseOrderDetailScreen({
+    super.key,
+    required this.orderId,
+    this.takePhoto = takeReceiptPhoto,
+  });
 
   @override
-  State<PurchaseOrderDetailScreen> createState() => _PurchaseOrderDetailScreenState();
+  State<PurchaseOrderDetailScreen> createState() =>
+      _PurchaseOrderDetailScreenState();
 }
 
 class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
-  late final PurchaseOrderDetailViewModel viewModel = getIt<PurchaseOrderDetailViewModel>(
-    param1: widget.orderId,
-  );
+  late final PurchaseOrderDetailViewModel viewModel =
+      getIt<PurchaseOrderDetailViewModel>(param1: widget.orderId);
   int _lastHaptic = 0;
 
   @override
@@ -87,26 +95,46 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       ),
       child: StateSheetHost<bool>(
         listenable: vm,
-        value: () => vm.state.showCancelSheet ? true : null,
-        onDismiss: vm.onDismissCancel,
+        value: () => vm.state.showReceiveSheet ? true : null,
+        onDismiss: vm.onDismissReceive,
         sheetBuilder: (context, _) => ListenableBuilder(
           listenable: vm,
-          builder: (context, _) => _CancelOrderSheet(
+          builder: (context, _) => _ReceiveOrderSheet(
             state: vm.state,
-            onDismiss: vm.onDismissCancel,
-            onReasonChange: vm.onCancelReasonChange,
-            onConfirm: vm.onConfirmCancel,
+            takePhoto: widget.takePhoto,
+            onDismiss: vm.onDismissReceive,
+            onNumberChange: vm.onReceiptNumberChange,
+            onDateChange: vm.onReceiptDateChange,
+            onPhotoCaptured: vm.onReceiptPhotoCaptured,
+            onPhotoDenied: vm.onReceiptPhotoDenied,
+            onRemovePhoto: vm.onRemoveReceiptPhoto,
+            onConfirm: vm.onConfirmReceive,
           ),
         ),
-        child: ListenableBuilder(
+        child: StateSheetHost<bool>(
           listenable: vm,
-          builder: (context, _) => PurchaseOrderDetailContent(
-            state: vm.state,
-            onBack: inventoryBack(context),
-            onRefresh: vm.refresh,
-            onOpenAddLine: vm.onOpenAddLine,
-            onIssueOrder: vm.onIssueOrder,
-            onOpenCancel: vm.onOpenCancel,
+          value: () => vm.state.showCancelSheet ? true : null,
+          onDismiss: vm.onDismissCancel,
+          sheetBuilder: (context, _) => ListenableBuilder(
+            listenable: vm,
+            builder: (context, _) => _CancelOrderSheet(
+              state: vm.state,
+              onDismiss: vm.onDismissCancel,
+              onReasonChange: vm.onCancelReasonChange,
+              onConfirm: vm.onConfirmCancel,
+            ),
+          ),
+          child: ListenableBuilder(
+            listenable: vm,
+            builder: (context, _) => PurchaseOrderDetailContent(
+              state: vm.state,
+              onBack: inventoryBack(context),
+              onRefresh: vm.refresh,
+              onOpenAddLine: vm.onOpenAddLine,
+              onIssueOrder: vm.onIssueOrder,
+              onOpenCancel: vm.onOpenCancel,
+              onOpenReceive: vm.onOpenReceive,
+            ),
           ),
         ),
       ),
@@ -121,6 +149,7 @@ class PurchaseOrderDetailContent extends StatelessWidget {
   final VoidCallback onOpenAddLine;
   final VoidCallback onIssueOrder;
   final VoidCallback onOpenCancel;
+  final VoidCallback onOpenReceive;
 
   const PurchaseOrderDetailContent({
     super.key,
@@ -130,6 +159,7 @@ class PurchaseOrderDetailContent extends StatelessWidget {
     required this.onOpenAddLine,
     required this.onIssueOrder,
     required this.onOpenCancel,
+    required this.onOpenReceive,
   });
 
   @override
@@ -148,13 +178,18 @@ class PurchaseOrderDetailContent extends StatelessWidget {
             subtitle: order?.totalCost?.format(),
             status: order == null
                 ? null
-                : AtelierChip(text: status.label(strings), kind: status.chipKind),
+                : AtelierChip(
+                    text: status.label(strings),
+                    kind: status.chipKind,
+                  ),
           ),
           if (!state.canRead)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AtelierNoPermissionState(text: strings.inventoryPoNoPermission),
+                child: AtelierNoPermissionState(
+                  text: strings.inventoryPoNoPermission,
+                ),
               ),
             )
           else
@@ -163,7 +198,9 @@ class PurchaseOrderDetailContent extends StatelessWidget {
                 loading: order == null && state.isLoading,
                 builder: (context, showSkeleton) => Column(
                   children: [
-                    AtelierRefreshBar(visible: state.isLoading && order != null),
+                    AtelierRefreshBar(
+                      visible: state.isLoading && order != null,
+                    ),
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: onRefresh,
@@ -173,7 +210,10 @@ class PurchaseOrderDetailContent extends StatelessWidget {
                           children: [
                             if (state.actionBanner case final banner?)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 child: AtelierBanner(
                                   message: banner.asString(strings),
                                   icon: Icons.check_circle_outline,
@@ -182,7 +222,10 @@ class PurchaseOrderDetailContent extends StatelessWidget {
                               ),
                             if (state.actionError case final err?)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 child: AtelierBanner(
                                   message: err.asString(strings),
                                   icon: Icons.error_outline,
@@ -197,12 +240,16 @@ class PurchaseOrderDetailContent extends StatelessWidget {
                                 )
                             else if (order == null && !state.isOnline)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: AtelierOfflineState(onRetry: onRefresh),
                               )
                             else if (order == null && state.error != null)
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: AtelierErrorState(
                                   message: state.error!.asString(strings),
                                   onRetry: onRefresh,
@@ -223,7 +270,11 @@ class PurchaseOrderDetailContent extends StatelessWidget {
     );
   }
 
-  List<Widget> _orderBody(BuildContext context, AppLocalizations strings, PurchaseOrder order) {
+  List<Widget> _orderBody(
+    BuildContext context,
+    AppLocalizations strings,
+    PurchaseOrder order,
+  ) {
     final colors = context.atelier;
     return [
       Padding(
@@ -246,7 +297,9 @@ class PurchaseOrderDetailContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: AtelierEmptyState(
             text: strings.invSeg2PoIssueHint,
-            actionLabel: order.isDraft && state.canCreate ? strings.invSeg2PoAddLineBtn : null,
+            actionLabel: order.isDraft && state.canCreate
+                ? strings.invSeg2PoAddLineBtn
+                : null,
             onAction: order.isDraft && state.canCreate ? onOpenAddLine : null,
           ),
         )
@@ -259,9 +312,31 @@ class PurchaseOrderDetailContent extends StatelessWidget {
             child: Column(
               children: [
                 for (var i = 0; i < order.lines.length; i++)
-                  _lineRow(context, strings, order.lines[i], showDivider: i < order.lines.length - 1),
+                  _lineRow(
+                    context,
+                    strings,
+                    order.lines[i],
+                    showDivider: i < order.lines.length - 1,
+                  ),
               ],
             ),
+          ),
+        ),
+      if (order.canBeReceived && state.canReceive)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 8,
+            children: [
+              if (!state.isOnline) const AtelierRequiresConnection(),
+              AtelierButton(
+                text: strings.invReceiveBtn,
+                onClick: onOpenReceive,
+                icon: Icons.inventory_2_outlined,
+                enabled: state.isOnline && !state.isMutating,
+              ),
+            ],
           ),
         ),
       if (state.canCreate && (order.isDraft || order.canBeCanceled))
@@ -276,12 +351,17 @@ class PurchaseOrderDetailContent extends StatelessWidget {
                 if (order.lines.isEmpty)
                   Text(
                     strings.invSeg2PoIssueHint,
-                    style: context.text.bodyMedium?.copyWith(color: colors.inkSecondary),
+                    style: context.text.bodyMedium?.copyWith(
+                      color: colors.inkSecondary,
+                    ),
                   ),
                 AtelierButton(
                   text: strings.invSeg2PoIssueBtn,
                   onClick: onIssueOrder,
-                  enabled: order.lines.isNotEmpty && state.isOnline && !state.isMutating,
+                  enabled:
+                      order.lines.isNotEmpty &&
+                      state.isOnline &&
+                      !state.isMutating,
                   loading: state.isMutating,
                 ),
               ],
@@ -317,7 +397,10 @@ class PurchaseOrderDetailContent extends StatelessWidget {
                   AtelierListRow(
                     title: strings.inventoryPoReceiptDate,
                     showDivider: false,
-                    trailing: Text(at.formatLimaDate(), style: context.text.titleMedium),
+                    trailing: Text(
+                      at.formatLimaDate(),
+                      style: context.text.titleMedium,
+                    ),
                   ),
               ],
             ),
@@ -345,7 +428,9 @@ class PurchaseOrderDetailContent extends StatelessWidget {
       trailing: totalCost != null
           ? Text(
               totalCost.format(),
-              style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+              style: context.text.titleMedium?.copyWith(
+                color: context.scheme.onSurface,
+              ),
             )
           : null,
     );
@@ -382,7 +467,10 @@ class _AddLineSheet extends StatelessWidget {
         AtelierButton(
           text: strings.invSeg2PoAddLineBtn,
           onClick: onConfirm,
-          enabled: state.isOnline && state.selectedPartId != null && !state.isAddingLine,
+          enabled:
+              state.isOnline &&
+              state.selectedPartId != null &&
+              !state.isAddingLine,
           loading: state.isAddingLine,
         ),
         AtelierButton(
@@ -433,7 +521,10 @@ class _AddLineSheet extends StatelessWidget {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         if (state.addLineError case final err?)
-          AtelierBanner(message: err.asString(strings), icon: Icons.error_outline),
+          AtelierBanner(
+            message: err.asString(strings),
+            icon: Icons.error_outline,
+          ),
       ],
     );
   }
@@ -486,7 +577,129 @@ class _CancelOrderSheet extends StatelessWidget {
           enabled: !state.isCanceling,
         ),
         if (state.cancelError case final err?)
-          AtelierBanner(message: err.asString(strings), icon: Icons.error_outline),
+          AtelierBanner(
+            message: err.asString(strings),
+            icon: Icons.error_outline,
+          ),
+      ],
+    );
+  }
+}
+
+/// Recibir la compra (US34 E2): número del comprobante, fecha opcional y foto. Al confirmar se crean los lotes, el
+/// stock sube y la alerta de mínimo deja de aparecer. Solo en línea: la foto se sube con la recepción.
+class _ReceiveOrderSheet extends StatelessWidget {
+  final PurchaseOrderDetailUiState state;
+  final TakeReceiptPhoto takePhoto;
+  final VoidCallback onDismiss;
+  final ValueChanged<String> onNumberChange;
+  final ValueChanged<String> onDateChange;
+  final ValueChanged<File> onPhotoCaptured;
+  final VoidCallback onPhotoDenied;
+  final VoidCallback onRemovePhoto;
+  final VoidCallback onConfirm;
+
+  const _ReceiveOrderSheet({
+    required this.state,
+    required this.takePhoto,
+    required this.onDismiss,
+    required this.onNumberChange,
+    required this.onDateChange,
+    required this.onPhotoCaptured,
+    required this.onPhotoDenied,
+    required this.onRemovePhoto,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = context.atelier;
+    final enabled = !state.isReceiving;
+    final photo = state.receiptPhoto;
+    return AtelierBottomSheet(
+      title: strings.invReceiveTitle,
+      actions: [
+        if (!state.isOnline) const AtelierRequiresConnection(),
+        AtelierButton(
+          text: strings.invReceiveConfirm,
+          onClick: onConfirm,
+          enabled: state.isOnline && enabled,
+          loading: state.isReceiving,
+        ),
+        AtelierButton(
+          text: strings.commonCancel,
+          onClick: onDismiss,
+          style: AtelierButtonStyle.text,
+          enabled: enabled,
+        ),
+      ],
+      content: [
+        Text(
+          strings.invReceiveBody,
+          style: context.text.bodyMedium?.copyWith(color: colors.inkSecondary),
+        ),
+        AtelierTextField(
+          label: strings.invReceiveNumberLabel,
+          value: state.receiptNumber,
+          onValueChange: onNumberChange,
+          isError: state.receiptNumberError != null,
+          errorText: state.receiptNumberError?.asString(strings),
+          enabled: enabled,
+          textCapitalization: TextCapitalization.characters,
+        ),
+        AtelierTextField(
+          label: strings.invReceiveDateLabel,
+          value: state.receiptDate,
+          onValueChange: onDateChange,
+          placeholder: strings.invReceiveDateHint,
+          isError: state.receiptDateError != null,
+          errorText: state.receiptDateError?.asString(strings),
+          enabled: enabled,
+          keyboardType: TextInputType.datetime,
+        ),
+        if (photo != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(
+              photo,
+              height: 160,
+              fit: BoxFit.cover,
+              semanticLabel: strings.invReceivePhotoPreview,
+            ),
+          ),
+        AtelierButton(
+          text: photo == null
+              ? strings.invReceiveTakePhoto
+              : strings.invReceiveRetakePhoto,
+          onClick: () =>
+              takePhoto(onCaptured: onPhotoCaptured, onDenied: onPhotoDenied),
+          style: AtelierButtonStyle.outlined,
+          icon: Icons.photo_camera_outlined,
+          enabled: enabled,
+        ),
+        if (photo != null)
+          AtelierButton(
+            text: strings.invReceiveRemovePhoto,
+            onClick: onRemovePhoto,
+            style: AtelierButtonStyle.text,
+            enabled: enabled,
+          ),
+        if (state.cameraDenied)
+          AtelierBanner(
+            message: strings.invReceiveCameraDenied,
+            icon: Icons.no_photography_outlined,
+          ),
+        if (state.receiptPhotoError case final err?)
+          AtelierBanner(
+            message: err.asString(strings),
+            icon: Icons.error_outline,
+          ),
+        if (state.receiveError case final err?)
+          AtelierBanner(
+            message: err.asString(strings),
+            icon: Icons.error_outline,
+          ),
       ],
     );
   }

@@ -9,6 +9,9 @@ import 'package:atelier_mobile_crossplatform/features/inventory/application/disp
 import 'package:atelier_mobile_crossplatform/features/inventory/application/find_part_by_sku_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_inventory_valuation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_purchase_order_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_stock_alerts_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/observe_stock_alerts_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/receive_purchase_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_purchase_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_suppliers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/issue_purchase_order_use_case.dart';
@@ -22,6 +25,7 @@ import 'package:atelier_mobile_crossplatform/features/inventory/application/rest
 import 'package:atelier_mobile_crossplatform/features/inventory/application/search_parts_catalog_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/update_part_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/update_supplier_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/presentation/alerts/stock_alerts_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/catalog/parts_catalog_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/detail/part_detail_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/navigation/inventory_nav_graph.dart';
@@ -33,7 +37,7 @@ import 'package:atelier_mobile_crossplatform/features/inventory/presentation/val
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 
 /// Pantallas y ViewModels de `inventory` (catálogo, escáner, ficha FIFO, proveedores, órdenes de compra y
-/// valorización). Alertas y recepción de compra (US34) quedan sin UI.
+/// valorización), alertas de stock mínimo y recepción de compra con comprobante (US34).
 void setupInventoryPresentation() {
   registerInventoryRoutes();
 
@@ -99,6 +103,7 @@ void setupInventoryPresentation() {
       addPurchaseOrderItem: getIt<AddPurchaseOrderItemUseCase>(),
       issuePurchaseOrder: getIt<IssuePurchaseOrderUseCase>(),
       cancelPurchaseOrder: getIt<CancelPurchaseOrderUseCase>(),
+      receivePurchaseOrder: getIt<ReceivePurchaseOrderUseCase>(),
     ),
   );
   getIt.registerFactory<InventoryValuationViewModel>(
@@ -106,6 +111,14 @@ void setupInventoryPresentation() {
       observeSession: getIt<ObserveSessionUseCase>(),
       observeCatalog: getIt<ObservePartsCatalogUseCase>(),
       getValuation: getIt<GetInventoryValuationUseCase>(),
+      connectivity: getIt<ConnectivityObserver>(),
+    ),
+  );
+  getIt.registerFactory<StockAlertsViewModel>(
+    () => StockAlertsViewModel(
+      observeSession: getIt<ObserveSessionUseCase>(),
+      getAlerts: getIt<GetStockAlertsUseCase>(),
+      observeAlerts: getIt<ObserveStockAlertsUseCase>(),
       connectivity: getIt<ConnectivityObserver>(),
     ),
   );

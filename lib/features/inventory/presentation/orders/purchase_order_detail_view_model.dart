@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
@@ -9,7 +10,9 @@ import 'package:atelier_mobile_crossplatform/features/inventory/application/get_
 import 'package:atelier_mobile_crossplatform/features/inventory/application/issue_purchase_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/observe_part_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/observe_parts_catalog_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/receive_purchase_order_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/refresh_parts_catalog_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/inventory_errors.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/inventory_validation.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
@@ -18,8 +21,8 @@ import 'package:atelier_mobile_crossplatform/features/inventory/presentation/ord
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:flutter/foundation.dart';
 
-/// US34 E2: orden de compra con su ciclo: agregar líneas (`DRAFT`), emitir (`ISSUED`) y anular (`CANCELED`).
-/// La recepción con comprobante fotográfico (US34) no está en esta versión.
+/// US34 E2: orden de compra con su ciclo: agregar líneas (`DRAFT`), emitir (`ISSUED`), recibir con número y foto
+/// del comprobante (sube el stock y la alerta de mínimo desaparece) y anular (`CANCELED`).
 class PurchaseOrderDetailViewModel extends ChangeNotifier {
   final String orderId;
   final ObserveSessionUseCase observeSession;
@@ -31,6 +34,7 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
   final AddPurchaseOrderItemUseCase addPurchaseOrderItem;
   final IssuePurchaseOrderUseCase issuePurchaseOrder;
   final CancelPurchaseOrderUseCase cancelPurchaseOrder;
+  final ReceivePurchaseOrderUseCase receivePurchaseOrder;
 
   PurchaseOrderDetailViewModel({
     required this.orderId,
@@ -43,6 +47,7 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
     required this.addPurchaseOrderItem,
     required this.issuePurchaseOrder,
     required this.cancelPurchaseOrder,
+    required this.receivePurchaseOrder,
   }) {
     _subscriptions.add(
       observeSession.execute().listen(
@@ -50,12 +55,15 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
           _state.copyWith(
             canRead: session?.has(Permission.purchaseOrdersRead) ?? false,
             canCreate: session?.has(Permission.purchaseOrdersCreate) ?? false,
+            canReceive: session?.has(Permission.batchesReceive) ?? false,
           ),
         ),
       ),
     );
     _subscriptions.add(
-      observeCatalog.execute().listen((parts) => _update(_state.copyWith(catalogParts: parts))),
+      observeCatalog.execute().listen(
+        (parts) => _update(_state.copyWith(catalogParts: parts)),
+      ),
     );
     _state = _state.copyWith(isOnline: connectivity.isOnline);
     connectivity.addListener(_onConnectivity);
@@ -100,7 +108,9 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> onOpenAddLine() async {
-    final first = _state.catalogParts.isEmpty ? null : _state.catalogParts.first;
+    final first = _state.catalogParts.isEmpty
+        ? null
+        : _state.catalogParts.first;
     _update(
       _state.copyWith(
         showAddLineSheet: true,
@@ -135,11 +145,21 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
     );
   }
 
-  void onLineQuantityChange(String v) =>
-      _update(_state.copyWith(lineQuantity: v, clearLineErrors: true, clearAddLineError: true));
+  void onLineQuantityChange(String v) => _update(
+    _state.copyWith(
+      lineQuantity: v,
+      clearLineErrors: true,
+      clearAddLineError: true,
+    ),
+  );
 
-  void onLineUnitCostChange(String v) =>
-      _update(_state.copyWith(lineUnitCost: v, clearLineErrors: true, clearAddLineError: true));
+  void onLineUnitCostChange(String v) => _update(
+    _state.copyWith(
+      lineUnitCost: v,
+      clearLineErrors: true,
+      clearAddLineError: true,
+    ),
+  );
 
   Future<void> onConfirmAddLine() async {
     final state = _state;
@@ -199,7 +219,13 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
 
   Future<void> onIssueOrder() async {
     if (_state.isMutating || !_state.isOnline) return;
-    _update(_state.copyWith(isMutating: true, clearActionError: true, clearActionBanner: true));
+    _update(
+      _state.copyWith(
+        isMutating: true,
+        clearActionError: true,
+        clearActionBanner: true,
+      ),
+    );
     try {
       final updated = await issuePurchaseOrder.execute(orderId);
       _update(
@@ -223,8 +249,13 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
     }
   }
 
-  void onOpenCancel() =>
-      _update(_state.copyWith(showCancelSheet: true, cancelReason: '', clearCancelError: true));
+  void onOpenCancel() => _update(
+    _state.copyWith(
+      showCancelSheet: true,
+      cancelReason: '',
+      clearCancelError: true,
+    ),
+  );
 
   void onDismissCancel() {
     if (!_state.showCancelSheet || _state.isCanceling) return;
@@ -239,7 +270,10 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
     if (state.isCanceling || !state.isOnline) return;
     _update(_state.copyWith(isCanceling: true, clearCancelError: true));
     try {
-      final updated = await cancelPurchaseOrder.execute(orderId, reason: state.cancelReason);
+      final updated = await cancelPurchaseOrder.execute(
+        orderId,
+        reason: state.cancelReason,
+      );
       _update(
         _state.copyWith(
           order: updated,
@@ -256,6 +290,141 @@ class PurchaseOrderDetailViewModel extends ChangeNotifier {
         _state.copyWith(
           isCanceling: false,
           cancelError: toUiText(e),
+          hapticEvent: _state.hapticEvent + 1,
+          hapticIsError: true,
+        ),
+      );
+    }
+  }
+
+  // ---- Recibir compra (US34 E2)
+
+  void onOpenReceive() => _update(
+    _state.copyWith(
+      showReceiveSheet: true,
+      receiptNumber: '',
+      receiptDate: '',
+      clearReceiptPhoto: true,
+      cameraDenied: false,
+      clearReceiptErrors: true,
+      clearReceiveError: true,
+    ),
+  );
+
+  void onDismissReceive() {
+    if (!_state.showReceiveSheet || _state.isReceiving) return;
+    _update(_state.copyWith(showReceiveSheet: false, clearReceiveError: true));
+  }
+
+  void onReceiptNumberChange(String v) => _update(
+    _state.copyWith(
+      receiptNumber: v,
+      clearReceiptErrors: true,
+      clearReceiveError: true,
+    ),
+  );
+
+  void onReceiptDateChange(String v) => _update(
+    _state.copyWith(
+      receiptDate: v,
+      clearReceiptErrors: true,
+      clearReceiveError: true,
+    ),
+  );
+
+  void onReceiptPhotoCaptured(File file) => _update(
+    _state.copyWith(
+      receiptPhoto: file,
+      cameraDenied: false,
+      clearReceiptErrors: true,
+      clearReceiveError: true,
+    ),
+  );
+
+  void onReceiptPhotoDenied() => _update(_state.copyWith(cameraDenied: true));
+
+  void onRemoveReceiptPhoto() =>
+      _update(_state.copyWith(clearReceiptPhoto: true));
+
+  /// `AAAA-MM-DD` (o `AAAA-MM-DD hh:mm`); vacío es "ahora". `null` y `false` distinguen vacío de inválido.
+  static (bool valid, DateTime? value) parseReceiptDate(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return (true, null);
+    final parsed = DateTime.tryParse(trimmed);
+    return parsed == null ? (false, null) : (true, parsed);
+  }
+
+  Future<void> onConfirmReceive() async {
+    final state = _state;
+    if (state.isReceiving || !state.isOnline) return;
+    final (dateValid, receivedAt) = parseReceiptDate(state.receiptDate);
+    if (!dateValid) {
+      _update(
+        _state.copyWith(
+          clearReceiptErrors: true,
+          receiptDateError: UiText.resource((s) => s.invReceiveErrDate),
+          hapticEvent: _state.hapticEvent + 1,
+          hapticIsError: true,
+        ),
+      );
+      return;
+    }
+    _update(
+      _state.copyWith(
+        isReceiving: true,
+        clearReceiptErrors: true,
+        clearReceiveError: true,
+      ),
+    );
+    try {
+      final updated = await receivePurchaseOrder.execute(
+        orderId,
+        receiptNumber: state.receiptNumber,
+        photo: state.receiptPhoto,
+        receivedAt: receivedAt,
+      );
+      _update(
+        _state.copyWith(
+          order: updated,
+          isReceiving: false,
+          showReceiveSheet: false,
+          actionBanner: UiText.resource((s) => s.inventoryPoReceivedOk),
+          clearActionError: true,
+          hapticEvent: _state.hapticEvent + 1,
+          hapticIsError: false,
+        ),
+      );
+    } on InvalidInventoryInputException catch (e) {
+      _update(
+        _state.copyWith(
+          isReceiving: false,
+          receiptPhotoError: e.field == 'photo'
+              ? UiText.resource((s) => s.invReceiveErrPhoto)
+              : null,
+          receiptNumberError: e.field == 'receiptNumber'
+              ? UiText.resource((s) => s.invReceiveErrNumber)
+              : null,
+          receiptDateError: e.field == 'receivedAt'
+              ? UiText.resource((s) => s.invReceiveErrDate)
+              : null,
+          hapticEvent: _state.hapticEvent + 1,
+          hapticIsError: true,
+        ),
+      );
+    } on PurchaseOrderNotReceivableException {
+      _update(
+        _state.copyWith(
+          isReceiving: false,
+          receiveError: UiText.resource((s) => s.invReceiveErrNotReceivable),
+          hapticEvent: _state.hapticEvent + 1,
+          hapticIsError: true,
+        ),
+      );
+    } on Object catch (e) {
+      _update(
+        _state.copyWith(
+          isReceiving: false,
+          receiveError: toUiText(e),
           hapticEvent: _state.hapticEvent + 1,
           hapticIsError: true,
         ),

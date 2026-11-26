@@ -2,6 +2,8 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/presentation/alerts/stock_alerts_screen.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/presentation/alerts/stock_alerts_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/supplier.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/catalog/parts_catalog_screen.dart';
@@ -48,7 +50,8 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
   await tester.pump(const Duration(milliseconds: 400));
 }
 
-Future<void> _teardown(WidgetTester tester) => tester.pumpWidget(const SizedBox());
+Future<void> _teardown(WidgetTester tester) =>
+    tester.pumpWidget(const SizedBox());
 
 final _part = Part(
   id: 'p1',
@@ -113,12 +116,18 @@ void main() {
           onOpenCreateSheet: () {},
         ),
       );
-      expect(find.text('Todavía no hay repuestos en el catálogo.'), findsOneWidget);
+      expect(
+        find.text('Todavía no hay repuestos en el catálogo.'),
+        findsOneWidget,
+      );
 
       await _pump(
         tester,
         PartsCatalogContent(
-          state: const PartsCatalogUiState(isLoaded: true, error: UiText.dynamic('Error catálogo')),
+          state: const PartsCatalogUiState(
+            isLoaded: true,
+            error: UiText.dynamic('Error catálogo'),
+          ),
           onBack: () {},
           onQueryChange: (_) {},
           onCategoryClick: (_) {},
@@ -137,7 +146,11 @@ void main() {
       await _pump(
         tester,
         PartDetailContent(
-          state: PartDetailUiState(part: _part, isLoading: false, canReadBatches: true),
+          state: PartDetailUiState(
+            part: _part,
+            isLoading: false,
+            canReadBatches: true,
+          ),
           onBack: () {},
           onRefresh: () async {},
           onOpenEditPart: () {},
@@ -152,7 +165,9 @@ void main() {
   });
 
   group('PurchaseOrdersContent & PurchaseOrderDetailContent', () {
-    testWidgets('lista y detalle de orden sin recepción US34', (tester) async {
+    testWidgets('lista y detalle de orden; recibir solo con permiso (US34)', (
+      tester,
+    ) async {
       await _pump(
         tester,
         PurchaseOrdersContent(
@@ -181,14 +196,96 @@ void main() {
           onOpenAddLine: () {},
           onIssueOrder: () {},
           onOpenCancel: () {},
+          onOpenReceive: () {},
         ),
       );
       expect(find.text('Orden OC-0042'), findsOneWidget);
       expect(find.text('Filtro de aceite Bosch'), findsOneWidget);
-      // US34 recepción de orden excluida
-      expect(find.text('Recibir orden'), findsNothing);
+      // Sin `inventory:batches:receive` no hay botón de recepción.
+      expect(find.text('Recibir compra'), findsNothing);
+
+      await _pump(
+        tester,
+        PurchaseOrderDetailContent(
+          state: PurchaseOrderDetailUiState(
+            isLoading: false,
+            order: _po,
+            partNames: const {'p1': 'Filtro de aceite Bosch'},
+            canRead: true,
+            canReceive: true,
+          ),
+          onBack: () {},
+          onRefresh: () async {},
+          onOpenAddLine: () {},
+          onIssueOrder: () {},
+          onOpenCancel: () {},
+          onOpenReceive: () {},
+        ),
+      );
+      expect(find.text('Recibir compra'), findsOneWidget);
       await _teardown(tester);
     });
+  });
+
+  group('StockAlertsContent (US34)', () {
+    testWidgets(
+      'lista las alertas con stock, mínimo y faltante; vacía y sin permiso',
+      (tester) async {
+        final alert = StockAlert(
+          itemId: 'p9',
+          name: 'Bujía NGK',
+          sku: 'NGK-9',
+          category: ItemCategory.filters,
+          currentStock: Decimal.fromInt(2),
+          minimumStock: Decimal.fromInt(5),
+          deficit: Decimal.fromInt(3),
+        );
+        await _pump(
+          tester,
+          StockAlertsContent(
+            state: StockAlertsUiState(isLoading: false, alerts: [alert]),
+            onBack: () {},
+            onRefresh: () async {},
+            onOpenPart: (_) {},
+          ),
+        );
+        expect(find.text('Bujía NGK'), findsOneWidget);
+        expect(find.textContaining('mínimo 5'), findsOneWidget);
+        expect(find.textContaining('faltan 3'), findsOneWidget);
+
+        await _pump(
+          tester,
+          StockAlertsContent(
+            state: const StockAlertsUiState(isLoading: false),
+            onBack: () {},
+            onRefresh: () async {},
+            onOpenPart: (_) {},
+          ),
+        );
+        expect(find.text('Bujía NGK'), findsNothing);
+        expect(
+          find.text('No hay alertas de stock. Todo está sobre el mínimo.'),
+          findsOneWidget,
+        );
+
+        await _pump(
+          tester,
+          StockAlertsContent(
+            state: const StockAlertsUiState(isLoading: false, canRead: false),
+            onBack: () {},
+            onRefresh: () async {},
+            onOpenPart: (_) {},
+          ),
+        );
+        expect(
+          find.text(
+            'Tu perfil no tiene permiso para ver las alertas de stock.',
+          ),
+          findsOneWidget,
+        );
+        await _teardown(tester);
+      },
+    );
   });
 
   group('Suppliers / Valuation / SkuScanner', () {
@@ -199,7 +296,12 @@ void main() {
           state: const SuppliersUiState(
             isLoading: false,
             suppliers: [
-              Supplier(id: 'sup1', businessName: 'Repuestos Lima SAC', taxId: '20123456789', active: true),
+              Supplier(
+                id: 'sup1',
+                businessName: 'Repuestos Lima SAC',
+                taxId: '20123456789',
+                active: true,
+              ),
             ],
           ),
           onBack: () {},

@@ -21,7 +21,12 @@ class AppRoot extends StatefulWidget {
   final PushInbox? pushInbox;
   final AuthDeepLinkInbox? authDeepLinks;
 
-  const AppRoot({super.key, required this.session, this.pushInbox, this.authDeepLinks});
+  const AppRoot({
+    super.key,
+    required this.session,
+    this.pushInbox,
+    this.authDeepLinks,
+  });
 
   @override
   State<AppRoot> createState() => _AppRootState();
@@ -80,14 +85,18 @@ class _AppRootState extends State<AppRoot> {
       if (link != null) {
         // Con sesión no se acepta una invitación: se avisa.
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).authDeeplinkSignedInWarning)),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).authDeeplinkSignedInWarning,
+            ),
+          ),
         );
       }
     }
   }
 
-  /// Abre la pantalla de un push. La revisión de suspensión (US29) abre la tarea. El destino de la historia
-  /// excluida (alertas de stock, US34) no navega a ninguna parte.
+  /// Abre la pantalla de un push. La revisión de suspensión (US29) abre la tarea; la alerta de stock mínimo
+  /// (US34) abre la bandeja de alertas.
   void _openPush(PushDestination destination) {
     final shell = MainShellController.current;
     void open(AppRoute route, {MainTab? tab, Object? args}) {
@@ -101,7 +110,10 @@ class _AppRootState extends State<AppRoot> {
     switch (destination) {
       case TaskDetailDestination(:final workOrderId, :final taskId) ||
           TaskProductsDestination(:final workOrderId, :final taskId):
-        open(AppRoute.taskDetail, args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId));
+        open(
+          AppRoute.taskDetail,
+          args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId),
+        );
       case WorkOrderDetailDestination(:final workOrderId):
         open(AppRoute.workOrderDetail, args: workOrderId);
       case CollaboratorAttendanceDestination():
@@ -109,9 +121,12 @@ class _AppRootState extends State<AppRoot> {
       case MyAttendanceDestination() || ClockInDestination():
         open(AppRoute.attendanceHome, tab: MainTab.shift);
       case TaskSuspensionReviewDestination(:final workOrderId, :final taskId):
-        open(AppRoute.taskDetail, args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId));
+        open(
+          AppRoute.taskDetail,
+          args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId),
+        );
       case LowStockAlertsDestination():
-        break;
+        open(AppRoute.stockAlerts);
     }
   }
 
@@ -124,8 +139,15 @@ class _AppRootState extends State<AppRoot> {
         return switch (_viewModel.sessionState) {
           SessionLoading() => ColoredBox(color: background),
           SessionSignedOut() => AppNavigator.build(context, AppRoute.authGraph),
-          SessionSignedIn(needsBranchChoice: true) => AppNavigator.build(context, AppRoute.branchSelection),
-          SessionSignedIn() => AppNavigator.build(context, AppRoute.mainShell, _viewModel.session),
+          SessionSignedIn(needsBranchChoice: true) => AppNavigator.build(
+            context,
+            AppRoute.branchSelection,
+          ),
+          SessionSignedIn() => AppNavigator.build(
+            context,
+            AppRoute.mainShell,
+            _viewModel.session,
+          ),
         };
       },
     );
