@@ -69,7 +69,12 @@ class AddTaskForm {
   final String price;
   final String? mechanicId;
 
-  const AddTaskForm({this.serviceId, this.description = '', this.price = '', this.mechanicId});
+  const AddTaskForm({
+    this.serviceId,
+    this.description = '',
+    this.price = '',
+    this.mechanicId,
+  });
 
   AddTaskForm copyWith({
     Object? serviceId = _keep,
@@ -78,10 +83,14 @@ class AddTaskForm {
     Object? mechanicId = _keep,
   }) {
     return AddTaskForm(
-      serviceId: identical(serviceId, _keep) ? this.serviceId : serviceId as String?,
+      serviceId: identical(serviceId, _keep)
+          ? this.serviceId
+          : serviceId as String?,
       description: description ?? this.description,
       price: price ?? this.price,
-      mechanicId: identical(mechanicId, _keep) ? this.mechanicId : mechanicId as String?,
+      mechanicId: identical(mechanicId, _keep)
+          ? this.mechanicId
+          : mechanicId as String?,
     );
   }
 }
@@ -92,10 +101,17 @@ class EditLaborForm {
   final String taskTitle;
   final String price;
 
-  const EditLaborForm({required this.taskId, required this.taskTitle, required this.price});
+  const EditLaborForm({
+    required this.taskId,
+    required this.taskTitle,
+    required this.price,
+  });
 
-  EditLaborForm copyWith({String? price}) =>
-      EditLaborForm(taskId: taskId, taskTitle: taskTitle, price: price ?? this.price);
+  EditLaborForm copyWith({String? price}) => EditLaborForm(
+    taskId: taskId,
+    taskTitle: taskTitle,
+    price: price ?? this.price,
+  );
 }
 
 /// US25 E2: modal «Cancelar la orden» con el motivo obligatorio del desistimiento del cliente.
@@ -132,7 +148,9 @@ class ChargeForm {
       query: query ?? this.query,
       results: results ?? this.results,
       isSearching: isSearching ?? this.isSearching,
-      selected: identical(selected, _keep) ? this.selected : selected as PartOption?,
+      selected: identical(selected, _keep)
+          ? this.selected
+          : selected as PartOption?,
       quantity: quantity ?? this.quantity,
     );
   }
@@ -146,10 +164,17 @@ class PartEditForm {
   final PartEditMode mode;
   final String quantity;
 
-  const PartEditForm({required this.product, required this.mode, required this.quantity});
+  const PartEditForm({
+    required this.product,
+    required this.mode,
+    required this.quantity,
+  });
 
-  PartEditForm copyWith({String? quantity}) =>
-      PartEditForm(product: product, mode: mode, quantity: quantity ?? this.quantity);
+  PartEditForm copyWith({String? quantity}) => PartEditForm(
+    product: product,
+    mode: mode,
+    quantity: quantity ?? this.quantity,
+  );
 }
 
 class WorkOrderDetailUiState {
@@ -188,6 +213,9 @@ class WorkOrderDetailUiState {
   final bool canCancelWorkOrder;
   final bool canResolveProposals;
   final bool canReadPartMovements;
+
+  /// US35 E2: `inventory:batches:read` o `invoicing:cashflow:export_pdf` (`GET /work-orders/{id}/profitability`).
+  final bool canReadProfitability;
   final bool canOpenObd;
   final bool hasCheckoutPermission;
 
@@ -238,28 +266,43 @@ class WorkOrderDetailUiState {
     this.canCancelWorkOrder = false,
     this.canResolveProposals = false,
     this.canReadPartMovements = false,
+    this.canReadProfitability = false,
     this.canOpenObd = false,
     this.hasCheckoutPermission = false,
   });
 
   bool get isBusy => busyAction != null;
 
-  WorkOrderStatus? get status => detail?.workOrder.status ?? cachedOrder?.status;
+  WorkOrderStatus? get status =>
+      detail?.workOrder.status ?? cachedOrder?.status;
   bool get isDraft => status == WorkOrderStatus.draft;
-  bool get isEditableOrder => status == WorkOrderStatus.draft || status == WorkOrderStatus.inProgress;
+  bool get isEditableOrder =>
+      status == WorkOrderStatus.draft || status == WorkOrderStatus.inProgress;
 
-  bool get canModifyTasks => canUpdateWorkOrder && isEditableOrder && isOnline && !isBusy;
-  bool get canChangeMechanic => canReassignMechanic && isEditableOrder && isOnline && !isBusy;
-  bool get canAddPartToTask => canChargeParts && isEditableOrder && isOnline && !isBusy;
-  bool get canEditTaskParts => canUpdateWorkOrder && isEditableOrder && isOnline && !isBusy;
-  bool get canGeneratePdf => canReadQuotation && detail != null && isOnline && !isBusy;
-  bool get canEmailQuotation => canSendQuotation && detail != null && isOnline && !isBusy;
-  bool get canResolveQuotation => canApproveQuotation && isDraft && isOnline && !isBusy;
+  bool get canModifyTasks =>
+      canUpdateWorkOrder && isEditableOrder && isOnline && !isBusy;
+  bool get canChangeMechanic =>
+      canReassignMechanic && isEditableOrder && isOnline && !isBusy;
+  bool get canAddPartToTask =>
+      canChargeParts && isEditableOrder && isOnline && !isBusy;
+  bool get canEditTaskParts =>
+      canUpdateWorkOrder && isEditableOrder && isOnline && !isBusy;
+  bool get canGeneratePdf =>
+      canReadQuotation && detail != null && isOnline && !isBusy;
+  bool get canEmailQuotation =>
+      canSendQuotation && detail != null && isOnline && !isBusy;
+  bool get canResolveQuotation =>
+      canApproveQuotation && isDraft && isOnline && !isBusy;
 
-  bool get canStartOrder => canUpdateWorkOrder && isDraft && isOnline && !isBusy;
+  bool get canStartOrder =>
+      canUpdateWorkOrder && isDraft && isOnline && !isBusy;
   bool get canCompleteOrder =>
-      canUpdateWorkOrder && status == WorkOrderStatus.inProgress && isOnline && !isBusy;
-  bool get canCancelOrder => canCancelWorkOrder && isEditableOrder && isOnline && !isBusy;
+      canUpdateWorkOrder &&
+      status == WorkOrderStatus.inProgress &&
+      isOnline &&
+      !isBusy;
+  bool get canCancelOrder =>
+      canCancelWorkOrder && isEditableOrder && isOnline && !isBusy;
   bool get canCheckout =>
       hasCheckoutPermission &&
       (status == WorkOrderStatus.completed || status == WorkOrderStatus.paid);
@@ -299,7 +342,10 @@ class WorkOrderDetailUiState {
       }
     }
     final rawName = task.serviceName;
-    final usable = rawName != null && rawName.trim().isNotEmpty && rawName != _genericServiceName
+    final usable =
+        rawName != null &&
+            rawName.trim().isNotEmpty &&
+            rawName != _genericServiceName
         ? rawName
         : null;
     return fromCatalog ?? usable ?? task.description;
@@ -321,7 +367,10 @@ class WorkOrderDetailUiState {
   String? productTitle(TaskProduct product) {
     final fromCatalog = partNamesById[product.productId];
     final raw = product.productName;
-    final usable = raw != null && raw.trim().isNotEmpty && !raw.startsWith(_genericProductPrefix)
+    final usable =
+        raw != null &&
+            raw.trim().isNotEmpty &&
+            !raw.startsWith(_genericProductPrefix)
         ? raw
         : null;
     return fromCatalog ?? usable;
@@ -363,6 +412,7 @@ class WorkOrderDetailUiState {
     bool? canCancelWorkOrder,
     bool? canResolveProposals,
     bool? canReadPartMovements,
+    bool? canReadProfitability,
     bool? canOpenObd,
     bool? hasCheckoutPermission,
     bool? canValidateSuspension,
@@ -372,13 +422,20 @@ class WorkOrderDetailUiState {
   }) {
     return WorkOrderDetailUiState(
       canReassignBays: canReassignBays ?? this.canReassignBays,
-      assignBayForm: identical(assignBayForm, _keep) ? this.assignBayForm : assignBayForm as AssignBayForm?,
-      canValidateSuspension: canValidateSuspension ?? this.canValidateSuspension,
+      assignBayForm: identical(assignBayForm, _keep)
+          ? this.assignBayForm
+          : assignBayForm as AssignBayForm?,
+      canValidateSuspension:
+          canValidateSuspension ?? this.canValidateSuspension,
       reviewingSuspensionTask: identical(reviewingSuspensionTask, _keep)
           ? this.reviewingSuspensionTask
           : reviewingSuspensionTask as TaskDetail?,
-      cachedOrder: identical(cachedOrder, _keep) ? this.cachedOrder : cachedOrder as WorkOrder?,
-      detail: identical(detail, _keep) ? this.detail : detail as WorkOrderDetail?,
+      cachedOrder: identical(cachedOrder, _keep)
+          ? this.cachedOrder
+          : cachedOrder as WorkOrder?,
+      detail: identical(detail, _keep)
+          ? this.detail
+          : detail as WorkOrderDetail?,
       services: services ?? this.services,
       partNamesById: partNamesById ?? this.partNamesById,
       isLoading: isLoading ?? this.isLoading,
@@ -386,27 +443,41 @@ class WorkOrderDetailUiState {
       busyAction: identical(busyAction, _keep)
           ? this.busyAction
           : busyAction as WorkOrderDetailAction?,
-      addTaskForm: identical(addTaskForm, _keep) ? this.addTaskForm : addTaskForm as AddTaskForm?,
+      addTaskForm: identical(addTaskForm, _keep)
+          ? this.addTaskForm
+          : addTaskForm as AddTaskForm?,
       editLaborForm: identical(editLaborForm, _keep)
           ? this.editLaborForm
           : editLaborForm as EditLaborForm?,
       deletingTask: identical(deletingTask, _keep)
           ? this.deletingTask
           : deletingTask as TaskDetail?,
-      chargeTaskId: identical(chargeTaskId, _keep) ? this.chargeTaskId : chargeTaskId as TaskId?,
-      chargeForm: identical(chargeForm, _keep) ? this.chargeForm : chargeForm as ChargeForm?,
+      chargeTaskId: identical(chargeTaskId, _keep)
+          ? this.chargeTaskId
+          : chargeTaskId as TaskId?,
+      chargeForm: identical(chargeForm, _keep)
+          ? this.chargeForm
+          : chargeForm as ChargeForm?,
       editingPartTaskId: identical(editingPartTaskId, _keep)
           ? this.editingPartTaskId
           : editingPartTaskId as TaskId?,
-      partEdit: identical(partEdit, _keep) ? this.partEdit : partEdit as PartEditForm?,
-      rejectForm: identical(rejectForm, _keep) ? this.rejectForm : rejectForm as RejectQuotationForm?,
-      generatedPdf: identical(generatedPdf, _keep) ? this.generatedPdf : generatedPdf as File?,
+      partEdit: identical(partEdit, _keep)
+          ? this.partEdit
+          : partEdit as PartEditForm?,
+      rejectForm: identical(rejectForm, _keep)
+          ? this.rejectForm
+          : rejectForm as RejectQuotationForm?,
+      generatedPdf: identical(generatedPdf, _keep)
+          ? this.generatedPdf
+          : generatedPdf as File?,
       proformaSentLabel: identical(proformaSentLabel, _keep)
           ? this.proformaSentLabel
           : proformaSentLabel as String?,
       notice: identical(notice, _keep) ? this.notice : notice as UiText?,
       error: identical(error, _keep) ? this.error : error as UiText?,
-      invalidField: identical(invalidField, _keep) ? this.invalidField : invalidField as String?,
+      invalidField: identical(invalidField, _keep)
+          ? this.invalidField
+          : invalidField as String?,
       canUpdateWorkOrder: canUpdateWorkOrder ?? this.canUpdateWorkOrder,
       canChargeParts: canChargeParts ?? this.canChargeParts,
       canReadParts: canReadParts ?? this.canReadParts,
@@ -418,16 +489,21 @@ class WorkOrderDetailUiState {
       assigningMechanicTask: identical(assigningMechanicTask, _keep)
           ? this.assigningMechanicTask
           : assigningMechanicTask as TaskDetail?,
-      cancelForm: identical(cancelForm, _keep) ? this.cancelForm : cancelForm as CancelOrderForm?,
-      showQuotationDecision: showQuotationDecision ?? this.showQuotationDecision,
+      cancelForm: identical(cancelForm, _keep)
+          ? this.cancelForm
+          : cancelForm as CancelOrderForm?,
+      showQuotationDecision:
+          showQuotationDecision ?? this.showQuotationDecision,
       movements: identical(movements, _keep)
           ? this.movements
           : movements as OnDemand<List<PartMovement>>?,
       canCancelWorkOrder: canCancelWorkOrder ?? this.canCancelWorkOrder,
       canResolveProposals: canResolveProposals ?? this.canResolveProposals,
       canReadPartMovements: canReadPartMovements ?? this.canReadPartMovements,
+      canReadProfitability: canReadProfitability ?? this.canReadProfitability,
       canOpenObd: canOpenObd ?? this.canOpenObd,
-      hasCheckoutPermission: hasCheckoutPermission ?? this.hasCheckoutPermission,
+      hasCheckoutPermission:
+          hasCheckoutPermission ?? this.hasCheckoutPermission,
     );
   }
 }

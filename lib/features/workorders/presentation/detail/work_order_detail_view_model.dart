@@ -154,7 +154,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       final cachedMileage = cached.mileageIn;
       updated = current.copyWith(
         workOrder: base.copyWith(
-          mileageIn: cachedMileage != null && cachedMileage > 0 ? cachedMileage : base.mileageIn,
+          mileageIn: cachedMileage != null && cachedMileage > 0
+              ? cachedMileage
+              : base.mileageIn,
           diagnosticSummary: cached.diagnosticSummary,
           currentBayId: cached.currentBayId,
           bayName: cached.bayName,
@@ -183,17 +185,24 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
         canValidateSuspension: has(Permission.tasksHoldValidate),
         canReassignBays: has(Permission.baysReassign),
         canUpdateWorkOrder: has(Permission.workOrdersUpdate),
-        canChargeParts: has(Permission.tasksChargeParts) || has(Permission.workOrdersUpdate),
+        canChargeParts:
+            has(Permission.tasksChargeParts) ||
+            has(Permission.workOrdersUpdate),
         canReadParts: canReadParts,
         canReadQuotation: has(Permission.quotationsRead),
         canSendQuotation: has(Permission.quotationsSend),
         canApproveQuotation: has(Permission.quotationsApprove),
-        canReassignMechanic: has(Permission.baysReassign) || has(Permission.workOrdersUpdate),
+        canReassignMechanic:
+            has(Permission.baysReassign) || has(Permission.workOrdersUpdate),
         canCancelWorkOrder: has(Permission.workOrdersCancel),
         canResolveProposals: has(Permission.proposalsResolve),
-        canReadPartMovements: has(Permission.batchesRead) || has(Permission.batchesRestore),
+        canReadPartMovements:
+            has(Permission.batchesRead) || has(Permission.batchesRestore),
+        canReadProfitability:
+            has(Permission.batchesRead) || has(Permission.cashflowExportPdf),
         canOpenObd: canOpenObd,
-        hasCheckoutPermission: has(Permission.invoicesRead) || has(Permission.invoicesIssueSunat),
+        hasCheckoutPermission:
+            has(Permission.invoicesRead) || has(Permission.invoicesIssueSunat),
       ),
     );
     if (canReadParts && _state.partNamesById.isEmpty) _preloadPartNames();
@@ -201,7 +210,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   void _onConnectivity() {
     final online = connectivity.isOnline;
-    final wasOfflineWithoutDetail = online && _state.detail == null && !_state.isLoading;
+    final wasOfflineWithoutDetail =
+        online && _state.detail == null && !_state.isLoading;
     _update(_state.copyWith(isOnline: online));
     if (wasOfflineWithoutDetail) load();
   }
@@ -271,7 +281,12 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   Future<void> onOpenAddTask() async {
     if (!_state.canModifyTasks) return;
     _update(
-      _state.copyWith(addTaskForm: const AddTaskForm(), notice: null, error: null, invalidField: null),
+      _state.copyWith(
+        addTaskForm: const AddTaskForm(),
+        notice: null,
+        error: null,
+        invalidField: null,
+      ),
     );
     if (_state.availableMechanics.isEmpty) {
       await _loadMechanicsIfMissing();
@@ -290,14 +305,18 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   void onDismissAddTask() {
     if (_state.isBusy) return;
-    _update(_state.copyWith(addTaskForm: null, error: null, invalidField: null));
+    _update(
+      _state.copyWith(addTaskForm: null, error: null, invalidField: null),
+    );
   }
 
   void onSelectTaskService(ServiceOption service) => _editAddTask((form) {
     final defaultPrice = service.basePrice?.amount.toString() ?? '';
     return form.copyWith(
       serviceId: service.id,
-      description: form.description.trim().isEmpty ? service.name : form.description,
+      description: form.description.trim().isEmpty
+          ? service.name
+          : form.description,
       price: form.price.trim().isEmpty ? defaultPrice : form.price,
     );
   });
@@ -305,7 +324,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onAddTaskDescriptionChange(String value) =>
       _editAddTask((form) => form.copyWith(description: value));
 
-  void onAddTaskPriceChange(String value) => _editAddTask((form) => form.copyWith(price: value));
+  void onAddTaskPriceChange(String value) =>
+      _editAddTask((form) => form.copyWith(price: value));
 
   void onSelectAddTaskMechanic(String? mechanicId) =>
       _editAddTask((form) => form.copyWith(mechanicId: mechanicId));
@@ -313,7 +333,13 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void _editAddTask(AddTaskForm Function(AddTaskForm) change) {
     final form = _state.addTaskForm;
     if (form == null || _state.isBusy) return;
-    _update(_state.copyWith(addTaskForm: change(form), error: null, invalidField: null));
+    _update(
+      _state.copyWith(
+        addTaskForm: change(form),
+        error: null,
+        invalidField: null,
+      ),
+    );
   }
 
   Future<void> onConfirmAddTask() async {
@@ -325,7 +351,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       _failWorkOrder(const InvalidWorkOrderInputException('serviceId'));
       return;
     }
-    final price = form.price.trim().isEmpty ? null : _toDecimalAmount(form.price);
+    final price = form.price.trim().isEmpty
+        ? null
+        : _toDecimalAmount(form.price);
     if (form.price.trim().isNotEmpty && price == null) {
       _failWorkOrder(const InvalidWorkOrderInputException('price'));
       return;
@@ -382,14 +410,20 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   void onDismissEditLabor() {
     if (_state.isBusy) return;
-    _update(_state.copyWith(editLaborForm: null, error: null, invalidField: null));
+    _update(
+      _state.copyWith(editLaborForm: null, error: null, invalidField: null),
+    );
   }
 
   void onEditLaborPriceChange(String value) {
     final form = _state.editLaborForm;
     if (form == null || _state.isBusy) return;
     _update(
-      _state.copyWith(editLaborForm: form.copyWith(price: value), error: null, invalidField: null),
+      _state.copyWith(
+        editLaborForm: form.copyWith(price: value),
+        error: null,
+        invalidField: null,
+      ),
     );
   }
 
@@ -403,7 +437,11 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       return;
     }
     _update(
-      state.copyWith(busyAction: WorkOrderDetailAction.editLabor, error: null, invalidField: null),
+      state.copyWith(
+        busyAction: WorkOrderDetailAction.editLabor,
+        error: null,
+        invalidField: null,
+      ),
     );
     try {
       final updated = await updateTask.execute(
@@ -427,7 +465,14 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onOpenDeleteTask(TaskDetail task) {
     final state = _state;
     if (!state.canModifyTasks) return;
-    _update(state.copyWith(deletingTask: task, notice: null, error: null, invalidField: null));
+    _update(
+      state.copyWith(
+        deletingTask: task,
+        notice: null,
+        error: null,
+        invalidField: null,
+      ),
+    );
   }
 
   void onDismissDeleteTask() {
@@ -439,8 +484,14 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     final state = _state;
     final task = state.deletingTask;
     final remove = removeTask;
-    if (task == null || remove == null || !state.canModifyTasks || task.products.isNotEmpty) return;
-    _update(state.copyWith(busyAction: WorkOrderDetailAction.deleteTask, error: null));
+    if (task == null ||
+        remove == null ||
+        !state.canModifyTasks ||
+        task.products.isNotEmpty)
+      return;
+    _update(
+      state.copyWith(busyAction: WorkOrderDetailAction.deleteTask, error: null),
+    );
     try {
       final updated = await remove.execute(WorkOrderId(workOrderId), task.id);
       _update(
@@ -474,11 +525,18 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       _update(
         _state.copyWith(
           partNamesById: _withNames(parts),
-          chargeForm: _state.chargeForm?.copyWith(results: parts, isSearching: false),
+          chargeForm: _state.chargeForm?.copyWith(
+            results: parts,
+            isSearching: false,
+          ),
         ),
       );
     } on Object {
-      _update(_state.copyWith(chargeForm: _state.chargeForm?.copyWith(isSearching: false)));
+      _update(
+        _state.copyWith(
+          chargeForm: _state.chargeForm?.copyWith(isSearching: false),
+        ),
+      );
     }
   }
 
@@ -486,14 +544,25 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     _searchTimer?.cancel();
     if (_state.isBusy) return;
     _update(
-      _state.copyWith(chargeTaskId: null, chargeForm: null, error: null, invalidField: null),
+      _state.copyWith(
+        chargeTaskId: null,
+        chargeForm: null,
+        error: null,
+        invalidField: null,
+      ),
     );
   }
 
   void _editCharge(ChargeForm Function(ChargeForm) change) {
     final form = _state.chargeForm;
     if (form == null || _state.isBusy) return;
-    _update(_state.copyWith(chargeForm: change(form), error: null, invalidField: null));
+    _update(
+      _state.copyWith(
+        chargeForm: change(form),
+        error: null,
+        invalidField: null,
+      ),
+    );
   }
 
   Future<void> _loadParts(String query) async {
@@ -502,7 +571,10 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       _update(
         _state.copyWith(
           partNamesById: _withNames(parts),
-          chargeForm: _state.chargeForm?.copyWith(results: parts, isSearching: false),
+          chargeForm: _state.chargeForm?.copyWith(
+            results: parts,
+            isSearching: false,
+          ),
         ),
       );
     } on Object catch (error) {
@@ -518,7 +590,10 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onChargeQueryChange(String value) {
     _searchTimer?.cancel();
     if (value.trim().isEmpty) {
-      _editCharge((form) => form.copyWith(query: value, selected: null, isSearching: true));
+      _editCharge(
+        (form) =>
+            form.copyWith(query: value, selected: null, isSearching: true),
+      );
       _loadParts('');
       return;
     }
@@ -547,7 +622,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     );
   }
 
-  void onChargeQuantityChange(String value) => _editCharge((form) => form.copyWith(quantity: value));
+  void onChargeQuantityChange(String value) =>
+      _editCharge((form) => form.copyWith(quantity: value));
 
   Future<void> onConfirmChargePart() async {
     final state = _state;
@@ -562,11 +638,17 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       return;
     }
     _update(
-      state.copyWith(busyAction: WorkOrderDetailAction.chargePart, error: null, invalidField: null),
+      state.copyWith(
+        busyAction: WorkOrderDetailAction.chargePart,
+        error: null,
+        invalidField: null,
+      ),
     );
     try {
       await addPart.execute(taskId, part.id, quantity);
-      await _reloadOrderAfterPartChange(UiText.resource((s) => s.taskPartCharged));
+      await _reloadOrderAfterPartChange(
+        UiText.resource((s) => s.taskPartCharged),
+      );
     } on Object catch (error) {
       _failTask(error);
     }
@@ -600,7 +682,12 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onDismissPartEdit() {
     if (_state.isBusy) return;
     _update(
-      _state.copyWith(editingPartTaskId: null, partEdit: null, error: null, invalidField: null),
+      _state.copyWith(
+        editingPartTaskId: null,
+        partEdit: null,
+        error: null,
+        invalidField: null,
+      ),
     );
   }
 
@@ -608,7 +695,11 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     final edit = _state.partEdit;
     if (edit == null || _state.isBusy) return;
     _update(
-      _state.copyWith(partEdit: edit.copyWith(quantity: value), error: null, invalidField: null),
+      _state.copyWith(
+        partEdit: edit.copyWith(quantity: value),
+        error: null,
+        invalidField: null,
+      ),
     );
   }
 
@@ -628,7 +719,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
         );
         try {
           await removePart.execute(taskId, edit.product.productId);
-          await _reloadOrderAfterPartChange(UiText.resource((s) => s.taskPartReturned));
+          await _reloadOrderAfterPartChange(
+            UiText.resource((s) => s.taskPartReturned),
+          );
         } on Object catch (error) {
           _failTask(error);
         }
@@ -646,8 +739,14 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
           ),
         );
         try {
-          await updatePartQuantity.execute(taskId, edit.product.productId, quantity);
-          await _reloadOrderAfterPartChange(UiText.resource((s) => s.taskPartUpdated));
+          await updatePartQuantity.execute(
+            taskId,
+            edit.product.productId,
+            quantity,
+          );
+          await _reloadOrderAfterPartChange(
+            UiText.resource((s) => s.taskPartUpdated),
+          );
         } on Object catch (error) {
           _failTask(error);
         }
@@ -712,7 +811,10 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onPdfHandled() => _update(_state.copyWith(generatedPdf: null));
 
   void onPdfOpenFailed() => _update(
-    _state.copyWith(generatedPdf: null, error: UiText.resource((s) => s.quotationNoPdfApp)),
+    _state.copyWith(
+      generatedPdf: null,
+      error: UiText.resource((s) => s.quotationNoPdfApp),
+    ),
   );
 
   Future<void> onSendQuotationEmail() async {
@@ -752,7 +854,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       ),
     );
     try {
-      final updatedOrder = await approveQuotation.execute(WorkOrderId(workOrderId));
+      final updatedOrder = await approveQuotation.execute(
+        WorkOrderId(workOrderId),
+      );
       _update(
         _state.copyWith(
           busyAction: null,
@@ -787,7 +891,11 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onRejectReasonChange(String value) {
     if (_state.rejectForm == null || _state.isBusy) return;
     _update(
-      _state.copyWith(rejectForm: RejectQuotationForm(reason: value), error: null, invalidField: null),
+      _state.copyWith(
+        rejectForm: RejectQuotationForm(reason: value),
+        error: null,
+        invalidField: null,
+      ),
     );
   }
 
@@ -803,7 +911,10 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       ),
     );
     try {
-      final canceled = await rejectQuotation.execute(WorkOrderId(workOrderId), form.reason.trim());
+      final canceled = await rejectQuotation.execute(
+        WorkOrderId(workOrderId),
+        form.reason.trim(),
+      );
       _update(
         _state.copyWith(
           busyAction: null,
@@ -821,7 +932,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   void onOpenQuotationDecision() {
     if (!(_state.canApproveQuotation && _state.isDraft)) return;
-    _update(_state.copyWith(showQuotationDecision: true, notice: null, error: null));
+    _update(
+      _state.copyWith(showQuotationDecision: true, notice: null, error: null),
+    );
   }
 
   void onDismissQuotationDecision() {
@@ -871,7 +984,11 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   void onCancelReasonChange(String value) {
     if (_state.cancelForm == null || _state.isBusy) return;
     _update(
-      _state.copyWith(cancelForm: CancelOrderForm(reason: value), error: null, invalidField: null),
+      _state.copyWith(
+        cancelForm: CancelOrderForm(reason: value),
+        error: null,
+        invalidField: null,
+      ),
     );
   }
 
@@ -892,7 +1009,12 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     Future<WorkOrder> Function() call,
   ) async {
     _update(
-      _state.copyWith(busyAction: action, notice: null, error: null, invalidField: null),
+      _state.copyWith(
+        busyAction: action,
+        notice: null,
+        error: null,
+        invalidField: null,
+      ),
     );
     try {
       final updated = await call();
@@ -905,7 +1027,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
           detail: current?.copyWith(
             workOrder: updated.copyWith(
               plate: updated.plate ?? current.workOrder.plate,
-              customerName: updated.customerName ?? current.workOrder.customerName,
+              customerName:
+                  updated.customerName ?? current.workOrder.customerName,
               bayName: updated.bayName ?? current.workOrder.bayName,
             ),
           ),
@@ -922,7 +1045,13 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   Future<void> onOpenAssignBay() async {
     final observe = observeBayBoard;
     if (observe == null || !_state.canAssignBay) return;
-    _update(_state.copyWith(assignBayForm: const AssignBayForm(), notice: null, error: null));
+    _update(
+      _state.copyWith(
+        assignBayForm: const AssignBayForm(),
+        notice: null,
+        error: null,
+      ),
+    );
     Object? failure;
     try {
       await refreshBayBoard?.execute();
@@ -953,12 +1082,26 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
   /// US40 E1/E2: una bahía no libre no llega al backend; con 409 la asignación previa queda intacta.
   Future<void> onConfirmAssignBay(WorkBay bay) async {
     final reassign = reassignBay;
-    if (reassign == null || _state.assignBayForm == null || !_state.canAssignBay) return;
-    _update(_state.copyWith(busyAction: WorkOrderDetailAction.assignBay, error: null, notice: null));
+    if (reassign == null ||
+        _state.assignBayForm == null ||
+        !_state.canAssignBay)
+      return;
+    _update(
+      _state.copyWith(
+        busyAction: WorkOrderDetailAction.assignBay,
+        error: null,
+        notice: null,
+      ),
+    );
     try {
       await reassign.execute(workOrderId, bay);
     } on BayUnavailableException {
-      _update(_state.copyWith(busyAction: null, error: UiText.resource((s) => s.baysUnavailableError)));
+      _update(
+        _state.copyWith(
+          busyAction: null,
+          error: UiText.resource((s) => s.baysUnavailableError),
+        ),
+      );
       return;
     } on Object catch (error) {
       _failWorkOrder(error);
@@ -969,7 +1112,10 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       detail = await getDetail.execute(WorkOrderId(workOrderId));
     } on Object {
       detail = detail?.copyWith(
-        workOrder: detail.workOrder.copyWith(currentBayId: bay.id, bayName: bay.name),
+        workOrder: detail.workOrder.copyWith(
+          currentBayId: bay.id,
+          bayName: bay.name,
+        ),
       );
     }
     _update(
@@ -986,7 +1132,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   void onOpenSuspensionReview(TaskDetail task) {
     if (!_state.canReviewSuspension || !task.hasPendingSuspension) return;
-    _update(_state.copyWith(reviewingSuspensionTask: task, notice: null, error: null));
+    _update(
+      _state.copyWith(reviewingSuspensionTask: task, notice: null, error: null),
+    );
   }
 
   void onDismissSuspensionReview() {
@@ -1018,7 +1166,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   Future<void> onResumeSuspendedTask(TaskDetail task) async {
     final resume = resumeSuspendedTask;
-    if (resume == null || !_state.canReviewSuspension || !task.isSuspended) return;
+    if (resume == null || !_state.canReviewSuspension || !task.isSuspended)
+      return;
     await _runSuspensionAction(
       WorkOrderDetailAction.resumeSuspended,
       UiText.resource((s) => s.ordersTaskResumedNotice),
@@ -1033,7 +1182,14 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     UiText notice,
     Future<TaskDetail> Function() call,
   ) async {
-    _update(_state.copyWith(busyAction: action, notice: null, error: null, invalidField: null));
+    _update(
+      _state.copyWith(
+        busyAction: action,
+        notice: null,
+        error: null,
+        invalidField: null,
+      ),
+    );
     final TaskDetail updated;
     try {
       updated = await call();
@@ -1046,11 +1202,19 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
       detail = await getDetail.execute(WorkOrderId(workOrderId));
     } on Object {
       detail = detail?.copyWith(
-        tasks: [for (final task in detail.tasks) task.id.value == updated.id.value ? updated : task],
+        tasks: [
+          for (final task in detail.tasks)
+            task.id.value == updated.id.value ? updated : task,
+        ],
       );
     }
     _update(
-      _state.copyWith(busyAction: null, reviewingSuspensionTask: null, detail: detail, notice: notice),
+      _state.copyWith(
+        busyAction: null,
+        reviewingSuspensionTask: null,
+        detail: detail,
+        notice: notice,
+      ),
     );
   }
 
@@ -1060,11 +1224,19 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     final get = getPartMovements;
     final state = _state;
     if (get == null || !state.canReadPartMovements || !state.isOnline) return;
-    _update(state.copyWith(movements: const OnDemand<List<PartMovement>>(), notice: null, error: null));
+    _update(
+      state.copyWith(
+        movements: const OnDemand<List<PartMovement>>(),
+        notice: null,
+        error: null,
+      ),
+    );
     try {
       final data = await get.execute(WorkOrderId(workOrderId));
       _update(
-        _state.copyWith(movements: OnDemand<List<PartMovement>>(isLoading: false, data: data)),
+        _state.copyWith(
+          movements: OnDemand<List<PartMovement>>(isLoading: false, data: data),
+        ),
       );
     } on Object catch (error) {
       _update(
@@ -1084,7 +1256,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   Future<void> onOpenAssignMechanic(TaskDetail task) async {
     if (!_state.canChangeMechanic) return;
-    _update(_state.copyWith(assigningMechanicTask: task, notice: null, error: null));
+    _update(
+      _state.copyWith(assigningMechanicTask: task, notice: null, error: null),
+    );
     if (_state.availableMechanics.isEmpty) await _loadMechanicsIfMissing();
   }
 
@@ -1097,7 +1271,12 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     final state = _state;
     final task = state.assigningMechanicTask;
     if (task == null || !state.canChangeMechanic || state.isBusy) return;
-    _update(state.copyWith(busyAction: WorkOrderDetailAction.assignMechanic, error: null));
+    _update(
+      state.copyWith(
+        busyAction: WorkOrderDetailAction.assignMechanic,
+        error: null,
+      ),
+    );
     try {
       final id = WorkOrderId(workOrderId);
       final reassign = reassignTaskMechanic;
@@ -1141,7 +1320,8 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     }
   }
 
-  Decimal? _toDecimalAmount(String value) => Decimal.tryParse(value.trim().replaceAll(',', '.'));
+  Decimal? _toDecimalAmount(String value) =>
+      Decimal.tryParse(value.trim().replaceAll(',', '.'));
 
   void _failWorkOrder(Object error) {
     _update(

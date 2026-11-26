@@ -27,6 +27,7 @@ import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_ord
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_audit.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_references.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/components/proposal_labels.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/profitability/profitability_card.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/components/quotation_summary_section.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/components/work_order_detail_dialogs.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/work_order_detail_ui_state.dart';
@@ -52,9 +53,8 @@ class WorkOrderDetailScreen extends StatefulWidget {
 }
 
 class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
-  late final WorkOrderDetailViewModel viewModel = getIt<WorkOrderDetailViewModel>(
-    param1: widget.workOrderId,
-  );
+  late final WorkOrderDetailViewModel viewModel =
+      getIt<WorkOrderDetailViewModel>(param1: widget.workOrderId);
   final AtelierHaptics _haptics = rememberAtelierHaptics();
   Object? _lastNotice;
   Object? _lastError;
@@ -67,8 +67,10 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
 
   void _feedback() {
     final state = viewModel.state;
-    if (state.notice != null && !identical(state.notice, _lastNotice)) _haptics.confirm();
-    if (state.error != null && !identical(state.error, _lastError)) _haptics.reject();
+    if (state.notice != null && !identical(state.notice, _lastNotice))
+      _haptics.confirm();
+    if (state.error != null && !identical(state.error, _lastError))
+      _haptics.reject();
     _lastNotice = state.notice;
     _lastError = state.error;
   }
@@ -98,15 +100,26 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
       onRetry: vm.load,
       onCompleteIntake: (vehicleId, customerId, orderId) => _pushAndRefresh(
         AppRoute.openWorkOrder,
-        OpenWorkOrderArgs(vehicleId: vehicleId, customerId: customerId, workOrderId: orderId),
+        OpenWorkOrderArgs(
+          vehicleId: vehicleId,
+          customerId: customerId,
+          workOrderId: orderId,
+        ),
       ),
-      onOpenCheckout: () => _pushAndRefresh(AppRoute.workOrderCheckout, vm.workOrderId),
-      onOpenObd: (vehicleId, plate) =>
-          _pushAndRefresh(AppRoute.diagnosticsHub, DiagnosticsHubArgs(initialVehicleId: vehicleId)),
-      onOpenTask: (orderId, taskId) =>
-          _pushAndRefresh(AppRoute.taskDetail, TaskDetailArgs(workOrderId: orderId, taskId: taskId)),
-      onOpenProposals: () => _pushAndRefresh(AppRoute.proposalsPanel, vm.workOrderId),
-      onOpenGallery: () => _pushAndRefresh(AppRoute.intakeGallery, vm.workOrderId),
+      onOpenCheckout: () =>
+          _pushAndRefresh(AppRoute.workOrderCheckout, vm.workOrderId),
+      onOpenObd: (vehicleId, plate) => _pushAndRefresh(
+        AppRoute.diagnosticsHub,
+        DiagnosticsHubArgs(initialVehicleId: vehicleId),
+      ),
+      onOpenTask: (orderId, taskId) => _pushAndRefresh(
+        AppRoute.taskDetail,
+        TaskDetailArgs(workOrderId: orderId, taskId: taskId),
+      ),
+      onOpenProposals: () =>
+          _pushAndRefresh(AppRoute.proposalsPanel, vm.workOrderId),
+      onOpenGallery: () =>
+          _pushAndRefresh(AppRoute.intakeGallery, vm.workOrderId),
       onOpenAddTask: vm.onOpenAddTask,
       onDismissAddTask: vm.onDismissAddTask,
       onSelectTaskService: vm.onSelectTaskService,
@@ -134,7 +147,10 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
       onConfirmPartEdit: vm.onConfirmPartEdit,
       onGenerateQuotationPdf: vm.onGenerateQuotationPdf,
       onSharePdf: (file) async {
-        final ok = await DocumentIntents.openPdf(file, strings.quotationShareChooser);
+        final ok = await DocumentIntents.openPdf(
+          file,
+          strings.quotationShareChooser,
+        );
         if (!mounted) return;
         if (ok) {
           vm.onPdfHandled();
@@ -177,7 +193,8 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
       actions: actions,
       child: ListenableBuilder(
         listenable: vm,
-        builder: (context, _) => WorkOrderDetailContent(state: vm.state, actions: actions),
+        builder: (context, _) =>
+            WorkOrderDetailContent(state: vm.state, actions: actions),
       ),
     );
   }
@@ -188,7 +205,11 @@ class _OrderSheetHosts extends StatelessWidget {
   final WorkOrderDetailActions actions;
   final Widget child;
 
-  const _OrderSheetHosts({required this.viewModel, required this.actions, required this.child});
+  const _OrderSheetHosts({
+    required this.viewModel,
+    required this.actions,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +368,9 @@ class _OrderSheetHosts extends StatelessWidget {
                   builder: (context, _) {
                     final s = vm.state;
                     return QuotationDecisionSheet(
-                      isApproving: s.busyAction == WorkOrderDetailAction.approveQuotation,
+                      isApproving:
+                          s.busyAction ==
+                          WorkOrderDetailAction.approveQuotation,
                       isBusy: s.isBusy || !s.isOnline,
                       isOnline: s.isOnline,
                       error: s.error,
@@ -368,7 +391,9 @@ class _OrderSheetHosts extends StatelessWidget {
                       if (form == null) return const SizedBox.shrink();
                       return RejectQuotationSheet(
                         form: form,
-                        isSaving: s.busyAction == WorkOrderDetailAction.rejectQuotation,
+                        isSaving:
+                            s.busyAction ==
+                            WorkOrderDetailAction.rejectQuotation,
                         invalidField: s.invalidField,
                         error: s.error,
                         onReasonChange: actions.onRejectReasonChange,
@@ -389,7 +414,8 @@ class _OrderSheetHosts extends StatelessWidget {
                         if (form == null) return const SizedBox.shrink();
                         return CancelOrderSheet(
                           form: form,
-                          isSaving: s.busyAction == WorkOrderDetailAction.cancelOrder,
+                          isSaving:
+                              s.busyAction == WorkOrderDetailAction.cancelOrder,
                           invalidField: s.invalidField,
                           error: s.error,
                           onReasonChange: actions.onCancelReasonChange,
@@ -422,7 +448,9 @@ class _OrderSheetHosts extends StatelessWidget {
                               taskTitle: s.taskTitle(task),
                               currentMechanicId: task.mechanicId,
                               mechanics: s.availableMechanics,
-                              isSaving: s.busyAction == WorkOrderDetailAction.assignMechanic,
+                              isSaving:
+                                  s.busyAction ==
+                                  WorkOrderDetailAction.assignMechanic,
                               error: s.error,
                               onSelectMechanic: actions.onConfirmAssignMechanic,
                               onDismiss: actions.onDismissAssignMechanic,
@@ -465,7 +493,8 @@ class _OrderSheetHosts extends StatelessWidget {
 class WorkOrderDetailActions {
   final VoidCallback onBack;
   final Future<void> Function() onRetry;
-  final void Function(String vehicleId, String customerId, String workOrderId) onCompleteIntake;
+  final void Function(String vehicleId, String customerId, String workOrderId)
+  onCompleteIntake;
   final VoidCallback onOpenCheckout;
   final void Function(String vehicleId, String? plate) onOpenObd;
   final void Function(String workOrderId, String taskId) onOpenTask;
@@ -604,7 +633,11 @@ class WorkOrderDetailContent extends StatelessWidget {
   final WorkOrderDetailUiState state;
   final WorkOrderDetailActions actions;
 
-  const WorkOrderDetailContent({super.key, required this.state, required this.actions});
+  const WorkOrderDetailContent({
+    super.key,
+    required this.state,
+    required this.actions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -656,7 +689,10 @@ class WorkOrderDetailContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: state.isOnline
-              ? AtelierErrorState(message: error.asString(strings), onRetry: actions.onRetry)
+              ? AtelierErrorState(
+                  message: error.asString(strings),
+                  onRetry: actions.onRetry,
+                )
               : AtelierOfflineState(onRetry: actions.onRetry),
         ),
       ];
@@ -664,7 +700,11 @@ class WorkOrderDetailContent extends StatelessWidget {
     if (showSkeleton) {
       return [
         for (var i = 0; i < 4; i++)
-          const AtelierListRow(title: 'Tarea de la orden', subtitle: 'Mecánico', loading: true),
+          const AtelierListRow(
+            title: 'Tarea de la orden',
+            subtitle: 'Mecánico',
+            loading: true,
+          ),
       ];
     }
     return const [];
@@ -692,8 +732,12 @@ class WorkOrderDetailContent extends StatelessWidget {
                 kind: BannerKind.ok,
               ),
             if (!state.hasOpenSheet && error != null)
-              AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
-            if (state.isDraft && (order.mileageIn == null || order.mileageIn == 0)) ...[
+              AtelierBanner(
+                message: error.asString(strings),
+                icon: Icons.error_outline,
+              ),
+            if (state.isDraft &&
+                (order.mileageIn == null || order.mileageIn == 0)) ...[
               AtelierBanner(
                 title: strings.orderIntakeIncompleteTitle,
                 message: strings.orderIntakeIncompleteBody,
@@ -702,8 +746,11 @@ class WorkOrderDetailContent extends StatelessWidget {
               ),
               AtelierButton(
                 text: strings.orderCompleteIntakeBtn,
-                onClick: () =>
-                    actions.onCompleteIntake(order.vehicleId, order.customerId, order.id.value),
+                onClick: () => actions.onCompleteIntake(
+                  order.vehicleId,
+                  order.customerId,
+                  order.id.value,
+                ),
                 style: AtelierButtonStyle.tonal,
               ),
             ],
@@ -732,9 +779,15 @@ class WorkOrderDetailContent extends StatelessWidget {
   }
 
   /// "Esperan tu decisión": propuestas en revisión y proforma sin respuesta (sin suspensiones US29).
-  List<Widget> _decisions(AppLocalizations strings, WorkOrderDetail detail, WorkOrder order) {
+  List<Widget> _decisions(
+    AppLocalizations strings,
+    WorkOrderDetail detail,
+    WorkOrder order,
+  ) {
     final pendingProposals = state.canResolveProposals
-        ? detail.proposals.where((p) => p.status == ProposalStatus.pendingReview).toList()
+        ? detail.proposals
+              .where((p) => p.status == ProposalStatus.pendingReview)
+              .toList()
         : const <Proposal>[];
     final quotationPending = state.isDraft && state.canApproveQuotation;
     final count = pendingProposals.length + (quotationPending ? 1 : 0);
@@ -742,7 +795,10 @@ class WorkOrderDetailContent extends StatelessWidget {
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: AtelierSectionHeader(title: strings.ordersSectionDecisions, count: count),
+        child: AtelierSectionHeader(
+          title: strings.ordersSectionDecisions,
+          count: count,
+        ),
       ),
       for (final proposal in pendingProposals)
         Padding(
@@ -770,7 +826,8 @@ class WorkOrderDetailContent extends StatelessWidget {
 
   List<Widget> _lifecycle(AppLocalizations strings) {
     final showStart = state.canUpdateWorkOrder && state.isDraft;
-    final showComplete = state.canUpdateWorkOrder && state.status == WorkOrderStatus.inProgress;
+    final showComplete =
+        state.canUpdateWorkOrder && state.status == WorkOrderStatus.inProgress;
     final showCancel = state.canCancelWorkOrder && state.isEditableOrder;
     if (!showStart && !showComplete && !showCancel) return const [];
     return [
@@ -792,7 +849,8 @@ class WorkOrderDetailContent extends StatelessWidget {
                 text: strings.ordersActionComplete,
                 onClick: actions.onCompleteWorkOrder,
                 enabled: state.canCompleteOrder,
-                loading: state.busyAction == WorkOrderDetailAction.completeOrder,
+                loading:
+                    state.busyAction == WorkOrderDetailAction.completeOrder,
               ),
             if (showCancel)
               AtelierButton(
@@ -810,9 +868,13 @@ class WorkOrderDetailContent extends StatelessWidget {
 
   /// Bahía (con permiso se asigna o cambia, US40), kilometraje y diagnóstico de ingreso.
   List<Widget> _orderData(AppLocalizations strings, WorkOrder order) {
-    final mileage = order.mileageIn != null && order.mileageIn! > 0 ? order.mileageIn : null;
+    final mileage = order.mileageIn != null && order.mileageIn! > 0
+        ? order.mileageIn
+        : null;
     final rawDiag = order.diagnosticSummary;
-    final diagnostic = rawDiag != null && rawDiag.trim().isNotEmpty ? rawDiag : null;
+    final diagnostic = rawDiag != null && rawDiag.trim().isNotEmpty
+        ? rawDiag
+        : null;
     final showBay = order.bayName != null || state.showBayAction;
     if (!showBay && mileage == null && diagnostic == null) return const [];
     return [
@@ -835,7 +897,9 @@ class WorkOrderDetailContent extends StatelessWidget {
                   onClick: state.canAssignBay ? actions.onOpenAssignBay : null,
                   trailing: state.showBayAction
                       ? AtelierButton(
-                          text: order.bayName == null ? strings.ordersBayAssign : strings.ordersBayChange,
+                          text: order.bayName == null
+                              ? strings.ordersBayAssign
+                              : strings.ordersBayChange,
                           onClick: actions.onOpenAssignBay,
                           style: AtelierButtonStyle.text,
                           enabled: state.canAssignBay,
@@ -861,11 +925,18 @@ class WorkOrderDetailContent extends StatelessWidget {
     ];
   }
 
-  List<Widget> _tasks(AppLocalizations strings, WorkOrderDetail detail, WorkOrder order) {
+  List<Widget> _tasks(
+    AppLocalizations strings,
+    WorkOrderDetail detail,
+    WorkOrder order,
+  ) {
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: AtelierSectionHeader(title: strings.orderTasksTitle, count: detail.tasks.length),
+        child: AtelierSectionHeader(
+          title: strings.orderTasksTitle,
+          count: detail.tasks.length,
+        ),
       ),
       if (detail.tasks.isEmpty)
         Padding(
@@ -882,11 +953,14 @@ class WorkOrderDetailContent extends StatelessWidget {
               child: TaskBlock(
                 task: task,
                 state: state,
-                onOpenTask: () => actions.onOpenTask(order.id.value, task.id.value),
+                onOpenTask: () =>
+                    actions.onOpenTask(order.id.value, task.id.value),
                 onEditLabor: () => actions.onOpenEditLabor(task),
                 onAddPart: () => actions.onOpenChargePart(task.id),
-                onEditPart: (product) => actions.onOpenEditPart(task.id, product),
-                onReturnPart: (product) => actions.onOpenReturnPart(task.id, product),
+                onEditPart: (product) =>
+                    actions.onOpenEditPart(task.id, product),
+                onReturnPart: (product) =>
+                    actions.onOpenReturnPart(task.id, product),
                 onAssignMechanic: () => actions.onOpenAssignMechanic(task),
                 onDeleteTask: () => actions.onOpenDeleteTask(task),
                 onReviewSuspension: () => actions.onOpenSuspensionReview(task),
@@ -943,7 +1017,11 @@ class WorkOrderDetailContent extends StatelessWidget {
     ];
   }
 
-  List<Widget> _photos(BuildContext context, AppLocalizations strings, WorkOrderDetail detail) {
+  List<Widget> _photos(
+    BuildContext context,
+    AppLocalizations strings,
+    WorkOrderDetail detail,
+  ) {
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -988,7 +1066,8 @@ class WorkOrderDetailContent extends StatelessWidget {
             onGeneratePdf: actions.onGenerateQuotationPdf,
             onSendEmail: actions.onSendQuotationEmail,
           ),
-          if (!state.isOnline && (state.canReadQuotation || state.canSendQuotation))
+          if (!state.isOnline &&
+              (state.canReadQuotation || state.canSendQuotation))
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: AtelierRequiresConnection(),
@@ -998,29 +1077,39 @@ class WorkOrderDetailContent extends StatelessWidget {
     ];
   }
 
-  /// Solo movimientos de repuestos (US33 E2); rentabilidad (US35) queda fuera.
+  /// Movimientos de repuestos (US33 E2) y rentabilidad con costo FIFO (US35 E2), cada uno con su permiso.
   List<Widget> _costs(BuildContext context, AppLocalizations strings) {
-    if (!state.canReadPartMovements) return const [];
+    if (!state.canReadPartMovements && !state.canReadProfitability)
+      return const [];
+    final workOrderId =
+        (state.detail?.workOrder.id ?? state.cachedOrder?.id)?.value;
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: AtelierSectionHeader(title: strings.ordersSectionCosts),
       ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: AtelierSurface(
-          tier: SurfaceTier.card,
-          shape: cardLargeShape,
-          child: AtelierListRow(
-            title: strings.ordersMovementsTitle,
-            subtitle: strings.ordersMovementsHint,
-            showDivider: false,
-            onClick: state.isOnline ? actions.onOpenMovements : null,
-            trailing: const _ChevronIcon(),
+      if (state.canReadProfitability && workOrderId != null)
+        WorkOrderProfitabilityCard(
+          workOrderId: workOrderId,
+          partNames: state.partNamesById,
+          isOnline: state.isOnline,
+        ),
+      if (state.canReadPartMovements)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: AtelierSurface(
+            tier: SurfaceTier.card,
+            shape: cardLargeShape,
+            child: AtelierListRow(
+              title: strings.ordersMovementsTitle,
+              subtitle: strings.ordersMovementsHint,
+              showDivider: false,
+              onClick: state.isOnline ? actions.onOpenMovements : null,
+              trailing: const _ChevronIcon(),
+            ),
           ),
         ),
-      ),
-      if (!state.isOnline)
+      if (!state.isOnline && state.canReadPartMovements)
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: AtelierRequiresConnection(),
@@ -1034,7 +1123,11 @@ class _OrderPanel extends StatelessWidget {
   final bool loading;
   final VoidCallback onBack;
 
-  const _OrderPanel({required this.order, required this.loading, required this.onBack});
+  const _OrderPanel({
+    required this.order,
+    required this.loading,
+    required this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1046,7 +1139,10 @@ class _OrderPanel extends StatelessWidget {
         title: strings.orderDetailTitle,
         subtitle: loading ? 'Cargando ficha…' : null,
         identity: loading
-            ? const Bone(loading: true, child: AtelierPlate(plate: 'BKR418', size: PlateSize.l))
+            ? const Bone(
+                loading: true,
+                child: AtelierPlate(plate: 'BKR418', size: PlateSize.l),
+              )
             : null,
       );
     }
@@ -1056,14 +1152,17 @@ class _OrderPanel extends StatelessWidget {
     final subtitleParts = [
       if (current.customerName != null) numberLabel,
       ?current.bayName,
-      if (current.totalAmount != null) strings.ordersTotal(current.totalAmount!.format()),
+      if (current.totalAmount != null)
+        strings.ordersTotal(current.totalAmount!.format()),
     ];
     final plate = current.plate;
     return AtelierFichaPanel(
       onBack: onBack,
       title: current.customerName ?? numberLabel,
       subtitle: subtitleParts.isEmpty ? null : subtitleParts.join(' · '),
-      identity: plate != null ? AtelierPlate(plate: plate, size: PlateSize.l) : null,
+      identity: plate != null
+          ? AtelierPlate(plate: plate, size: PlateSize.l)
+          : null,
       status: AtelierChip(
         text: workOrderStatusLabel(strings, current.status),
         kind: workOrderStatusChipKind(current.status),
@@ -1077,6 +1176,9 @@ class _ChevronIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.chevron_right_outlined, color: context.atelier.inkSecondary);
+    return Icon(
+      Icons.chevron_right_outlined,
+      color: context.atelier.inkSecondary,
+    );
   }
 }

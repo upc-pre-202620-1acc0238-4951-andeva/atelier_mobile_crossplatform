@@ -28,6 +28,7 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/dow
 import 'package:atelier_mobile_crossplatform/features/workorders/application/find_draft_work_order_for_vehicle_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_branch_mechanics_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_part_movements_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/get_profitability_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_service_catalog_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_work_order_detail_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/notify_proposal_use_case.dart';
@@ -47,6 +48,7 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/sub
 import 'package:atelier_mobile_crossplatform/features/workorders/application/update_service_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/update_work_order_task_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/update_work_order_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/profitability/profitability_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/work_order_detail_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/finding/report_finding_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/intake/intake_gallery_view_model.dart';
@@ -87,6 +89,12 @@ void setupWorkOrdersPresentation() {
       observePendingSyncCount: getIt<ObservePendingOperationCountUseCase>(),
       observePushHistory: getIt<ObservePushHistoryUseCase>(),
       findPendingSuspensions: getIt<FindPendingSuspensionsUseCase>(),
+    ),
+  );
+  getIt.registerFactoryParam<ProfitabilityViewModel, String, void>(
+    (workOrderId, _) => ProfitabilityViewModel(
+      workOrderId: workOrderId,
+      getProfitability: getIt<GetProfitabilityUseCase>(),
     ),
   );
   getIt.registerFactoryParam<WorkOrderDetailViewModel, String, void>(
