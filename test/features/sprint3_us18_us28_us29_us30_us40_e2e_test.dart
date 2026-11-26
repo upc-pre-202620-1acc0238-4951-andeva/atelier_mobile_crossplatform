@@ -30,13 +30,13 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure
 import 'package:atelier_mobile_crossplatform/features/diagnostics/infrastructure/remote/iot_api.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/hold_reason.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/evidence_kind.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_evidence.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_evidence_section.dart';
-import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_photo_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_sheets.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/task_detail_actions.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/task_detail_screen.dart';
@@ -188,66 +188,92 @@ void main() {
   });
 
   group('E2E Sprint 3 — US28, US29 y US30 en pantalla', () {
-    testWidgets('US28: junta fotos confirmadas y en cola sin repetir, y permite añadir', (tester) async {
+    testWidgets('US28: junta fotos confirmadas y en cola sin repetir, y permite añadir y revisar fallas', (tester) async {
       var added = false;
+      PendingEvidence? selected;
+      final kinds = <EvidenceKind>[];
+      final notes = <String>[];
       await _pump(
         tester,
         Scaffold(
-          body: TaskEvidenceSection(
-            images: const [TaskEvidence(id: 'e1', imageUrl: 'https://x/1.jpg', description: 'Desmontaje')],
-            pending: [
-              PendingEvidence(
-                operationId: 'op1',
-                imageUrl: 'https://x/1.jpg',
-                description: 'Desmontaje',
-                status: 'PENDING',
-                capturedAt: DateTime.utc(2026, 11, 25),
+          body: SingleChildScrollView(
+            child: TaskEvidenceSection(
+              state: TaskDetailUiState(
+                canUploadPhotos: true,
+                evidenceNote: 'Pastilla',
+                detail: TaskDetail(
+                  id: TaskId('t1'),
+                  workOrderId: 'wo1',
+                  status: TaskStatus.inProgress,
+                  description: 'Frenos',
+                  totalPausedSeconds: 0,
+                  evidenceImages: const [TaskEvidence(id: 'e1', imageUrl: 'https://x/1.jpg', description: 'Desmontaje')],
+                ),
+                pendingEvidence: [
+                  PendingEvidence(
+                    operationId: 'op1',
+                    imageUrl: 'https://x/1.jpg',
+                    description: 'Desmontaje',
+                    status: 'PENDING',
+                    capturedAt: DateTime.utc(2026, 11, 25),
+                  ),
+                  PendingEvidence(
+                    operationId: 'op2',
+                    imageUrl: '',
+                    description: 'Montaje: pastilla nueva',
+                    status: 'FAILED',
+                    lastErrorMessage: 'La tarea ya está cerrada',
+                    capturedAt: DateTime.utc(2026, 11, 25),
+                  ),
+                ],
               ),
-              PendingEvidence(
-                operationId: 'op2',
-                imageUrl: '',
-                description: 'Montaje: pastilla nueva',
-                status: 'FAILED',
-                lastErrorMessage: 'La tarea ya está cerrada',
-                capturedAt: DateTime.utc(2026, 11, 25),
-              ),
-            ],
-            onAdd: () => added = true,
+              onKindChange: kinds.add,
+              onNoteChange: notes.add,
+              onTakePhoto: () => added = true,
+              onSelectFailedEvidence: (pending) => selected = pending,
+            ),
           ),
         ),
       );
 
-      expect(find.text('Desmontaje'), findsOneWidget);
+      expect(find.text('Desmontaje'), findsWidgets);
       expect(find.text('Montaje: pastilla nueva'), findsOneWidget);
       expect(find.text('Falló'), findsOneWidget);
-      expect(find.text('La tarea ya está cerrada'), findsOneWidget);
+      expect(find.text('8 / 488 caracteres disponibles'), findsOneWidget);
+      await tester.tap(find.text('Montaje').first);
+      expect(kinds, [EvidenceKind.assembly]);
+      await tester.tap(find.text('Montaje: pastilla nueva'));
+      expect(selected?.operationId, 'op2');
       await tester.tap(find.text('Tomar foto'));
       expect(added, isTrue);
     });
 
-    testWidgets('US28: la hoja de captura entrega la foto elegida', (tester) async {
-      File? captured;
+    testWidgets('US28: la hoja de foto fallida ofrece reintentar y descartar', (tester) async {
+      var retried = 0;
+      var discarded = 0;
       await _pump(
         tester,
         Scaffold(
-          body: EvidenceCaptureSheet(
-            form: const EvidenceCaptureForm(),
-            isSaving: false,
-            invalidField: null,
-            error: null,
-            onKindChange: (_) {},
-            onNoteChange: (_) {},
-            onCaptured: (file) => captured = file,
-            onDenied: () {},
+          body: FailedEvidenceSheet(
+            evidence: PendingEvidence(
+              operationId: 'op2',
+              imageUrl: '',
+              description: 'Montaje: pastilla nueva',
+              status: 'FAILED',
+              lastErrorMessage: 'La tarea ya está cerrada',
+              capturedAt: DateTime.utc(2026, 11, 25),
+            ),
+            onRetry: () => retried++,
+            onDiscard: () => discarded++,
             onDismiss: () {},
-            takePhoto: ({required onCaptured, required onDenied}) async => onCaptured(File('camara.jpg')),
           ),
         ),
       );
-      await tester.tap(find.text('Tomar foto'));
-      expect(captured?.path, 'camara.jpg');
-      expect(find.text('Desmontaje'), findsOneWidget);
-      expect(find.text('Montaje'), findsOneWidget);
+      expect(find.text('La tarea ya está cerrada'), findsOneWidget);
+      await tester.tap(find.text('Reintentar'));
+      await tester.tap(find.text('Descartar'));
+      expect(retried, 1);
+      expect(discarded, 1);
     });
 
     testWidgets('US29 y US30: sin conexión las hojas no dejan confirmar', (tester) async {

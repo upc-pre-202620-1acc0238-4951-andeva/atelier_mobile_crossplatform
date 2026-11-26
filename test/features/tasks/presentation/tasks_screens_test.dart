@@ -247,7 +247,7 @@ void main() {
       expect(find.text('Terminar tarea'), findsNothing);
       expect(find.text('Solicitar suspensión'), findsNothing);
       expect(find.text('Control de labor'), findsNothing);
-      expect(find.text('Evidencias fotográficas'), findsOneWidget);
+      expect(find.text('Evidencias fotográficas'), findsNothing);
       expect(find.text('Tomar foto'), findsNothing);
 
       await tester.tap(find.text('Pausar'));
@@ -309,7 +309,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Reanudar tarea'), findsOneWidget);
+      expect(find.text('Suspensión activa por repuesto'), findsOneWidget);
       expect(find.text('Tarea suspendida: solo un supervisor puede levantarla.'), findsNothing);
       await _teardown(tester);
     });

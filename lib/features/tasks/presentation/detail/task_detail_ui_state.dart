@@ -145,15 +145,6 @@ class ResumeSuspensionForm {
 }
 
 /// US28: tipo de foto y nota antes de abrir la cámara o la galería.
-class EvidenceCaptureForm {
-  final EvidenceKind kind;
-  final String note;
-
-  const EvidenceCaptureForm({this.kind = EvidenceKind.disassembly, this.note = ''});
-
-  EvidenceCaptureForm copyWith({EvidenceKind? kind, String? note}) =>
-      EvidenceCaptureForm(kind: kind ?? this.kind, note: note ?? this.note);
-}
 
 class TaskDetailUiState {
   /// Tarea desde Drift: se muestra sin red.
@@ -173,10 +164,16 @@ class TaskDetailUiState {
   final RequestSuspensionForm? suspensionForm;
   final ReviewSuspensionForm? reviewForm;
   final ResumeSuspensionForm? resumeForm;
-  final EvidenceCaptureForm? evidenceForm;
 
   /// US28: fotos en cola de esta tarea; se ven sin red.
   final List<PendingEvidence> pendingEvidence;
+
+  /// Foto fallida que se está revisando (reintentar o descartar).
+  final PendingEvidence? selectedFailedEvidence;
+
+  /// Tipo y nota de la próxima foto de evidencia; la nota se escribe antes de tomar la foto.
+  final EvidenceKind evidenceKind;
+  final String evidenceNote;
   final UiText? notice;
   final UiText? error;
 
@@ -213,8 +210,10 @@ class TaskDetailUiState {
     this.suspensionForm,
     this.reviewForm,
     this.resumeForm,
-    this.evidenceForm,
     this.pendingEvidence = const [],
+    this.selectedFailedEvidence,
+    this.evidenceKind = EvidenceKind.disassembly,
+    this.evidenceNote = '',
     this.notice,
     this.error,
     this.invalidField,
@@ -242,7 +241,7 @@ class TaskDetailUiState {
       suspensionForm != null ||
       reviewForm != null ||
       resumeForm != null ||
-      evidenceForm != null;
+      selectedFailedEvidence != null;
 
   /// D3: los productos solo vienen de `GET /tasks/{id}`; sin ese detalle no se sabe qué repuestos hay.
   bool get partsAvailable => detail != null;
@@ -259,6 +258,8 @@ class TaskDetailUiState {
   String? get plate => task?.plate;
   String? get vehicleId => task?.vehicleId;
   String get resolvedWorkOrderId => detail?.workOrderId ?? task?.workOrderId ?? fallbackWorkOrderId;
+
+  String? get missingItemDescription => detail?.missingItemDescription ?? task?.missingItemDescription;
 
   String? get pendingSuspensionReason =>
       detail != null ? detail!.pendingSuspensionReason : task?.pendingSuspensionReason;
@@ -293,6 +294,27 @@ class TaskDetailUiState {
   bool get showResumeSuspended => canValidateSuspension && isSuspended;
 
   /// US28: funciona sin red; solo con la tarea abierta.
+  /// 500 caracteres de la descripción menos la etiqueta del tipo y su separador (`Desmontaje: `).
+  int get maxEvidenceNoteLength => 500 - (evidenceKind.label.length + 2);
+
+  bool get hasAssemblyEvidence =>
+      evidenceImages.any((image) => _isAssemblyDescription(image.description)) ||
+      pendingEvidence.any((item) => _isAssemblyDescription(item.description));
+
+  /// Exige foto de montaje antes de cerrar si el perfil puede subir evidencia fotográfica.
+  bool get requiresAssemblyEvidence => canUploadPhotos && !hasAssemblyEvidence;
+
+  /// Nota de evidencia escrita que aún no se adjuntó a una foto.
+  bool get hasUnsavedChanges => evidenceNote.trim().isNotEmpty;
+
+  static bool _isAssemblyDescription(String? description) {
+    final text = description?.trim().toLowerCase() ?? '';
+    if (text.isEmpty) return false;
+    final assembly = EvidenceKind.assembly.label.toLowerCase();
+    final disassembly = EvidenceKind.disassembly.label.toLowerCase();
+    return text.startsWith(assembly) || (text.contains(assembly) && !text.contains(disassembly));
+  }
+
   bool get canAddEvidence => canUploadPhotos && isOpenTask && resolvedWorkOrderId.trim().isNotEmpty;
 
   /// Imputar repuestos solo con la tarea abierta.
@@ -335,9 +357,11 @@ class TaskDetailUiState {
     bool clearReviewForm = false,
     ResumeSuspensionForm? resumeForm,
     bool clearResumeForm = false,
-    EvidenceCaptureForm? evidenceForm,
-    bool clearEvidenceForm = false,
     List<PendingEvidence>? pendingEvidence,
+    PendingEvidence? selectedFailedEvidence,
+    bool clearSelectedFailedEvidence = false,
+    EvidenceKind? evidenceKind,
+    String? evidenceNote,
     UiText? notice,
     bool clearNotice = false,
     UiText? error,
@@ -372,8 +396,10 @@ class TaskDetailUiState {
       suspensionForm: clearSuspensionForm ? null : suspensionForm ?? this.suspensionForm,
       reviewForm: clearReviewForm ? null : reviewForm ?? this.reviewForm,
       resumeForm: clearResumeForm ? null : resumeForm ?? this.resumeForm,
-      evidenceForm: clearEvidenceForm ? null : evidenceForm ?? this.evidenceForm,
       pendingEvidence: pendingEvidence ?? this.pendingEvidence,
+      selectedFailedEvidence: clearSelectedFailedEvidence ? null : selectedFailedEvidence ?? this.selectedFailedEvidence,
+      evidenceKind: evidenceKind ?? this.evidenceKind,
+      evidenceNote: evidenceNote ?? this.evidenceNote,
       notice: clearNotice ? null : notice ?? this.notice,
       error: clearError ? null : error ?? this.error,
       invalidField: clearInvalidField ? null : invalidField ?? this.invalidField,
