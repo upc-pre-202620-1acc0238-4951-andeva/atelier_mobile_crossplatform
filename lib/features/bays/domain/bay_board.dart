@@ -3,13 +3,15 @@ import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.d
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
 
 /// Orden que ocupa una bahía (US40 E3). [internalNumber] y [plate] salen de las cachés y pueden
-/// faltar; [mechanicIds] (membershipId, H11) y [laborElapsed] llegan con el detalle de la orden.
+/// faltar; [mechanicIds] (membershipId, H11), [laborElapsed] y [tasks] llegan con el detalle de la orden.
+/// [tasks] permite reasignar el mecánico de cada tarea desde la hoja de la bahía.
 class BayOccupant {
   final String workOrderId;
   final int? internalNumber;
   final String? plate;
   final List<String> mechanicIds;
   final Duration? laborElapsed;
+  final List<TaskDetail> tasks;
 
   const BayOccupant({
     required this.workOrderId,
@@ -17,6 +19,7 @@ class BayOccupant {
     this.plate,
     this.mechanicIds = const [],
     this.laborElapsed,
+    this.tasks = const [],
   });
 }
 

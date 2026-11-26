@@ -14,6 +14,7 @@ import 'package:atelier_mobile_crossplatform/features/bays/application/create_wo
 import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/poll_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_bay_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_task_mechanic_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/release_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/restore_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/set_bay_maintenance_use_case.dart';
@@ -344,7 +345,7 @@ void main() {
             tenantId: 't1',
             tenantName: 'Taller',
             membershipId: 'm1',
-            permissions: {'operations:bays:read'},
+            permissions: {'operations:bays:read', 'operations:bays:manage'},
             plan: null,
           ),
         ),
@@ -364,6 +365,7 @@ void main() {
           refreshOrders: refreshOrders,
           getMechanics: mechanics,
           reassignBay: ReassignBayUseCase(repository: repository),
+          reassignTaskMechanic: ReassignTaskMechanicUseCase(repository: repository),
           releaseBay: ReleaseBayUseCase(repository: repository),
           createBay: CreateWorkBayUseCase(repository: repository),
           setBayMaintenance: SetBayMaintenanceUseCase(repository: repository),

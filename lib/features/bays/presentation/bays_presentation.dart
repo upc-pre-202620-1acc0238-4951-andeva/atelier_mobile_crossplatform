@@ -4,6 +4,7 @@ import 'package:atelier_mobile_crossplatform/features/bays/application/create_wo
 import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/poll_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_bay_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_task_mechanic_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/release_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/restore_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/set_bay_maintenance_use_case.dart';
@@ -27,6 +28,7 @@ void setupBaysPresentation() {
       refreshOrders: getIt<RefreshBranchWorkOrdersUseCase>(),
       getMechanics: getIt<GetBranchMechanicsUseCase>(),
       reassignBay: getIt<ReassignBayUseCase>(),
+      reassignTaskMechanic: getIt<ReassignTaskMechanicUseCase>(),
       releaseBay: getIt<ReleaseBayUseCase>(),
       createBay: getIt<CreateWorkBayUseCase>(),
       setBayMaintenance: getIt<SetBayMaintenanceUseCase>(),
