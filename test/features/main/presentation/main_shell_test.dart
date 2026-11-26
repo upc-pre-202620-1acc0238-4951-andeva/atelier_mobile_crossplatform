@@ -182,7 +182,7 @@ void main() {
       expect(find.text('Catálogo de repuestos'), findsOneWidget);
       expect(find.text('Notificaciones'), findsOneWidget);
       expect(find.text('m@taller.pe'), findsOneWidget);
-      expect(find.text('Series SUNAT'), findsOneWidget);
+      expect(find.text('Series de comprobantes'), findsOneWidget);
       expect(find.text('Alertas de stock'), findsOneWidget);
 
       // Un módulo que no es pestaña se empuja al raíz y cierra la hoja.

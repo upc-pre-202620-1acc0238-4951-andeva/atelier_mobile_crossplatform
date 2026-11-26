@@ -11704,66 +11704,6 @@ abstract class AppLocalizations {
   /// **'Fallas DTC e informe IA'**
   String get floorHubQuickObdSubNoLive;
 
-  /// No description provided for @stockAlertsTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Alertas de stock'**
-  String get stockAlertsTitle;
-
-  /// No description provided for @stockAlertsContext.
-  ///
-  /// In es, this message translates to:
-  /// **'Inventario'**
-  String get stockAlertsContext;
-
-  /// No description provided for @stockAlertsCaption.
-  ///
-  /// In es, this message translates to:
-  /// **'Repuestos en el mínimo o por debajo'**
-  String get stockAlertsCaption;
-
-  /// No description provided for @stockAlertsOut.
-  ///
-  /// In es, this message translates to:
-  /// **'agotados'**
-  String get stockAlertsOut;
-
-  /// No description provided for @stockAlertsLow.
-  ///
-  /// In es, this message translates to:
-  /// **'por reponer'**
-  String get stockAlertsLow;
-
-  /// No description provided for @stockAlertsNoPermission.
-  ///
-  /// In es, this message translates to:
-  /// **'Tu perfil no tiene permiso para ver las alertas de stock.'**
-  String get stockAlertsNoPermission;
-
-  /// No description provided for @stockAlertsEmpty.
-  ///
-  /// In es, this message translates to:
-  /// **'No hay alertas de stock. Todo está sobre el mínimo.'**
-  String get stockAlertsEmpty;
-
-  /// No description provided for @stockAlertsChipOut.
-  ///
-  /// In es, this message translates to:
-  /// **'Agotado'**
-  String get stockAlertsChipOut;
-
-  /// No description provided for @stockAlertsChipLow.
-  ///
-  /// In es, this message translates to:
-  /// **'Stock bajo'**
-  String get stockAlertsChipLow;
-
-  /// No description provided for @stockAlertsDetail.
-  ///
-  /// In es, this message translates to:
-  /// **'Stock {current} · mínimo {minimum} · faltan {missing}'**
-  String stockAlertsDetail(String current, String minimum, String missing);
-
   /// No description provided for @invReceiveBtn.
   ///
   /// In es, this message translates to:
@@ -11961,6 +11901,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Quitar cliente'**
   String get reportsFleetClear;
+
+  /// No description provided for @floorHubStockAlertLine.
+  ///
+  /// In es, this message translates to:
+  /// **'{p1} · Stock {p2} / mín. {p3}'**
+  String floorHubStockAlertLine(String p1, String p2, String p3);
+
+  /// No description provided for @floorHubStockMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltan {p1}'**
+  String floorHubStockMissing(String p1);
 }
 
 class _AppLocalizationsDelegate

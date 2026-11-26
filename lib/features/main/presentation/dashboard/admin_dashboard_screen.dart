@@ -4,6 +4,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_grouped_card.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_kpi_card.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_live_beacon.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_main_top_bar.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_navigation_bar.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_panels.dart';
@@ -110,6 +111,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             onRegisterWalkIn: () => _open(AppRoute.registerCustomer, const RegisterCustomerArgs()),
             onOpenOrder: (id) => _open(AppRoute.workOrderDetail, id),
             onOpenOrders: () => _openTab(AppRoute.workOrders, MainTab.orders),
+            onOpenBays: () => _openTab(AppRoute.bays, MainTab.bays),
+            onOpenStockAlerts: () => _open(AppRoute.stockAlerts),
             onOpenTeam: () => _openTab(AppRoute.adminAttendance, MainTab.team),
             onOpenObd: () => _open(AppRoute.diagnosticsHub),
             onOpenMyAttendance: () => _open(AppRoute.attendanceDetail),
@@ -132,6 +135,8 @@ class DashboardActions {
   final VoidCallback onRegisterWalkIn;
   final ValueChanged<String> onOpenOrder;
   final VoidCallback onOpenOrders;
+  final VoidCallback onOpenBays;
+  final VoidCallback onOpenStockAlerts;
   final VoidCallback onOpenTeam;
   final VoidCallback onOpenObd;
   final VoidCallback onOpenMyAttendance;
@@ -148,6 +153,8 @@ class DashboardActions {
     VoidCallback? onRegisterWalkIn,
     ValueChanged<String>? onOpenOrder,
     VoidCallback? onOpenOrders,
+    VoidCallback? onOpenBays,
+    VoidCallback? onOpenStockAlerts,
     VoidCallback? onOpenTeam,
     VoidCallback? onOpenObd,
     VoidCallback? onOpenMyAttendance,
@@ -162,6 +169,8 @@ class DashboardActions {
        onRegisterWalkIn = onRegisterWalkIn ?? (() {}),
        onOpenOrder = onOpenOrder ?? ((_) {}),
        onOpenOrders = onOpenOrders ?? (() {}),
+       onOpenBays = onOpenBays ?? (() {}),
+       onOpenStockAlerts = onOpenStockAlerts ?? (() {}),
        onOpenTeam = onOpenTeam ?? (() {}),
        onOpenObd = onOpenObd ?? (() {}),
        onOpenMyAttendance = onOpenMyAttendance ?? (() {}),
@@ -385,6 +394,12 @@ class _ReportPanel extends StatelessWidget {
       caption: caption,
       loading: loading,
       figures: [
+        if (state.canReadBays)
+          PanelFigure(
+            value: state.occupiedBaysCount.toString(),
+            label: strings.todayFigureInBay,
+            onClick: actions.onOpenBays,
+          ),
         if (state.canReadWorkOrders)
           PanelFigure(
             value: state.readyOrdersCount.toString(),
@@ -450,6 +465,15 @@ class _BranchCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (state.occupiedBaysCount > 0)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 6,
+                children: [
+                  AtelierLiveBeacon(color: colors.okMark, size: 8),
+                  Text(strings.todayLiveBayBadge, style: context.text.labelMedium?.copyWith(color: colors.ok)),
+                ],
+              ),
             if (state.canChangeBranch)
               Icon(Icons.keyboard_arrow_right_outlined, color: colors.inkSecondary),
           ],
@@ -574,7 +598,7 @@ class _ReceptionCard extends StatelessWidget {
   }
 }
 
-/// Cuatro indicadores de la sede, dos por fila. Cada uno aparece solo con el permiso de su fuente.
+/// Indicadores de la sede, dos por fila. Cada uno aparece solo con el permiso de su fuente.
 class _KpiGrid extends StatelessWidget {
   final AdminDashboardUiState state;
   final DashboardActions actions;
@@ -600,6 +624,14 @@ class _KpiGrid extends StatelessWidget {
               : null,
           onClick: actions.onOpenOrders,
         ),
+      if (state.canReadBays)
+        AtelierKpiCard(
+          title: strings.dashboardKpiBays,
+          value: '${state.occupiedBaysCount}/${state.bays.length}',
+          subtitle: strings.dashboardKpiBaysSub(state.availableBaysCount),
+          loading: loading,
+          onClick: actions.onOpenBays,
+        ),
       if (state.canReadCustomers)
         AtelierKpiCard(
           title: strings.dashboardKpiCrm,
@@ -607,6 +639,17 @@ class _KpiGrid extends StatelessWidget {
           subtitle: strings.dashboardKpiCrmSub(state.appointments.length),
           loading: loading,
           onClick: actions.onReceiveVehicle,
+        ),
+      if (state.canReadInventory)
+        AtelierKpiCard(
+          title: strings.dashboardKpiStock,
+          value: state.stockAlerts.length.toString(),
+          subtitle: strings.dashboardKpiStockSub,
+          loading: loading,
+          chip: state.stockAlerts.isNotEmpty
+              ? AtelierChip(text: strings.notificationsLowStockChip, kind: ChipKind.bad)
+              : null,
+          onClick: actions.onOpenStockAlerts,
         ),
       if (state.canAuditAttendance)
         AtelierKpiCard(

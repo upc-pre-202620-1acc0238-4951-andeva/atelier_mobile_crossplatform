@@ -1,14 +1,16 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/today_attendance.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/bay_board.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/appointment.dart';
 import 'package:atelier_mobile_crossplatform/features/team/domain/team_attendance.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/pending_suspension.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
 
 /// "Hoy": el panel de la sede. Todo sale de listas (órdenes abiertas, citas, clientes, asistencia del día,
-/// escáneres OBD, descargos y suspensiones por revisar, US29). Sin tablero de bahías ni alertas de stock
-/// (US40, US34).
+/// tablero de bahías, alertas de stock, escáneres OBD, descargos y suspensiones por revisar, US29).
 class AdminDashboardUiState {
   /// Día de Lima `yyyy-MM-dd`; vacío mientras no se conoce.
   final String today;
@@ -18,7 +20,9 @@ class AdminDashboardUiState {
   final String? branchName;
   final bool canChangeBranch;
   final List<WorkOrder> orders;
+  final List<BayBoardItem> bays;
   final List<Appointment> appointments;
+  final List<StockAlert> stockAlerts;
   final List<ObdDevice> obdDevices;
   final int customersCount;
   final int vehiclesCount;
@@ -42,9 +46,11 @@ class AdminDashboardUiState {
   final bool canCreateWorkOrder;
   final bool canReadWorkOrders;
   final bool canStartWorkOrders;
+  final bool canReadBays;
   final bool canReadAppointments;
   final bool canReadCustomers;
   final bool canRegisterCustomers;
+  final bool canReadInventory;
   final bool canReadObd;
   final bool canAuditAttendance;
   final bool canApproveJustifications;
@@ -66,7 +72,9 @@ class AdminDashboardUiState {
     this.branchName,
     this.canChangeBranch = false,
     this.orders = const [],
+    this.bays = const [],
     this.appointments = const [],
+    this.stockAlerts = const [],
     this.obdDevices = const [],
     this.customersCount = 0,
     this.vehiclesCount = 0,
@@ -86,9 +94,11 @@ class AdminDashboardUiState {
     this.canCreateWorkOrder = false,
     this.canReadWorkOrders = false,
     this.canStartWorkOrders = false,
+    this.canReadBays = false,
     this.canReadAppointments = false,
     this.canReadCustomers = false,
     this.canRegisterCustomers = false,
+    this.canReadInventory = false,
     this.canReadObd = false,
     this.canAuditAttendance = false,
     this.canApproveJustifications = false,
@@ -118,6 +128,9 @@ class AdminDashboardUiState {
 
   List<PendingSuspension> get suspensionDecisions => canValidateSuspension ? pendingSuspensions : const [];
 
+  int get occupiedBaysCount => bays.where((b) => b.bay.status == BayStatus.occupied).length;
+  int get availableBaysCount => bays.where((b) => b.bay.status == BayStatus.available).length;
+
   int get decisionsCount =>
       draftOrders.length +
       suspensionDecisions.length +
@@ -134,7 +147,9 @@ class AdminDashboardUiState {
     String? branchName,
     bool? canChangeBranch,
     List<WorkOrder>? orders,
+    List<BayBoardItem>? bays,
     List<Appointment>? appointments,
+    List<StockAlert>? stockAlerts,
     List<ObdDevice>? obdDevices,
     int? customersCount,
     int? vehiclesCount,
@@ -157,9 +172,11 @@ class AdminDashboardUiState {
     bool? canCreateWorkOrder,
     bool? canReadWorkOrders,
     bool? canStartWorkOrders,
+    bool? canReadBays,
     bool? canReadAppointments,
     bool? canReadCustomers,
     bool? canRegisterCustomers,
+    bool? canReadInventory,
     bool? canReadObd,
     bool? canAuditAttendance,
     bool? canApproveJustifications,
@@ -180,7 +197,9 @@ class AdminDashboardUiState {
       branchName: branchName ?? this.branchName,
       canChangeBranch: canChangeBranch ?? this.canChangeBranch,
       orders: orders ?? this.orders,
+      bays: bays ?? this.bays,
       appointments: appointments ?? this.appointments,
+      stockAlerts: stockAlerts ?? this.stockAlerts,
       obdDevices: obdDevices ?? this.obdDevices,
       customersCount: customersCount ?? this.customersCount,
       vehiclesCount: vehiclesCount ?? this.vehiclesCount,
@@ -200,9 +219,11 @@ class AdminDashboardUiState {
       canCreateWorkOrder: canCreateWorkOrder ?? this.canCreateWorkOrder,
       canReadWorkOrders: canReadWorkOrders ?? this.canReadWorkOrders,
       canStartWorkOrders: canStartWorkOrders ?? this.canStartWorkOrders,
+      canReadBays: canReadBays ?? this.canReadBays,
       canReadAppointments: canReadAppointments ?? this.canReadAppointments,
       canReadCustomers: canReadCustomers ?? this.canReadCustomers,
       canRegisterCustomers: canRegisterCustomers ?? this.canRegisterCustomers,
+      canReadInventory: canReadInventory ?? this.canReadInventory,
       canReadObd: canReadObd ?? this.canReadObd,
       canAuditAttendance: canAuditAttendance ?? this.canAuditAttendance,
       canApproveJustifications: canApproveJustifications ?? this.canApproveJustifications,

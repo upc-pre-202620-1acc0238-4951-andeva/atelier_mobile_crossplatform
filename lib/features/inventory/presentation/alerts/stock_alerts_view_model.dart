@@ -8,6 +8,7 @@ import 'package:atelier_mobile_crossplatform/features/inventory/application/obse
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/alerts/stock_alerts_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
 /// Bandeja de alertas de stock mínimo (US34, `inventory:alerts:read`). La lista sale de la caché observada: al
@@ -29,6 +30,7 @@ class StockAlertsViewModel extends ChangeNotifier {
         (session) => _update(
           _state.copyWith(
             canRead: session?.has(Permission.alertsRead) ?? false,
+            canCreatePurchaseOrder: session?.has(Permission.purchaseOrdersCreate) ?? false,
           ),
         ),
       ),
@@ -57,10 +59,15 @@ class StockAlertsViewModel extends ChangeNotifier {
   final List<StreamSubscription<Object?>> _subscriptions = [];
   bool _disposed = false;
 
-  /// Las más urgentes primero: mayor faltante arriba.
+  /// Agotados primero y, después, los que más faltan.
   static List<StockAlert> _sorted(List<StockAlert> alerts) {
     final copy = [...alerts];
-    copy.sort((a, b) => b.deficit.compareTo(a.deficit));
+    copy.sort((a, b) {
+      final aInStock = a.currentStock > Decimal.zero;
+      final bInStock = b.currentStock > Decimal.zero;
+      if (aInStock != bInStock) return aInStock ? 1 : -1;
+      return b.deficit.compareTo(a.deficit);
+    });
     return copy;
   }
 

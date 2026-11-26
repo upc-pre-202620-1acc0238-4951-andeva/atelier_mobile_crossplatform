@@ -3707,29 +3707,6 @@
   },
   "floorHubStockPosCaption": "órdenes de compra emitidas",
   "floorHubQuickObdSubNoLive": "Fallas DTC e informe IA",
-  "stockAlertsTitle": "Alertas de stock",
-  "stockAlertsContext": "Inventario",
-  "stockAlertsCaption": "Repuestos en el mínimo o por debajo",
-  "stockAlertsOut": "agotados",
-  "stockAlertsLow": "por reponer",
-  "stockAlertsNoPermission": "Tu perfil no tiene permiso para ver las alertas de stock.",
-  "stockAlertsEmpty": "No hay alertas de stock. Todo está sobre el mínimo.",
-  "stockAlertsChipOut": "Agotado",
-  "stockAlertsChipLow": "Stock bajo",
-  "stockAlertsDetail": "Stock {current} · mínimo {minimum} · faltan {missing}",
-  "@stockAlertsDetail": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      },
-      "minimum": {
-        "type": "String"
-      },
-      "missing": {
-        "type": "String"
-      }
-    }
-  },
   "invReceiveBtn": "Recibir compra",
   "invReceiveTitle": "Recibir compra",
   "invReceiveBody": "Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.",
@@ -3782,5 +3759,27 @@
       }
     }
   },
-  "reportsFleetClear": "Quitar cliente"
+  "reportsFleetClear": "Quitar cliente",
+  "floorHubStockAlertLine": "{p1} · Stock {p2} / mín. {p3}",
+  "@floorHubStockAlertLine": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      },
+      "p3": {
+        "type": "String"
+      }
+    }
+  },
+  "floorHubStockMissing": "Faltan {p1}",
+  "@floorHubStockMissing": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  }
 }

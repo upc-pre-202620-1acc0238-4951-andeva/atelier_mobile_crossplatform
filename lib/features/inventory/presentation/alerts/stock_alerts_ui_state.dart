@@ -7,6 +7,7 @@ class StockAlertsUiState {
   final bool isLoading;
   final bool isOnline;
   final bool canRead;
+  final bool canCreatePurchaseOrder;
   final UiText? error;
 
   const StockAlertsUiState({
@@ -14,6 +15,7 @@ class StockAlertsUiState {
     this.isLoading = true,
     this.isOnline = true,
     this.canRead = true,
+    this.canCreatePurchaseOrder = false,
     this.error,
   });
 
@@ -22,6 +24,7 @@ class StockAlertsUiState {
     bool? isLoading,
     bool? isOnline,
     bool? canRead,
+    bool? canCreatePurchaseOrder,
     UiText? error,
     bool clearError = false,
   }) {
@@ -30,6 +33,7 @@ class StockAlertsUiState {
       isLoading: isLoading ?? this.isLoading,
       isOnline: isOnline ?? this.isOnline,
       canRead: canRead ?? this.canRead,
+      canCreatePurchaseOrder: canCreatePurchaseOrder ?? this.canCreatePurchaseOrder,
       error: clearError ? null : error ?? this.error,
     );
   }

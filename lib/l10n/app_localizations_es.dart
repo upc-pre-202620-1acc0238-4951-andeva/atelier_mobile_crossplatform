@@ -6680,40 +6680,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get floorHubQuickObdSubNoLive => 'Fallas DTC e informe IA';
 
   @override
-  String get stockAlertsTitle => 'Alertas de stock';
-
-  @override
-  String get stockAlertsContext => 'Inventario';
-
-  @override
-  String get stockAlertsCaption => 'Repuestos en el mínimo o por debajo';
-
-  @override
-  String get stockAlertsOut => 'agotados';
-
-  @override
-  String get stockAlertsLow => 'por reponer';
-
-  @override
-  String get stockAlertsNoPermission =>
-      'Tu perfil no tiene permiso para ver las alertas de stock.';
-
-  @override
-  String get stockAlertsEmpty =>
-      'No hay alertas de stock. Todo está sobre el mínimo.';
-
-  @override
-  String get stockAlertsChipOut => 'Agotado';
-
-  @override
-  String get stockAlertsChipLow => 'Stock bajo';
-
-  @override
-  String stockAlertsDetail(String current, String minimum, String missing) {
-    return 'Stock $current · mínimo $minimum · faltan $missing';
-  }
-
-  @override
   String get invReceiveBtn => 'Recibir compra';
 
   @override
@@ -6822,4 +6788,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportsFleetClear => 'Quitar cliente';
+
+  @override
+  String floorHubStockAlertLine(String p1, String p2, String p3) {
+    return '$p1 · Stock $p2 / mín. $p3';
+  }
+
+  @override
+  String floorHubStockMissing(String p1) {
+    return 'Faltan $p1';
+  }
 }
