@@ -26,7 +26,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> _pump(WidgetTester tester, Widget child, {bool dark = false}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  Widget child, {
+  bool dark = false,
+}) async {
   tester.view.physicalSize = const Size(390 * 3, 3000 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -43,9 +47,15 @@ Future<void> _pump(WidgetTester tester, Widget child, {bool dark = false}) async
 }
 
 /// Quita del árbol las animaciones infinitas (balizas, huesos) antes de cerrar la prueba.
-Future<void> _teardown(WidgetTester tester) => tester.pumpWidget(const SizedBox());
+Future<void> _teardown(WidgetTester tester) =>
+    tester.pumpWidget(const SizedBox());
 
-WorkOrder _order(String id, int number, WorkOrderStatus status, {String? customer = 'Rosa Quispe'}) {
+WorkOrder _order(
+  String id,
+  int number,
+  WorkOrderStatus status, {
+  String? customer = 'Rosa Quispe',
+}) {
   return WorkOrder(
     id: WorkOrderId(id),
     internalNumber: number,
@@ -98,7 +108,9 @@ void main() {
   setUpAll(_loadSatoshi);
 
   group('AdminDashboardContent', () {
-    testWidgets('cargado: parte, decisiones y órdenes, sin módulos excluidos', (tester) async {
+    testWidgets('cargado: parte, decisiones y órdenes, sin módulos excluidos', (
+      tester,
+    ) async {
       final state = AdminDashboardUiState(
         today: '2026-11-16',
         fullName: 'Carlos Mendoza',
@@ -122,7 +134,10 @@ void main() {
         canAuditAttendance: true,
         canApproveJustifications: true,
       );
-      await _pump(tester, AdminDashboardContent(state: state, actions: DashboardActions()));
+      await _pump(
+        tester,
+        AdminDashboardContent(state: state, actions: DashboardActions()),
+      );
 
       expect(find.text('Motores Cusco'), findsOneWidget);
       expect(find.text('3 autos'), findsOneWidget);
@@ -131,7 +146,7 @@ void main() {
       expect(find.text('Descargo por tardanza'), findsOneWidget);
       expect(find.text('Órdenes abiertas'), findsOneWidget);
       expect(find.text('Rosa Quispe'), findsWidgets);
-      // Historias fuera de esta versión: bahías (US40) y alertas de stock (US34).
+      // El tablero no trae bahías ni alertas de stock: viven en la hoja de módulos.
       expect(find.textContaining('Bahías'), findsNothing);
       expect(find.textContaining('Alertas de stock'), findsNothing);
       expect(find.textContaining('Cerrar sesión'), findsNothing);
@@ -144,15 +159,23 @@ void main() {
         hasLoaded: true,
         canReadWorkOrders: true,
       );
-      await _pump(tester, AdminDashboardContent(state: state, actions: DashboardActions()));
+      await _pump(
+        tester,
+        AdminDashboardContent(state: state, actions: DashboardActions()),
+      );
 
       expect(find.text('Sin autos'), findsOneWidget);
-      expect(find.text('No hay órdenes abiertas en esta sede.'), findsOneWidget);
+      expect(
+        find.text('No hay órdenes abiertas en esta sede.'),
+        findsOneWidget,
+      );
       expect(find.text('Esperan tu decisión'), findsNothing);
       await _teardown(tester);
     });
 
-    testWidgets('error sin caché: muestra el mensaje y reintenta', (tester) async {
+    testWidgets('error sin caché: muestra el mensaje y reintenta', (
+      tester,
+    ) async {
       var retried = 0;
       final state = AdminDashboardUiState(
         today: '2026-11-16',
@@ -175,31 +198,55 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('sin permiso de órdenes y sin conexión: avisa y no muestra decisiones', (
-      tester,
-    ) async {
-      const state = AdminDashboardUiState(hasLoaded: true, isOnline: false);
-      await _pump(tester, AdminDashboardContent(state: state, actions: DashboardActions()));
+    testWidgets(
+      'sin permiso de órdenes y sin conexión: avisa y no muestra decisiones',
+      (tester) async {
+        const state = AdminDashboardUiState(hasLoaded: true, isOnline: false);
+        await _pump(
+          tester,
+          AdminDashboardContent(state: state, actions: DashboardActions()),
+        );
 
-      expect(find.text('Sin conexión. Ves lo último que se guardó en este teléfono.'), findsOneWidget);
-      expect(find.text('Tu cuenta no puede ver las órdenes de la sede.'), findsOneWidget);
-      await _teardown(tester);
-    });
+        expect(
+          find.text(
+            'Sin conexión. Ves lo último que se guardó en este teléfono.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Tu cuenta no puede ver las órdenes de la sede.'),
+          findsOneWidget,
+        );
+        await _teardown(tester);
+      },
+    );
 
-    test('las decisiones cuentan órdenes sin iniciar y descargos sin resolver', () {
-      final state = AdminDashboardUiState(
-        orders: [_order('1', 1, WorkOrderStatus.draft), _order('2', 2, WorkOrderStatus.draft)],
-        justifications: [_late(), _late(id: 'a2')],
-        resolved: const {'a2': true},
-        canStartWorkOrders: true,
-      );
-      expect(state.decisionsCount, 3);
-      expect(state.copyWith(canStartWorkOrders: false).decisionsCount, 1);
-    });
+    test(
+      'las decisiones cuentan órdenes sin iniciar y descargos sin resolver',
+      () {
+        final state = AdminDashboardUiState(
+          orders: [
+            _order('1', 1, WorkOrderStatus.draft),
+            _order('2', 2, WorkOrderStatus.draft),
+          ],
+          justifications: [
+            _late(),
+            _late(id: 'a2'),
+          ],
+          resolved: const {'a2': true},
+          canStartWorkOrders: true,
+        );
+        expect(state.decisionsCount, 3);
+        expect(state.copyWith(canStartWorkOrders: false).decisionsCount, 1);
+      },
+    );
   });
 
   group('AdminAttendanceContent', () {
-    AdminAttendanceContent content(AdminAttendanceUiState state, {VoidCallback? onBack}) {
+    AdminAttendanceContent content(
+      AdminAttendanceUiState state, {
+      VoidCallback? onBack,
+    }) {
       return AdminAttendanceContent(
         state: state,
         onBack: onBack,
@@ -210,7 +257,9 @@ void main() {
       );
     }
 
-    testWidgets('cargado: cifras del día, descargos y colaboradores', (tester) async {
+    testWidgets('cargado: cifras del día, descargos y colaboradores', (
+      tester,
+    ) async {
       final state = AdminAttendanceUiState(
         today: '2026-11-16',
         branchName: 'Sede Surco',
@@ -252,10 +301,17 @@ void main() {
     });
 
     testWidgets('vacío: nadie ha marcado', (tester) async {
-      final state = AdminAttendanceUiState(today: '2026-11-16', hasLoaded: true, canAuditAll: true);
+      final state = AdminAttendanceUiState(
+        today: '2026-11-16',
+        hasLoaded: true,
+        canAuditAll: true,
+      );
       await _pump(tester, content(state));
 
-      expect(find.text('Nadie ha marcado asistencia hoy en esta sede.'), findsOneWidget);
+      expect(
+        find.text('Nadie ha marcado asistencia hoy en esta sede.'),
+        findsOneWidget,
+      );
       await _teardown(tester);
     });
 
@@ -273,27 +329,34 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('sin permisos: lo explica; con ambos, pestañas y asistencia propia', (
-      tester,
-    ) async {
-      await _pump(tester, content(const AdminAttendanceUiState(hasLoaded: true)));
-      expect(find.text('Tu cuenta no puede ver la asistencia del equipo.'), findsOneWidget);
+    testWidgets(
+      'sin permisos: lo explica; con ambos, pestañas y asistencia propia',
+      (tester) async {
+        await _pump(
+          tester,
+          content(const AdminAttendanceUiState(hasLoaded: true)),
+        );
+        expect(
+          find.text('Tu cuenta no puede ver la asistencia del equipo.'),
+          findsOneWidget,
+        );
 
-      await _pump(
-        tester,
-        content(
-          const AdminAttendanceUiState(
-            hasLoaded: true,
-            canAuditAll: true,
-            canClockIn: true,
-            tab: TeamTab.mine,
+        await _pump(
+          tester,
+          content(
+            const AdminAttendanceUiState(
+              hasLoaded: true,
+              canAuditAll: true,
+              canClockIn: true,
+              tab: TeamTab.mine,
+            ),
           ),
-        ),
-      );
-      expect(find.text('Mi asistencia'), findsOneWidget);
-      expect(find.text('Mi asistencia embebida'), findsOneWidget);
-      await _teardown(tester);
-    });
+        );
+        expect(find.text('Mi asistencia'), findsOneWidget);
+        expect(find.text('Mi asistencia embebida'), findsOneWidget);
+        await _teardown(tester);
+      },
+    );
   });
 
   group('NotificationsContent', () {
@@ -311,56 +374,69 @@ void main() {
       );
     }
 
-    testWidgets('cargado: atención y avisos con el título por defecto del destino', (tester) async {
-      final state = NotificationsUiState(
-        isLoading: false,
-        session: _session(),
-        pushHistory: [
-          NotificationRecord(
-            id: 'n1',
-            title: null,
-            body: 'Pastillas gastadas en BKR418',
-            destination: const WorkOrderDetailDestination('o1'),
-            channel: PushChannel.tasks,
-            receivedAt: DateTime.utc(2026, 11, 16, 19, 32),
-          ),
-          NotificationRecord(
-            id: 'n2',
-            title: 'Propuesta pendiente',
-            body: '',
-            destination: null,
-            channel: PushChannel.tasks,
-            receivedAt: DateTime.utc(2026, 11, 16, 15),
-            read: true,
-          ),
-        ],
-        pendingJustifications: [_late()],
-        draftOrdersWaitingApproval: [_order('1', 1042, WorkOrderStatus.draft)],
-        pendingSyncCount: 2,
-        notificationsEnabled: false,
-      );
-      await _pump(tester, content(state));
+    testWidgets(
+      'cargado: atención y avisos con el título por defecto del destino',
+      (tester) async {
+        final state = NotificationsUiState(
+          isLoading: false,
+          session: _session(),
+          pushHistory: [
+            NotificationRecord(
+              id: 'n1',
+              title: null,
+              body: 'Pastillas gastadas en BKR418',
+              destination: const WorkOrderDetailDestination('o1'),
+              channel: PushChannel.tasks,
+              receivedAt: DateTime.utc(2026, 11, 16, 19, 32),
+            ),
+            NotificationRecord(
+              id: 'n2',
+              title: 'Propuesta pendiente',
+              body: '',
+              destination: null,
+              channel: PushChannel.tasks,
+              receivedAt: DateTime.utc(2026, 11, 16, 15),
+              read: true,
+            ),
+          ],
+          pendingJustifications: [_late()],
+          draftOrdersWaitingApproval: [
+            _order('1', 1042, WorkOrderStatus.draft),
+          ],
+          pendingSyncCount: 2,
+          notificationsEnabled: false,
+        );
+        await _pump(tester, content(state));
 
-      expect(find.text('Notificaciones'), findsOneWidget);
-      expect(
-        find.textContaining('Notificaciones desactivadas en el teléfono', findRichText: true),
-        findsOneWidget,
-      );
-      expect(find.text('Piden tu atención · 3'), findsOneWidget);
-      expect(find.text('2 registros sin enviar'), findsOneWidget);
-      expect(find.text('Orden de trabajo actualizada'), findsOneWidget);
-      expect(find.text('Propuesta pendiente'), findsOneWidget);
-      expect(find.text('Nuevo'), findsOneWidget);
-      expect(find.text('Marcar leídos'), findsOneWidget);
-      expect(find.textContaining('Stock bajo'), findsNothing);
-      await _teardown(tester);
-    });
+        expect(find.text('Notificaciones'), findsOneWidget);
+        expect(
+          find.textContaining(
+            'Notificaciones desactivadas en el teléfono',
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Piden tu atención · 3'), findsOneWidget);
+        expect(find.text('2 registros sin enviar'), findsOneWidget);
+        expect(find.text('Orden de trabajo actualizada'), findsOneWidget);
+        expect(find.text('Propuesta pendiente'), findsOneWidget);
+        expect(find.text('Nuevo'), findsOneWidget);
+        expect(find.text('Marcar leídos'), findsOneWidget);
+        expect(find.textContaining('Stock bajo'), findsNothing);
+        await _teardown(tester);
+      },
+    );
 
     testWidgets('vacío', (tester) async {
-      await _pump(tester, content(const NotificationsUiState(isLoading: false)));
+      await _pump(
+        tester,
+        content(const NotificationsUiState(isLoading: false)),
+      );
 
       expect(
-        find.text('Aquí verás los avisos de tareas, stock y asistencia cuando lleguen.'),
+        find.text(
+          'Aquí verás los avisos de tareas, stock y asistencia cuando lleguen.',
+        ),
         findsOneWidget,
       );
       expect(find.text('Piden tu atención'), findsNothing);
@@ -379,7 +455,11 @@ void main() {
   });
 
   group('ProfileContent', () {
-    ProfileContent content(ProfileUiState state, {VoidCallback? onBack, VoidCallback? onSignOut}) {
+    ProfileContent content(
+      ProfileUiState state, {
+      VoidCallback? onBack,
+      VoidCallback? onSignOut,
+    }) {
       return ProfileContent(
         state: state,
         onBack: onBack,
@@ -403,21 +483,30 @@ void main() {
       version: '0.10.0',
     );
 
-    testWidgets('como pestaña: identidad, taller, plan y cerrar sesión (US04)', (tester) async {
-      await _pump(tester, content(loaded));
+    testWidgets(
+      'como pestaña: identidad, taller, plan y cerrar sesión (US04)',
+      (tester) async {
+        await _pump(tester, content(loaded));
 
-      expect(find.text('Carlos Mendoza Rivas'), findsOneWidget);
-      expect(find.text('Sede actual · Cambiar sede'), findsOneWidget);
-      expect(find.text('Plan Pro'), findsOneWidget);
-      expect(find.text('Escáneres OBD-II'), findsOneWidget);
-      expect(find.text('2 registros pendientes de sincronizar'), findsOneWidget);
-      expect(find.text('3 avisos sin leer'), findsOneWidget);
-      expect(find.text('Atelier Workshop Mobile · versión 0.10.0'), findsOneWidget);
-      expect(find.text('Seguridad y sesión'), findsOneWidget);
-      expect(find.text('Cerrar sesión'), findsOneWidget);
-      expect(find.text('Salir de Atelier en este teléfono'), findsOneWidget);
-      await _teardown(tester);
-    });
+        expect(find.text('Carlos Mendoza Rivas'), findsOneWidget);
+        expect(find.text('Sede actual · Cambiar sede'), findsOneWidget);
+        expect(find.text('Plan Pro'), findsOneWidget);
+        expect(find.text('Escáneres OBD-II'), findsOneWidget);
+        expect(
+          find.text('2 registros pendientes de sincronizar'),
+          findsOneWidget,
+        );
+        expect(find.text('3 avisos sin leer'), findsOneWidget);
+        expect(
+          find.text('Atelier Workshop Mobile · versión 0.10.0'),
+          findsOneWidget,
+        );
+        expect(find.text('Seguridad y sesión'), findsOneWidget);
+        expect(find.text('Cerrar sesión'), findsOneWidget);
+        expect(find.text('Salir de Atelier en este teléfono'), findsOneWidget);
+        await _teardown(tester);
+      },
+    );
 
     testWidgets('tocar Cerrar sesión pide confirmación (US04)', (tester) async {
       var taps = 0;
@@ -428,17 +517,18 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('con Atrás: resumen de cuenta; sin datos: sede desconocida y todo sincronizado', (
-      tester,
-    ) async {
-      await _pump(tester, content(const ProfileUiState(), onBack: () {}));
+    testWidgets(
+      'con Atrás: resumen de cuenta; sin datos: sede desconocida y todo sincronizado',
+      (tester) async {
+        await _pump(tester, content(const ProfileUiState(), onBack: () {}));
 
-      expect(find.text('Resumen de cuenta'), findsOneWidget);
-      expect(find.text('Sin sede elegida'), findsWidgets);
-      expect(find.text('Todo sincronizado con el servidor'), findsOneWidget);
-      expect(find.text('Sin avisos nuevos'), findsOneWidget);
-      await _teardown(tester);
-    });
+        expect(find.text('Resumen de cuenta'), findsOneWidget);
+        expect(find.text('Sin sede elegida'), findsWidgets);
+        expect(find.text('Todo sincronizado con el servidor'), findsOneWidget);
+        expect(find.text('Sin avisos nuevos'), findsOneWidget);
+        await _teardown(tester);
+      },
+    );
   });
 
   group('PendingOperationsContent', () {
@@ -458,43 +548,60 @@ void main() {
         type: type,
         status: status,
         attempts: 3,
-        lastErrorMessage: status == PendingOperationStatus.failed ? 'La foto ya no está' : null,
+        lastErrorMessage: status == PendingOperationStatus.failed
+            ? 'La foto ya no está'
+            : null,
         createdAt: DateTime.utc(2026, 11, 16, 13, 2),
         dependsOn: null,
       );
     }
 
-    testWidgets('cargado: resumen, filas y hoja de detalle con reintentar y descartar', (
-      tester,
-    ) async {
-      final state = PendingOperationsUiState(
-        hasLoaded: true,
-        isOnline: false,
-        operations: [
-          op('1', 'ATTACH_INTAKE_IMAGE', PendingOperationStatus.failed),
-          op('2', 'CLOCK_IN', PendingOperationStatus.pending),
-        ],
-      );
-      await _pump(tester, content(state));
+    testWidgets(
+      'cargado: resumen, filas y hoja de detalle con reintentar y descartar',
+      (tester) async {
+        final state = PendingOperationsUiState(
+          hasLoaded: true,
+          isOnline: false,
+          operations: [
+            op('1', 'ATTACH_INTAKE_IMAGE', PendingOperationStatus.failed),
+            op('2', 'CLOCK_IN', PendingOperationStatus.pending),
+          ],
+        );
+        await _pump(tester, content(state));
 
-      expect(find.text('1 en cola · 0 enviando · 1 con error'), findsOneWidget);
-      expect(find.text('Sin conexión: los registros se enviarán en cuanto vuelva la red.'), findsOneWidget);
-      expect(find.text('Evidencia fotográfica de recepción'), findsOneWidget);
-      expect(find.text('Creado: 16/11 08:02 · Intentos: 3'), findsWidgets);
-      expect(find.text('Con error'), findsOneWidget);
+        expect(
+          find.text('1 en cola · 0 enviando · 1 con error'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Sin conexión: los registros se enviarán en cuanto vuelva la red.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Evidencia fotográfica de recepción'), findsOneWidget);
+        expect(find.text('Creado: 16/11 08:02 · Intentos: 3'), findsWidgets);
+        expect(find.text('Con error'), findsOneWidget);
 
-      await tester.tap(find.text('Evidencia fotográfica de recepción'));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text('La foto ya no está'), findsOneWidget);
-      expect(find.text('Reintentar'), findsOneWidget);
-      expect(find.text('Descartar'), findsOneWidget);
-      await _teardown(tester);
-    });
+        await tester.tap(find.text('Evidencia fotográfica de recepción'));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text('La foto ya no está'), findsOneWidget);
+        expect(find.text('Reintentar'), findsOneWidget);
+        expect(find.text('Descartar'), findsOneWidget);
+        await _teardown(tester);
+      },
+    );
 
     testWidgets('vacío: todo sincronizado', (tester) async {
-      await _pump(tester, content(const PendingOperationsUiState(hasLoaded: true)));
+      await _pump(
+        tester,
+        content(const PendingOperationsUiState(hasLoaded: true)),
+      );
 
-      expect(find.text('Todo sincronizado. No hay nada pendiente de envío.'), findsOneWidget);
+      expect(
+        find.text('Todo sincronizado. No hay nada pendiente de envío.'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Sincronizar ahora'), findsNothing);
       await _teardown(tester);
     });

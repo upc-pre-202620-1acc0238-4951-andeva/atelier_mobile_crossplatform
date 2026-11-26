@@ -6739,4 +6739,230 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get floorHubQuickObdSubNoLive => 'Fallas DTC e informe IA';
+
+  @override
+  String get stockAlertsTitle => 'Alertas de stock';
+
+  @override
+  String get stockAlertsContext => 'Inventario';
+
+  @override
+  String get stockAlertsCaption => 'Repuestos en el mínimo o por debajo';
+
+  @override
+  String get stockAlertsOut => 'agotados';
+
+  @override
+  String get stockAlertsLow => 'por reponer';
+
+  @override
+  String get stockAlertsNoPermission =>
+      'Tu perfil no tiene permiso para ver las alertas de stock.';
+
+  @override
+  String get stockAlertsEmpty =>
+      'No hay alertas de stock. Todo está sobre el mínimo.';
+
+  @override
+  String get stockAlertsChipOut => 'Agotado';
+
+  @override
+  String get stockAlertsChipLow => 'Stock bajo';
+
+  @override
+  String stockAlertsDetail(String current, String minimum, String missing) {
+    return 'Stock ${current} · mínimo ${minimum} · faltan ${missing}';
+  }
+
+  @override
+  String get moreHStockAlerts => 'Alertas de stock';
+
+  @override
+  String get moreHStockAlertsSub => 'Repuestos bajo el mínimo';
+
+  @override
+  String get moreHFiscalSeries => 'Series SUNAT';
+
+  @override
+  String get moreHFiscalSeriesSub => 'Series de facturas y boletas';
+
+  @override
+  String get invReceiveBtn => 'Recibir compra';
+
+  @override
+  String get invReceiveTitle => 'Recibir compra';
+
+  @override
+  String get invReceiveBody =>
+      'Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.';
+
+  @override
+  String get invReceiveConfirm => 'Confirmar recepción';
+
+  @override
+  String get invReceiveNumberLabel => 'Número de comprobante';
+
+  @override
+  String get invReceiveDateLabel => 'Fecha de recepción (opcional)';
+
+  @override
+  String get invReceiveDateHint => 'AAAA-MM-DD';
+
+  @override
+  String get invReceivePhotoPreview => 'Foto del comprobante';
+
+  @override
+  String get invReceiveTakePhoto => 'Tomar foto del comprobante';
+
+  @override
+  String get invReceiveRetakePhoto => 'Tomar otra foto';
+
+  @override
+  String get invReceiveRemovePhoto => 'Quitar foto';
+
+  @override
+  String get invReceiveCameraDenied =>
+      'Sin permiso de cámara. Actívalo en los ajustes del teléfono para fotografiar el comprobante.';
+
+  @override
+  String get invReceiveErrPhoto =>
+      'Toma la foto del comprobante para recibir la compra.';
+
+  @override
+  String get invReceiveErrNumber => 'Ingresa el número del comprobante.';
+
+  @override
+  String get invReceiveErrDate =>
+      'La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.';
+
+  @override
+  String get invReceiveErrNotReceivable =>
+      'Solo se pueden recibir órdenes emitidas.';
+
+  @override
+  String get fiscalSeriesTitle => 'Series de comprobantes';
+
+  @override
+  String get fiscalSeriesContext => 'Facturación electrónica';
+
+  @override
+  String get fiscalSeriesCaption => 'series activas en la sede';
+
+  @override
+  String get fiscalSeriesFigFactura => 'facturas';
+
+  @override
+  String get fiscalSeriesFigBoleta => 'boletas';
+
+  @override
+  String get fiscalSeriesNoPermission =>
+      'Tu perfil no tiene permiso para configurar series de comprobantes.';
+
+  @override
+  String get fiscalSeriesPse =>
+      'La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.';
+
+  @override
+  String get fiscalSeriesListHeader => 'Series de la sede';
+
+  @override
+  String get fiscalSeriesAdd => 'Agregar serie';
+
+  @override
+  String get fiscalSeriesEmpty =>
+      'Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.';
+
+  @override
+  String fiscalSeriesRowSub(String type, String number) {
+    return '${type} · correlativo actual ${number}';
+  }
+
+  @override
+  String get fiscalSeriesActive => 'Activa';
+
+  @override
+  String get fiscalSeriesInactive => 'Inactiva';
+
+  @override
+  String fiscalSeriesToggleLabel(String serie) {
+    return 'Activar o desactivar la serie ${serie}';
+  }
+
+  @override
+  String fiscalSeriesCreatedOk(String serie, String type) {
+    return 'Serie ${serie} (${type}) activada para esta sede.';
+  }
+
+  @override
+  String get fiscalSeriesSheetTitle => 'Agregar serie';
+
+  @override
+  String get fiscalSeriesSheetBody =>
+      'Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.';
+
+  @override
+  String get fiscalSeriesSerieLabel => 'Serie';
+
+  @override
+  String get fiscalSeriesInitialLabel => 'Correlativo inicial (opcional)';
+
+  @override
+  String get fiscalSeriesSave => 'Activar serie';
+
+  @override
+  String get profitabilityTitle => 'Rentabilidad';
+
+  @override
+  String get profitabilityHint =>
+      'Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).';
+
+  @override
+  String get profitabilityCalculate => 'Calcular rentabilidad';
+
+  @override
+  String get profitabilityRefresh => 'Actualizar';
+
+  @override
+  String get profitabilityNeedsConnection => 'Requiere conexión a internet.';
+
+  @override
+  String get profitabilityRevenue => 'Ingreso por repuestos';
+
+  @override
+  String get profitabilityCost => 'Costo de ventas (FIFO)';
+
+  @override
+  String get profitabilityGross => 'Ganancia bruta';
+
+  @override
+  String get profitabilityLabor => 'Mano de obra';
+
+  @override
+  String get profitabilityLines => 'Por repuesto';
+
+  @override
+  String get profitabilityLineUnknown => 'Repuesto';
+
+  @override
+  String profitabilityLineDetail(String qty, String revenue, String cost) {
+    return '${qty} u. · ingreso ${revenue} · costo ${cost}';
+  }
+
+  @override
+  String get profitabilityNoTax => 'Importes sin IGV.';
+
+  @override
+  String get diagReportPdfTitle => 'Informe en PDF';
+
+  @override
+  String get diagReportPdfHint =>
+      'Semáforo de salud por subsistema, riesgos y acciones recomendadas.';
+
+  @override
+  String reportsFleetSelected(String name) {
+    return 'Cliente: ${name}';
+  }
+
+  @override
+  String get reportsFleetClear => 'Quitar cliente';
 }

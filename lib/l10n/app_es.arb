@@ -3726,5 +3726,132 @@
     }
   },
   "floorHubStockPosCaption": "órdenes de compra emitidas",
-  "floorHubQuickObdSubNoLive": "Fallas DTC e informe IA"
+  "floorHubQuickObdSubNoLive": "Fallas DTC e informe IA",
+  "stockAlertsTitle": "Alertas de stock",
+  "stockAlertsContext": "Inventario",
+  "stockAlertsCaption": "Repuestos en el mínimo o por debajo",
+  "stockAlertsOut": "agotados",
+  "stockAlertsLow": "por reponer",
+  "stockAlertsNoPermission": "Tu perfil no tiene permiso para ver las alertas de stock.",
+  "stockAlertsEmpty": "No hay alertas de stock. Todo está sobre el mínimo.",
+  "stockAlertsChipOut": "Agotado",
+  "stockAlertsChipLow": "Stock bajo",
+  "stockAlertsDetail": "Stock {current} · mínimo {minimum} · faltan {missing}",
+  "@stockAlertsDetail": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "minimum": {
+        "type": "String"
+      },
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
+  "moreHStockAlerts": "Alertas de stock",
+  "moreHStockAlertsSub": "Repuestos bajo el mínimo",
+  "moreHFiscalSeries": "Series SUNAT",
+  "moreHFiscalSeriesSub": "Series de facturas y boletas",
+  "invReceiveBtn": "Recibir compra",
+  "invReceiveTitle": "Recibir compra",
+  "invReceiveBody": "Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.",
+  "invReceiveConfirm": "Confirmar recepción",
+  "invReceiveNumberLabel": "Número de comprobante",
+  "invReceiveDateLabel": "Fecha de recepción (opcional)",
+  "invReceiveDateHint": "AAAA-MM-DD",
+  "invReceivePhotoPreview": "Foto del comprobante",
+  "invReceiveTakePhoto": "Tomar foto del comprobante",
+  "invReceiveRetakePhoto": "Tomar otra foto",
+  "invReceiveRemovePhoto": "Quitar foto",
+  "invReceiveCameraDenied": "Sin permiso de cámara. Actívalo en los ajustes del teléfono para fotografiar el comprobante.",
+  "invReceiveErrPhoto": "Toma la foto del comprobante para recibir la compra.",
+  "invReceiveErrNumber": "Ingresa el número del comprobante.",
+  "invReceiveErrDate": "La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.",
+  "invReceiveErrNotReceivable": "Solo se pueden recibir órdenes emitidas.",
+  "fiscalSeriesTitle": "Series de comprobantes",
+  "fiscalSeriesContext": "Facturación electrónica",
+  "fiscalSeriesCaption": "series activas en la sede",
+  "fiscalSeriesFigFactura": "facturas",
+  "fiscalSeriesFigBoleta": "boletas",
+  "fiscalSeriesNoPermission": "Tu perfil no tiene permiso para configurar series de comprobantes.",
+  "fiscalSeriesPse": "La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.",
+  "fiscalSeriesListHeader": "Series de la sede",
+  "fiscalSeriesAdd": "Agregar serie",
+  "fiscalSeriesEmpty": "Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.",
+  "fiscalSeriesRowSub": "{type} · correlativo actual {number}",
+  "@fiscalSeriesRowSub": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "fiscalSeriesActive": "Activa",
+  "fiscalSeriesInactive": "Inactiva",
+  "fiscalSeriesToggleLabel": "Activar o desactivar la serie {serie}",
+  "@fiscalSeriesToggleLabel": {
+    "placeholders": {
+      "serie": {
+        "type": "String"
+      }
+    }
+  },
+  "fiscalSeriesCreatedOk": "Serie {serie} ({type}) activada para esta sede.",
+  "@fiscalSeriesCreatedOk": {
+    "placeholders": {
+      "serie": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "fiscalSeriesSheetTitle": "Agregar serie",
+  "fiscalSeriesSheetBody": "Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.",
+  "fiscalSeriesSerieLabel": "Serie",
+  "fiscalSeriesInitialLabel": "Correlativo inicial (opcional)",
+  "fiscalSeriesSave": "Activar serie",
+  "profitabilityTitle": "Rentabilidad",
+  "profitabilityHint": "Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).",
+  "profitabilityCalculate": "Calcular rentabilidad",
+  "profitabilityRefresh": "Actualizar",
+  "profitabilityNeedsConnection": "Requiere conexión a internet.",
+  "profitabilityRevenue": "Ingreso por repuestos",
+  "profitabilityCost": "Costo de ventas (FIFO)",
+  "profitabilityGross": "Ganancia bruta",
+  "profitabilityLabor": "Mano de obra",
+  "profitabilityLines": "Por repuesto",
+  "profitabilityLineUnknown": "Repuesto",
+  "profitabilityLineDetail": "{qty} u. · ingreso {revenue} · costo {cost}",
+  "@profitabilityLineDetail": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "revenue": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "profitabilityNoTax": "Importes sin IGV.",
+  "diagReportPdfTitle": "Informe en PDF",
+  "diagReportPdfHint": "Semáforo de salud por subsistema, riesgos y acciones recomendadas.",
+  "reportsFleetSelected": "Cliente: {name}",
+  "@reportsFleetSelected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsFleetClear": "Quitar cliente"
 }

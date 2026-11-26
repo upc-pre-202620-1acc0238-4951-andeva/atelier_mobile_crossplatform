@@ -11811,6 +11811,408 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Fallas DTC e informe IA'**
   String get floorHubQuickObdSubNoLive;
+
+  /// No description provided for @stockAlertsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Alertas de stock'**
+  String get stockAlertsTitle;
+
+  /// No description provided for @stockAlertsContext.
+  ///
+  /// In es, this message translates to:
+  /// **'Inventario'**
+  String get stockAlertsContext;
+
+  /// No description provided for @stockAlertsCaption.
+  ///
+  /// In es, this message translates to:
+  /// **'Repuestos en el mínimo o por debajo'**
+  String get stockAlertsCaption;
+
+  /// No description provided for @stockAlertsOut.
+  ///
+  /// In es, this message translates to:
+  /// **'agotados'**
+  String get stockAlertsOut;
+
+  /// No description provided for @stockAlertsLow.
+  ///
+  /// In es, this message translates to:
+  /// **'por reponer'**
+  String get stockAlertsLow;
+
+  /// No description provided for @stockAlertsNoPermission.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu perfil no tiene permiso para ver las alertas de stock.'**
+  String get stockAlertsNoPermission;
+
+  /// No description provided for @stockAlertsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay alertas de stock. Todo está sobre el mínimo.'**
+  String get stockAlertsEmpty;
+
+  /// No description provided for @stockAlertsChipOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Agotado'**
+  String get stockAlertsChipOut;
+
+  /// No description provided for @stockAlertsChipLow.
+  ///
+  /// In es, this message translates to:
+  /// **'Stock bajo'**
+  String get stockAlertsChipLow;
+
+  /// No description provided for @stockAlertsDetail.
+  ///
+  /// In es, this message translates to:
+  /// **'Stock {current} · mínimo {minimum} · faltan {missing}'**
+  String stockAlertsDetail(String current, String minimum, String missing);
+
+  /// No description provided for @moreHStockAlerts.
+  ///
+  /// In es, this message translates to:
+  /// **'Alertas de stock'**
+  String get moreHStockAlerts;
+
+  /// No description provided for @moreHStockAlertsSub.
+  ///
+  /// In es, this message translates to:
+  /// **'Repuestos bajo el mínimo'**
+  String get moreHStockAlertsSub;
+
+  /// No description provided for @moreHFiscalSeries.
+  ///
+  /// In es, this message translates to:
+  /// **'Series SUNAT'**
+  String get moreHFiscalSeries;
+
+  /// No description provided for @moreHFiscalSeriesSub.
+  ///
+  /// In es, this message translates to:
+  /// **'Series de facturas y boletas'**
+  String get moreHFiscalSeriesSub;
+
+  /// No description provided for @invReceiveBtn.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibir compra'**
+  String get invReceiveBtn;
+
+  /// No description provided for @invReceiveTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibir compra'**
+  String get invReceiveTitle;
+
+  /// No description provided for @invReceiveBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.'**
+  String get invReceiveBody;
+
+  /// No description provided for @invReceiveConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar recepción'**
+  String get invReceiveConfirm;
+
+  /// No description provided for @invReceiveNumberLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Número de comprobante'**
+  String get invReceiveNumberLabel;
+
+  /// No description provided for @invReceiveDateLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de recepción (opcional)'**
+  String get invReceiveDateLabel;
+
+  /// No description provided for @invReceiveDateHint.
+  ///
+  /// In es, this message translates to:
+  /// **'AAAA-MM-DD'**
+  String get invReceiveDateHint;
+
+  /// No description provided for @invReceivePhotoPreview.
+  ///
+  /// In es, this message translates to:
+  /// **'Foto del comprobante'**
+  String get invReceivePhotoPreview;
+
+  /// No description provided for @invReceiveTakePhoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar foto del comprobante'**
+  String get invReceiveTakePhoto;
+
+  /// No description provided for @invReceiveRetakePhoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar otra foto'**
+  String get invReceiveRetakePhoto;
+
+  /// No description provided for @invReceiveRemovePhoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar foto'**
+  String get invReceiveRemovePhoto;
+
+  /// No description provided for @invReceiveCameraDenied.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin permiso de cámara. Actívalo en los ajustes del teléfono para fotografiar el comprobante.'**
+  String get invReceiveCameraDenied;
+
+  /// No description provided for @invReceiveErrPhoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Toma la foto del comprobante para recibir la compra.'**
+  String get invReceiveErrPhoto;
+
+  /// No description provided for @invReceiveErrNumber.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa el número del comprobante.'**
+  String get invReceiveErrNumber;
+
+  /// No description provided for @invReceiveErrDate.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.'**
+  String get invReceiveErrDate;
+
+  /// No description provided for @invReceiveErrNotReceivable.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo se pueden recibir órdenes emitidas.'**
+  String get invReceiveErrNotReceivable;
+
+  /// No description provided for @fiscalSeriesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Series de comprobantes'**
+  String get fiscalSeriesTitle;
+
+  /// No description provided for @fiscalSeriesContext.
+  ///
+  /// In es, this message translates to:
+  /// **'Facturación electrónica'**
+  String get fiscalSeriesContext;
+
+  /// No description provided for @fiscalSeriesCaption.
+  ///
+  /// In es, this message translates to:
+  /// **'series activas en la sede'**
+  String get fiscalSeriesCaption;
+
+  /// No description provided for @fiscalSeriesFigFactura.
+  ///
+  /// In es, this message translates to:
+  /// **'facturas'**
+  String get fiscalSeriesFigFactura;
+
+  /// No description provided for @fiscalSeriesFigBoleta.
+  ///
+  /// In es, this message translates to:
+  /// **'boletas'**
+  String get fiscalSeriesFigBoleta;
+
+  /// No description provided for @fiscalSeriesNoPermission.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu perfil no tiene permiso para configurar series de comprobantes.'**
+  String get fiscalSeriesNoPermission;
+
+  /// No description provided for @fiscalSeriesPse.
+  ///
+  /// In es, this message translates to:
+  /// **'La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.'**
+  String get fiscalSeriesPse;
+
+  /// No description provided for @fiscalSeriesListHeader.
+  ///
+  /// In es, this message translates to:
+  /// **'Series de la sede'**
+  String get fiscalSeriesListHeader;
+
+  /// No description provided for @fiscalSeriesAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar serie'**
+  String get fiscalSeriesAdd;
+
+  /// No description provided for @fiscalSeriesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.'**
+  String get fiscalSeriesEmpty;
+
+  /// No description provided for @fiscalSeriesRowSub.
+  ///
+  /// In es, this message translates to:
+  /// **'{type} · correlativo actual {number}'**
+  String fiscalSeriesRowSub(String type, String number);
+
+  /// No description provided for @fiscalSeriesActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa'**
+  String get fiscalSeriesActive;
+
+  /// No description provided for @fiscalSeriesInactive.
+  ///
+  /// In es, this message translates to:
+  /// **'Inactiva'**
+  String get fiscalSeriesInactive;
+
+  /// No description provided for @fiscalSeriesToggleLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Activar o desactivar la serie {serie}'**
+  String fiscalSeriesToggleLabel(String serie);
+
+  /// No description provided for @fiscalSeriesCreatedOk.
+  ///
+  /// In es, this message translates to:
+  /// **'Serie {serie} ({type}) activada para esta sede.'**
+  String fiscalSeriesCreatedOk(String serie, String type);
+
+  /// No description provided for @fiscalSeriesSheetTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar serie'**
+  String get fiscalSeriesSheetTitle;
+
+  /// No description provided for @fiscalSeriesSheetBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.'**
+  String get fiscalSeriesSheetBody;
+
+  /// No description provided for @fiscalSeriesSerieLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Serie'**
+  String get fiscalSeriesSerieLabel;
+
+  /// No description provided for @fiscalSeriesInitialLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Correlativo inicial (opcional)'**
+  String get fiscalSeriesInitialLabel;
+
+  /// No description provided for @fiscalSeriesSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Activar serie'**
+  String get fiscalSeriesSave;
+
+  /// No description provided for @profitabilityTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Rentabilidad'**
+  String get profitabilityTitle;
+
+  /// No description provided for @profitabilityHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).'**
+  String get profitabilityHint;
+
+  /// No description provided for @profitabilityCalculate.
+  ///
+  /// In es, this message translates to:
+  /// **'Calcular rentabilidad'**
+  String get profitabilityCalculate;
+
+  /// No description provided for @profitabilityRefresh.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizar'**
+  String get profitabilityRefresh;
+
+  /// No description provided for @profitabilityNeedsConnection.
+  ///
+  /// In es, this message translates to:
+  /// **'Requiere conexión a internet.'**
+  String get profitabilityNeedsConnection;
+
+  /// No description provided for @profitabilityRevenue.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingreso por repuestos'**
+  String get profitabilityRevenue;
+
+  /// No description provided for @profitabilityCost.
+  ///
+  /// In es, this message translates to:
+  /// **'Costo de ventas (FIFO)'**
+  String get profitabilityCost;
+
+  /// No description provided for @profitabilityGross.
+  ///
+  /// In es, this message translates to:
+  /// **'Ganancia bruta'**
+  String get profitabilityGross;
+
+  /// No description provided for @profitabilityLabor.
+  ///
+  /// In es, this message translates to:
+  /// **'Mano de obra'**
+  String get profitabilityLabor;
+
+  /// No description provided for @profitabilityLines.
+  ///
+  /// In es, this message translates to:
+  /// **'Por repuesto'**
+  String get profitabilityLines;
+
+  /// No description provided for @profitabilityLineUnknown.
+  ///
+  /// In es, this message translates to:
+  /// **'Repuesto'**
+  String get profitabilityLineUnknown;
+
+  /// No description provided for @profitabilityLineDetail.
+  ///
+  /// In es, this message translates to:
+  /// **'{qty} u. · ingreso {revenue} · costo {cost}'**
+  String profitabilityLineDetail(String qty, String revenue, String cost);
+
+  /// No description provided for @profitabilityNoTax.
+  ///
+  /// In es, this message translates to:
+  /// **'Importes sin IGV.'**
+  String get profitabilityNoTax;
+
+  /// No description provided for @diagReportPdfTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Informe en PDF'**
+  String get diagReportPdfTitle;
+
+  /// No description provided for @diagReportPdfHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Semáforo de salud por subsistema, riesgos y acciones recomendadas.'**
+  String get diagReportPdfHint;
+
+  /// No description provided for @reportsFleetSelected.
+  ///
+  /// In es, this message translates to:
+  /// **'Cliente: {name}'**
+  String reportsFleetSelected(String name);
+
+  /// No description provided for @reportsFleetClear.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar cliente'**
+  String get reportsFleetClear;
 }
 
 class _AppLocalizationsDelegate

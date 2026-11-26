@@ -15,8 +15,7 @@ import 'package:flutter/material.dart';
 
 /// Adónde puede ir quien abre "Módulos". `MainShellController.navigateToModule` decide la ruta de cada uno.
 ///
-/// Sin Comprobantes SUNAT (US37), Series de comprobantes (US42) ni Alertas de stock (US34): sus historias están
-/// fuera.
+/// Incluye Series de comprobantes (US42) y Alertas de stock (US34).
 enum MoreDestination {
   branch,
   myAttendance,
@@ -27,11 +26,13 @@ enum MoreDestination {
   services,
   dailyCash,
   vouchers,
+  fiscalSeries,
   reports,
   parts,
   purchaseOrders,
   suppliers,
   valuation,
+  stockAlerts,
   obd,
   notifications,
   syncQueue,
@@ -49,11 +50,13 @@ enum MoreDestination {
     services => (AppRoute.servicesCatalog, null),
     dailyCash => (AppRoute.dailyCash, MainTab.cash),
     vouchers => (AppRoute.vouchers, null),
+    fiscalSeries => (AppRoute.fiscalSeries, null),
     reports => (AppRoute.reports, null),
     parts => (AppRoute.partsCatalog, MainTab.inventory),
     purchaseOrders => (AppRoute.purchaseOrders, MainTab.purchases),
     suppliers => (AppRoute.suppliers, null),
     valuation => (AppRoute.inventoryValuation, null),
+    stockAlerts => (AppRoute.stockAlerts, null),
     obd => (AppRoute.diagnosticsHub, MainTab.obd),
     notifications => (AppRoute.notifications, null),
     syncQueue => (AppRoute.pendingOperations, null),
@@ -105,9 +108,16 @@ List<_MoreRow> _moreRows(Session s) {
   );
 
   if (s.canSwitchBranch()) {
-    add(_MoreGroup.workshop, MoreDestination.branch, Icons.storefront_outlined, (t) => t.moreHBranch, (t) => t.moreHBranchSub);
+    add(
+      _MoreGroup.workshop,
+      MoreDestination.branch,
+      Icons.storefront_outlined,
+      (t) => t.moreHBranch,
+      (t) => t.moreHBranchSub,
+    );
   }
-  if (s.has(Permission.attendanceClockIn) || s.has(Permission.attendanceClockOut)) {
+  if (s.has(Permission.attendanceClockIn) ||
+      s.has(Permission.attendanceClockOut)) {
     add(
       _MoreGroup.workshop,
       MoreDestination.myAttendance,
@@ -119,7 +129,9 @@ List<_MoreRow> _moreRows(Session s) {
   if (s.has(Permission.tasksRead)) {
     final isOwnExecution = s.has(Permission.tasksTrackTime);
     final isWorkshopSupervision =
-        s.has(Permission.workOrdersUpdate) || s.has(Permission.tasksHoldValidate) || s.has(Permission.baysReassign);
+        s.has(Permission.workOrdersUpdate) ||
+        s.has(Permission.tasksHoldValidate) ||
+        s.has(Permission.baysReassign);
     if (isOwnExecution) {
       add(
         _MoreGroup.workshop,
@@ -138,11 +150,24 @@ List<_MoreRow> _moreRows(Session s) {
       );
     }
   }
-  if (s.has(Permission.workOrdersRead) && !MainTab.tabsFor(s).contains(MainTab.orders)) {
-    add(_MoreGroup.workshop, MoreDestination.workOrders, Icons.build_outlined, (t) => t.moreHOrders, (t) => t.moreHOrdersSub);
+  if (s.has(Permission.workOrdersRead) &&
+      !MainTab.tabsFor(s).contains(MainTab.orders)) {
+    add(
+      _MoreGroup.workshop,
+      MoreDestination.workOrders,
+      Icons.build_outlined,
+      (t) => t.moreHOrders,
+      (t) => t.moreHOrdersSub,
+    );
   }
   if (s.has(Permission.baysRead)) {
-    add(_MoreGroup.workshop, MoreDestination.bays, Icons.garage_outlined, (t) => t.moreHBays, (t) => t.moreHBaysSub);
+    add(
+      _MoreGroup.workshop,
+      MoreDestination.bays,
+      Icons.garage_outlined,
+      (t) => t.moreHBays,
+      (t) => t.moreHBaysSub,
+    );
   }
   if (s.has(Permission.customersRead) ||
       s.has(Permission.vehiclesRead) ||
@@ -157,7 +182,13 @@ List<_MoreRow> _moreRows(Session s) {
     );
   }
   if (s.has(Permission.servicesRead) || s.has(Permission.servicesManage)) {
-    add(_MoreGroup.workshop, MoreDestination.services, Icons.handyman_outlined, (t) => t.moreHServices, (t) => t.moreHServicesSub);
+    add(
+      _MoreGroup.workshop,
+      MoreDestination.services,
+      Icons.handyman_outlined,
+      (t) => t.moreHServices,
+      (t) => t.moreHServicesSub,
+    );
   }
   if (s.canUseTelemetry() ||
       s.canReadTelemetry() ||
@@ -176,14 +207,48 @@ List<_MoreRow> _moreRows(Session s) {
     );
   }
   if (s.has(Permission.invoicesRead)) {
-    add(_MoreGroup.cashier, MoreDestination.dailyCash, Icons.payments_outlined, (t) => t.moreHDailyCash, (t) => t.moreHDailyCashSub);
-    add(_MoreGroup.cashier, MoreDestination.vouchers, Icons.receipt_long_outlined, (t) => t.moreHVouchers, (t) => t.moreHVouchersSub);
+    add(
+      _MoreGroup.cashier,
+      MoreDestination.dailyCash,
+      Icons.payments_outlined,
+      (t) => t.moreHDailyCash,
+      (t) => t.moreHDailyCashSub,
+    );
+    add(
+      _MoreGroup.cashier,
+      MoreDestination.vouchers,
+      Icons.receipt_long_outlined,
+      (t) => t.moreHVouchers,
+      (t) => t.moreHVouchersSub,
+    );
   }
-  if (s.has(Permission.cashflowExportPdf) || (s.canReadAiReports() && s.has(Permission.customersRead))) {
-    add(_MoreGroup.cashier, MoreDestination.reports, Icons.assessment_outlined, (t) => t.moreHReports, (t) => t.moreHReportsSub);
+  if (s.has(Permission.fiscalConfigManage)) {
+    add(
+      _MoreGroup.cashier,
+      MoreDestination.fiscalSeries,
+      Icons.confirmation_number_outlined,
+      (t) => t.moreHFiscalSeries,
+      (t) => t.moreHFiscalSeriesSub,
+    );
+  }
+  if (s.has(Permission.cashflowExportPdf) ||
+      (s.canReadAiReports() && s.has(Permission.customersRead))) {
+    add(
+      _MoreGroup.cashier,
+      MoreDestination.reports,
+      Icons.assessment_outlined,
+      (t) => t.moreHReports,
+      (t) => t.moreHReportsSub,
+    );
   }
   if (s.has(Permission.partsRead)) {
-    add(_MoreGroup.stock, MoreDestination.parts, Icons.inventory_2_outlined, (t) => t.moreHParts, (t) => t.moreHPartsSub);
+    add(
+      _MoreGroup.stock,
+      MoreDestination.parts,
+      Icons.inventory_2_outlined,
+      (t) => t.moreHParts,
+      (t) => t.moreHPartsSub,
+    );
   }
   if (s.has(Permission.purchaseOrdersRead)) {
     add(
@@ -195,7 +260,13 @@ List<_MoreRow> _moreRows(Session s) {
     );
   }
   if (s.has(Permission.suppliersManage)) {
-    add(_MoreGroup.stock, MoreDestination.suppliers, Icons.local_shipping_outlined, (t) => t.moreHSuppliers, (t) => t.moreHSuppliersSub);
+    add(
+      _MoreGroup.stock,
+      MoreDestination.suppliers,
+      Icons.local_shipping_outlined,
+      (t) => t.moreHSuppliers,
+      (t) => t.moreHSuppliersSub,
+    );
   }
   // El endpoint de valorización exige `inventory:batches:read` (docs/02); no existe un permiso de valorización.
   if (s.has(Permission.batchesRead)) {
@@ -207,6 +278,15 @@ List<_MoreRow> _moreRows(Session s) {
       (t) => t.moreHValuationSub,
     );
   }
+  if (s.has(Permission.alertsRead)) {
+    add(
+      _MoreGroup.stock,
+      MoreDestination.stockAlerts,
+      Icons.warning_amber_outlined,
+      (t) => t.moreHStockAlerts,
+      (t) => t.moreHStockAlertsSub,
+    );
+  }
   add(
     _MoreGroup.account,
     MoreDestination.notifications,
@@ -214,8 +294,20 @@ List<_MoreRow> _moreRows(Session s) {
     (t) => t.moreHNotifications,
     (t) => t.moreHNotificationsSub,
   );
-  add(_MoreGroup.account, MoreDestination.syncQueue, Icons.sync_outlined, (t) => t.moreHSync, (t) => t.moreHSyncSub);
-  add(_MoreGroup.account, MoreDestination.profile, Icons.person_outlined, (t) => t.moreHProfile, (t) => t.moreHProfileSub);
+  add(
+    _MoreGroup.account,
+    MoreDestination.syncQueue,
+    Icons.sync_outlined,
+    (t) => t.moreHSync,
+    (t) => t.moreHSyncSub,
+  );
+  add(
+    _MoreGroup.account,
+    MoreDestination.profile,
+    Icons.person_outlined,
+    (t) => t.moreHProfile,
+    (t) => t.moreHProfileSub,
+  );
   return rows;
 }
 
@@ -236,7 +328,12 @@ class ModulesSheet extends StatelessWidget {
   final int pendingSync;
   final ValueChanged<MoreDestination> onOpen;
 
-  const ModulesSheet({super.key, required this.session, required this.pendingSync, required this.onOpen});
+  const ModulesSheet({
+    super.key,
+    required this.session,
+    required this.pendingSync,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +342,12 @@ class ModulesSheet extends StatelessWidget {
     final rows = session == null ? const <_MoreRow>[] : _moreRows(session);
     return AtelierBottomSheet(
       title: strings.modulesTitle,
-      content: _body(context, rows: rows, email: session?.email, pendingSync: pendingSync),
+      content: _body(
+        context,
+        rows: rows,
+        email: session?.email,
+        pendingSync: pendingSync,
+      ),
     );
   }
 
@@ -259,7 +361,9 @@ class ModulesSheet extends StatelessWidget {
     final strings = AppLocalizations.of(context);
     final colors = context.atelier;
     final body = <Widget>[];
-    for (final group in _MoreGroup.values.where((g) => g != _MoreGroup.account)) {
+    for (final group in _MoreGroup.values.where(
+      (g) => g != _MoreGroup.account,
+    )) {
       final items = rows.where((r) => r.group == group).toList();
       if (items.isEmpty) continue;
       body.add(
@@ -267,12 +371,17 @@ class ModulesSheet extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: Text(
             _groupTitle(strings, group),
-            style: context.text.labelLarge!.copyWith(color: colors.inkSecondary),
+            style: context.text.labelLarge!.copyWith(
+              color: colors.inkSecondary,
+            ),
           ),
         ),
       );
       for (var start = 0; start < items.length; start += _tileColumns) {
-        final chunk = items.sublist(start, math.min(start + _tileColumns, items.length));
+        final chunk = items.sublist(
+          start,
+          math.min(start + _tileColumns, items.length),
+        );
         body.add(
           IntrinsicHeight(
             child: Row(
@@ -281,9 +390,13 @@ class ModulesSheet extends StatelessWidget {
               children: [
                 for (final row in chunk)
                   Expanded(
-                    child: _ModuleTile(row: row, onClick: () => onOpen(row.destination)),
+                    child: _ModuleTile(
+                      row: row,
+                      onClick: () => onOpen(row.destination),
+                    ),
                   ),
-                for (var i = chunk.length; i < _tileColumns; i++) const Spacer(),
+                for (var i = chunk.length; i < _tileColumns; i++)
+                  const Spacer(),
               ],
             ),
           ),
@@ -301,11 +414,14 @@ class ModulesSheet extends StatelessWidget {
               for (var index = 0; index < account.length; index++)
                 AtelierGroupedRow(
                   title: account[index].title(strings),
-                  subtitle: account[index].destination == MoreDestination.profile
+                  subtitle:
+                      account[index].destination == MoreDestination.profile
                       ? email ?? account[index].subtitle(strings)
                       : account[index].subtitle(strings),
                   icon: account[index].icon,
-                  trailingBadgeText: account[index].destination == MoreDestination.syncQueue && pendingSync > 0
+                  trailingBadgeText:
+                      account[index].destination == MoreDestination.syncQueue &&
+                          pendingSync > 0
                       ? pendingSync.toString()
                       : null,
                   showDivider: index < account.length - 1,
@@ -348,14 +464,19 @@ class _ModuleTile extends StatelessWidget {
               width: 40,
               height: 40,
               alignment: Alignment.center,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: colors.surfaceRecessed),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.surfaceRecessed,
+              ),
               child: icon != null
                   ? Icon(icon, size: 22, color: colors.primaryText)
                   : AtelierIcon(vector!, size: 22, color: colors.primaryText),
             ),
             Text(
               row.title(strings),
-              style: context.text.bodySmall!.copyWith(color: context.scheme.onSurface),
+              style: context.text.bodySmall!.copyWith(
+                color: context.scheme.onSurface,
+              ),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

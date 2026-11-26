@@ -48,6 +48,7 @@ enum AppRoute {
   purchaseOrders,
   purchaseOrderDetail, // String purchaseOrderId
   inventoryValuation,
+  stockAlerts, // alertas de stock mínimo (US34)
   // diagnostics
   diagnosticsHub, // DiagnosticsHubArgs?
   vehicleFaults, // VehicleArgs
@@ -57,6 +58,7 @@ enum AppRoute {
   dailyCash,
   vouchers,
   workOrderCheckout, // String workOrderId
+  fiscalSeries, // series de comprobantes de la sede (US42)
   // reports
   reports,
   // bays
@@ -102,7 +104,12 @@ class RegisterCustomerArgs {
   final String? customerId;
   final String? customerName;
 
-  const RegisterCustomerArgs({this.email, this.plate, this.customerId, this.customerName});
+  const RegisterCustomerArgs({
+    this.email,
+    this.plate,
+    this.customerId,
+    this.customerName,
+  });
 }
 
 class OpenWorkOrderArgs {
@@ -110,7 +117,11 @@ class OpenWorkOrderArgs {
   final String customerId;
   final String? workOrderId;
 
-  const OpenWorkOrderArgs({required this.vehicleId, required this.customerId, this.workOrderId});
+  const OpenWorkOrderArgs({
+    required this.vehicleId,
+    required this.customerId,
+    this.workOrderId,
+  });
 }
 
 class DiagnosticsHubArgs {
@@ -132,7 +143,8 @@ abstract final class AppNavigator {
   static final Map<AppRoute, AppRouteBuilder> _builders = {};
 
   /// Cada feature registra aquí sus pantallas (una vez, al arrancar).
-  static void register(AppRoute route, AppRouteBuilder builder) => _builders[route] = builder;
+  static void register(AppRoute route, AppRouteBuilder builder) =>
+      _builders[route] = builder;
 
   static bool isRegistered(AppRoute route) => _builders.containsKey(route);
 
@@ -153,16 +165,29 @@ abstract final class AppNavigator {
   }
 
   /// Empuja el destino en el `Navigator` más cercano.
-  static Future<T?> push<T>(BuildContext context, AppRoute route, [Object? args]) {
+  static Future<T?> push<T>(
+    BuildContext context,
+    AppRoute route, [
+    Object? args,
+  ]) {
     return Navigator.of(context).push<T>(routeOf<T>(route, args));
   }
 
   /// Reemplaza toda la pila por el destino (login ↔ app, elegir sede → inicio).
-  static Future<T?> pushAndClear<T>(BuildContext context, AppRoute route, [Object? args]) {
-    return Navigator.of(context).pushAndRemoveUntil<T>(routeOf<T>(route, args), (_) => false);
+  static Future<T?> pushAndClear<T>(
+    BuildContext context,
+    AppRoute route, [
+    Object? args,
+  ]) {
+    return Navigator.of(context)
+        .pushAndRemoveUntil<T>(routeOf<T>(route, args), (_) => false);
   }
 
-  static Future<T?> pushReplacement<T, R>(BuildContext context, AppRoute route, [Object? args]) {
+  static Future<T?> pushReplacement<T, R>(
+    BuildContext context,
+    AppRoute route, [
+    Object? args,
+  ]) {
     return Navigator.of(context).pushReplacement<T, R>(routeOf<T>(route, args));
   }
 }

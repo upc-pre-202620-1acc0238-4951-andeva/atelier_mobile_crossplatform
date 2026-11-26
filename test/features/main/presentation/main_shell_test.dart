@@ -19,9 +19,13 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockSessionRepository extends Mock implements SessionRepository {}
 
-class _MockPendingRepository extends Mock implements PendingOperationRepository {}
+class _MockPendingRepository extends Mock
+    implements PendingOperationRepository {}
 
-Session _session(Iterable<Permission> permissions, {String email = 'm@taller.pe'}) => Session(
+Session _session(
+  Iterable<Permission> permissions, {
+  String email = 'm@taller.pe',
+}) => Session(
   userId: 'u1',
   email: email,
   fullName: 'Andrés',
@@ -51,7 +55,11 @@ void main() {
 
   setUp(() {
     for (final route in AppRoute.values) {
-      AppNavigator.register(route, (context, args) => Scaffold(body: Center(child: Text('pantalla:${route.name}'))));
+      AppNavigator.register(
+        route,
+        (context, args) =>
+            Scaffold(body: Center(child: Text('pantalla:${route.name}'))),
+      );
     }
     sessions = StreamController<Session?>.broadcast();
     pending = StreamController<int>.broadcast();
@@ -68,8 +76,12 @@ void main() {
     final pendingRepository = _MockPendingRepository();
     when(pendingRepository.watchCount).thenAnswer((_) => pending.stream);
     return MainViewModel(
-      observeSessionUseCase: ObserveSessionUseCase(repository: sessionRepository),
-      observePendingCountUseCase: ObservePendingOperationCountUseCase(repository: pendingRepository),
+      observeSessionUseCase: ObserveSessionUseCase(
+        repository: sessionRepository,
+      ),
+      observePendingCountUseCase: ObservePendingOperationCountUseCase(
+        repository: pendingRepository,
+      ),
       initialSession: session,
     );
   }
@@ -82,139 +94,172 @@ void main() {
     home: MainShell(viewModel: vm),
   );
 
-  testWidgets('arranca en la primera pestaña con la barra de la sesión y "Módulos"', (tester) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'arranca en la primera pestaña con la barra de la sesión y "Módulos"',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      await tester.pumpAndSettle();
 
-    expect(find.text('pantalla:adminDashboard'), findsOneWidget);
-    for (final label in ['Hoy', 'Órdenes', 'Equipo', 'Módulos']) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
-    // Bahías no existe como pestaña aunque la sesión tenga el permiso.
-    expect(find.text('Bahías'), findsNothing);
+      expect(find.text('pantalla:adminDashboard'), findsOneWidget);
+      for (final label in ['Hoy', 'Órdenes', 'Equipo', 'Módulos']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      // Bahías no existe como pestaña aunque la sesión tenga el permiso.
+      expect(find.text('Bahías'), findsNothing);
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 
-  testWidgets('cambiar de pestaña conserva la anterior y construye la nueva una vez', (tester) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'cambiar de pestaña conserva la anterior y construye la nueva una vez',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Órdenes'));
-    await tester.pumpAndSettle();
-    expect(find.text('pantalla:workOrders'), findsOneWidget);
-    // La anterior sigue viva, fuera de la vista.
-    expect(find.text('pantalla:adminDashboard', skipOffstage: false), findsOneWidget);
-    expect(find.text('pantalla:adminDashboard'), findsNothing);
+      await tester.tap(find.text('Órdenes'));
+      await tester.pumpAndSettle();
+      expect(find.text('pantalla:workOrders'), findsOneWidget);
+      // La anterior sigue viva, fuera de la vista.
+      expect(
+        find.text('pantalla:adminDashboard', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text('pantalla:adminDashboard'), findsNothing);
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 
-  testWidgets('un detalle empujado al Navigator raíz cubre la barra; navigateToTab vuelve a ella', (tester) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'un detalle empujado al Navigator raíz cubre la barra; navigateToTab vuelve a ella',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      await tester.pumpAndSettle();
 
-    MainShellController.current!.openRoute(AppRoute.workOrderDetail, args: 'wo-1');
-    await tester.pumpAndSettle();
-    expect(find.text('pantalla:workOrderDetail'), findsOneWidget);
-    expect(find.text('Módulos'), findsNothing);
+      MainShellController.current!.openRoute(
+        AppRoute.workOrderDetail,
+        args: 'wo-1',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('pantalla:workOrderDetail'), findsOneWidget);
+      expect(find.text('Módulos'), findsNothing);
 
-    expect(MainShellController.current!.navigateToTab(MainTab.team), isTrue);
-    await tester.pumpAndSettle();
-    expect(find.text('pantalla:workOrderDetail'), findsNothing);
-    expect(find.text('pantalla:adminAttendance'), findsOneWidget);
-    expect(find.text('Módulos'), findsOneWidget);
+      expect(MainShellController.current!.navigateToTab(MainTab.team), isTrue);
+      await tester.pumpAndSettle();
+      expect(find.text('pantalla:workOrderDetail'), findsNothing);
+      expect(find.text('pantalla:adminAttendance'), findsOneWidget);
+      expect(find.text('Módulos'), findsOneWidget);
 
-    // Una pestaña que la sesión no tiene no hace nada.
-    expect(MainShellController.current!.navigateToTab(MainTab.cash), isFalse);
+      // Una pestaña que la sesión no tiene no hace nada.
+      expect(MainShellController.current!.navigateToTab(MainTab.cash), isFalse);
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 
-  testWidgets('"Módulos" abre la hoja con Comprobantes SUNAT (US37) y Bahías (US40), sin series ni alertas', (
-    tester,
-  ) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    await tester.pumpAndSettle();
+  testWidgets(
+    '"Módulos" abre la hoja con Comprobantes SUNAT (US37), Series (US42), Alertas de stock (US34) y Bahías (US40)',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Módulos'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Módulos'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Todos los módulos'), findsOneWidget);
-    expect(find.text('Caja del día'), findsOneWidget);
-    expect(find.text('Comprobantes SUNAT'), findsOneWidget);
-    expect(find.text('Reportes'), findsOneWidget);
-    expect(find.text('Bahías'), findsOneWidget);
-    expect(find.text('Catálogo de repuestos'), findsOneWidget);
-    expect(find.text('Notificaciones'), findsOneWidget);
-    expect(find.text('m@taller.pe'), findsOneWidget);
-    for (final excluded in ['Series de comprobantes', 'Alertas de stock']) {
-      expect(find.text(excluded), findsNothing, reason: excluded);
-    }
+      expect(find.text('Todos los módulos'), findsOneWidget);
+      expect(find.text('Caja del día'), findsOneWidget);
+      expect(find.text('Comprobantes SUNAT'), findsOneWidget);
+      expect(find.text('Reportes'), findsOneWidget);
+      expect(find.text('Bahías'), findsOneWidget);
+      expect(find.text('Catálogo de repuestos'), findsOneWidget);
+      expect(find.text('Notificaciones'), findsOneWidget);
+      expect(find.text('m@taller.pe'), findsOneWidget);
+      expect(find.text('Series SUNAT'), findsOneWidget);
+      expect(find.text('Alertas de stock'), findsOneWidget);
 
-    // Un módulo que no es pestaña se empuja al raíz y cierra la hoja.
-    await tester.tap(find.text('Catálogo de repuestos'));
-    await tester.pumpAndSettle();
-    expect(find.text('Todos los módulos'), findsNothing);
-    expect(find.text('pantalla:partsCatalog'), findsOneWidget);
+      // Un módulo que no es pestaña se empuja al raíz y cierra la hoja.
+      await tester.tap(find.text('Catálogo de repuestos'));
+      await tester.pumpAndSettle();
+      expect(find.text('Todos los módulos'), findsNothing);
+      expect(find.text('pantalla:partsCatalog'), findsOneWidget);
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 
-  testWidgets('un módulo que es pestaña de la barra cambia de pestaña en vez de apilarse', (tester) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'un módulo que es pestaña de la barra cambia de pestaña en vez de apilarse',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Módulos'));
-    await tester.pumpAndSettle();
-    expect(find.text('Órdenes de trabajo'), findsNothing); // Órdenes ya está en la barra.
+      await tester.tap(find.text('Módulos'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Órdenes de trabajo'),
+        findsNothing,
+      ); // Órdenes ya está en la barra.
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 
-  testWidgets('el contador de pendientes aparece sobre "Módulos" y en la hoja', (tester) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    pending.add(3);
-    await tester.pumpAndSettle();
+  testWidgets(
+    'el contador de pendientes aparece sobre "Módulos" y en la hoja',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      pending.add(3);
+      await tester.pumpAndSettle();
 
-    expect(find.text('3'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
 
-    await tester.tap(find.text('Módulos'));
-    await tester.pumpAndSettle();
-    expect(find.text('Pendientes de sincronizar'), findsOneWidget);
-    expect(find.text('3'), findsNWidgets(2));
+      await tester.tap(find.text('Módulos'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pendientes de sincronizar'), findsOneWidget);
+      expect(find.text('3'), findsNWidgets(2));
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 
-  testWidgets('si la sesión pierde la pestaña a la vista, vuelve a la primera', (tester) async {
-    final vm = viewModel(_admin);
-    await tester.pumpWidget(host(vm));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Equipo'));
-    await tester.pumpAndSettle();
-    expect(find.text('pantalla:adminAttendance'), findsOneWidget);
+  testWidgets(
+    'si la sesión pierde la pestaña a la vista, vuelve a la primera',
+    (tester) async {
+      final vm = viewModel(_admin);
+      await tester.pumpWidget(host(vm));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Equipo'));
+      await tester.pumpAndSettle();
+      expect(find.text('pantalla:adminAttendance'), findsOneWidget);
 
-    sessions.add(_session([Permission.workOrdersCreate, Permission.workOrdersRead, Permission.customersRead]));
-    await tester.pumpAndSettle();
+      sessions.add(
+        _session([
+          Permission.workOrdersCreate,
+          Permission.workOrdersRead,
+          Permission.customersRead,
+        ]),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Equipo'), findsNothing);
-    expect(find.text('Recepción'), findsOneWidget);
-    expect(find.text('pantalla:adminDashboard'), findsOneWidget);
+      expect(find.text('Equipo'), findsNothing);
+      expect(find.text('Recepción'), findsOneWidget);
+      expect(find.text('pantalla:adminDashboard'), findsOneWidget);
 
-    await tester.pumpWidget(const SizedBox());
-    vm.dispose();
-  });
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    },
+  );
 }
