@@ -3,6 +3,7 @@ import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_branch_series_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_daily_cash_summary_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_credit_note_use_case.dart';
@@ -10,6 +11,7 @@ import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_
 import 'package:atelier_mobile_crossplatform/features/cashier/application/observe_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/prepare_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/refresh_voucher_status_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/register_payment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/void_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/presentation/checkout/work_order_checkout_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/presentation/dailycash/daily_cash_view_model.dart';
@@ -19,8 +21,8 @@ import 'package:atelier_mobile_crossplatform/features/main/application/observe_s
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_work_order_detail_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_work_order_use_case.dart';
 
-/// Pantallas de `cashier`: Caja del día, Comprobantes SUNAT y Facturación de orden (US37).
-/// Series fiscales (US42) y pasos de cobro/entrega (US38/US39) quedan excluidos.
+/// Pantallas de `cashier`: Caja del día, Comprobantes SUNAT y "Cobrar y entregar" de una orden (US37–US38).
+/// Series fiscales (US42) y el pase de salida/entrega (US39) aún no.
 void setupCashierPresentation() {
   registerCashierRoutes();
 
@@ -55,6 +57,8 @@ void setupCashierPresentation() {
       issueVoucher: getIt<IssueVoucherUseCase>(),
       voidVoucher: getIt<VoidVoucherUseCase>(),
       issueCreditNote: getIt<IssueCreditNoteUseCase>(),
+      getPayments: getIt<GetVoucherPaymentsUseCase>(),
+      registerPayment: getIt<RegisterPaymentUseCase>(),
       connectivity: getIt<ConnectivityObserver>(),
       downloadVoucherDocument: getIt<DownloadVoucherDocumentUseCase>(),
       refreshVoucherStatus: getIt<RefreshVoucherStatusUseCase>(),

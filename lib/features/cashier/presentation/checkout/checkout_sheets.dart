@@ -15,8 +15,8 @@ import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
-/// Hojas de confirmación fiscal en checkout (US37): Emitir, Anular y Nota de Crédito.
-/// Sin hojas de cobro (US38) ni entrega (US39).
+/// Hojas de confirmación de "Cobrar y entregar": Emitir, Anular y Nota de Crédito (US37) y Registrar cobro
+/// (US38). Emitir y cobrar son irreversibles: llevan la placa a la vista.
 class CheckoutSheetBody extends StatelessWidget {
   final WorkOrderCheckoutUiState state;
   final WorkOrderCheckoutViewModel vm;
@@ -55,6 +55,30 @@ class CheckoutSheetBody extends StatelessWidget {
             onIssueName: vm.onIssueName,
             onIssueAddress: vm.onIssueAddress,
             onIssueLineName: vm.onIssueLineName,
+          ),
+        ],
+      ),
+      PaymentCheckoutSheet(:final form) => AtelierBottomSheet(
+        title: strings.cashierPaymentTitle,
+        actions: _sheetActions(
+          strings: strings,
+          confirm: strings.cashierPaymentConfirm(
+            formatCashierAmount(form.parsedAmount ?? Decimal.zero, form.voucher.currency),
+          ),
+          enabled: form.canSubmit && state.isOnline,
+          loading: state.busy == CheckoutAction.paying,
+          online: state.isOnline,
+          onConfirm: vm.onConfirmPayment,
+          onCancel: vm.onDismissSheet,
+        ),
+        content: [
+          PaymentSheetContent(
+            order: state.order,
+            form: form,
+            error: state.sheetError?.asString(strings),
+            onPaymentAmount: vm.onPaymentAmount,
+            onPaymentMethod: vm.onPaymentMethod,
+            onPaymentReference: vm.onPaymentReference,
           ),
         ],
       ),
@@ -284,6 +308,108 @@ class IssueSheetContent extends StatelessWidget {
         ),
         Text(
           strings.cashierIssueIrreversible,
+          style: context.text.bodyMedium?.copyWith(color: colors.inkSecondary),
+        ),
+        if (error != null) AtelierBanner(message: error!, icon: Icons.error_outline),
+      ],
+    );
+  }
+}
+
+/// Registrar un cobro total o parcial (US38): resumen del comprobante, monto (sugerido el saldo), medio de pago y
+/// código de operación cuando no es efectivo.
+class PaymentSheetContent extends StatelessWidget {
+  final WorkOrder? order;
+  final PaymentForm form;
+  final String? error;
+  final ValueChanged<String> onPaymentAmount;
+  final ValueChanged<PaymentMethod> onPaymentMethod;
+  final ValueChanged<String> onPaymentReference;
+
+  const PaymentSheetContent({
+    super.key,
+    required this.order,
+    required this.form,
+    this.error,
+    required this.onPaymentAmount,
+    required this.onPaymentMethod,
+    required this.onPaymentReference,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = context.atelier;
+    final voucher = form.voucher;
+    final amountInvalid = form.amount.trim().isNotEmpty && form.parsedAmount == null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        _OrderIdentity(order: order),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (voucher.subtotal != null && voucher.igv != null) ...[
+              AmountRow(
+                label: strings.cashierSubtotal,
+                value: formatCashierAmount(voucher.subtotal!, voucher.currency),
+              ),
+              AmountRow(
+                label: strings.cashierIgv(18),
+                value: formatCashierAmount(voucher.igv!, voucher.currency),
+              ),
+            ],
+            AmountRow(
+              label: strings.cashierTotal,
+              value: formatCashierAmount(voucher.total, voucher.currency),
+              emphasized: true,
+            ),
+            AmountRow(
+              label: strings.cashierCollected,
+              value: formatCashierAmount(voucher.paid, voucher.currency),
+            ),
+            AmountRow(
+              label: strings.cashierBalance,
+              value: formatCashierAmount(voucher.pending, voucher.currency),
+              emphasized: true,
+            ),
+          ],
+        ),
+        AtelierTextField(
+          label: strings.cashierPaymentAmount,
+          value: form.amount,
+          onValueChange: onPaymentAmount,
+          isError: amountInvalid,
+          errorText: amountInvalid ? strings.cashierPaymentAmountError : null,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        Text(
+          strings.cashierPaymentMethod,
+          style: context.text.titleSmall?.copyWith(color: colors.inkSecondary),
+        ),
+        ChoiceGrid<PaymentMethod>(
+          options: PaymentMethod.values,
+          selected: form.method,
+          label: (m) => paymentMethodLabel(strings, m),
+          onSelect: onPaymentMethod,
+          columns: 2,
+        ),
+        if (form.requiresReference) ...[
+          AtelierTextField(
+            label: strings.cashierPaymentReference,
+            value: form.reference,
+            onValueChange: onPaymentReference,
+            placeholder: strings.cashierPaymentReferenceHint,
+          ),
+          if (form.reference.trim().isEmpty)
+            Text(
+              strings.cashierPaymentReferenceRequired,
+              style: context.text.labelSmall?.copyWith(color: colors.inkSecondary),
+            ),
+        ],
+        Text(
+          strings.cashierPaymentIrreversible,
           style: context.text.bodyMedium?.copyWith(color: colors.inkSecondary),
         ),
         if (error != null) AtelierBanner(message: error!, icon: Icons.error_outline),

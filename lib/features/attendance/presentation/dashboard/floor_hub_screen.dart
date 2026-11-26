@@ -39,8 +39,8 @@ import 'package:flutter/material.dart';
 /// Hub de Piso y Mostrador ("Turno") del Segmento 2. Compone su panel de cabecera y bloques operativos
 /// exclusivamente desde los permisos de la sesión, siguiendo el sistema visual "La vía señalizada".
 ///
-/// Sin accesos a bahías ni alertas de stock (US40, US34), a la telemetría en vivo (US18) ni al cobro de una
-/// orden (US37–US39).
+/// Sin accesos a bahías ni alertas de stock (US40, US34) ni a la telemetría en vivo (US18). Las órdenes listas
+/// para cobrar abren "Cobrar y entregar" (US37–US39).
 class FloorHubScreen extends StatefulWidget {
   const FloorHubScreen({super.key});
 
@@ -124,6 +124,7 @@ class _FloorHubScreenState extends State<FloorHubScreen> {
             onOpenPurchaseOrders: () => _open(AppRoute.purchaseOrders),
             onOpenPurchaseOrderDetail: (id) => _open(AppRoute.purchaseOrderDetail, id),
             onOpenWorkOrder: (id) => _open(AppRoute.workOrderDetail, id),
+            onOpenWorkOrderCheckout: (id) => _open(AppRoute.workOrderCheckout, id),
             onOpenDailyCash: () => _open(AppRoute.dailyCash),
           ),
         ),
@@ -150,6 +151,7 @@ class FloorHubActions {
   final VoidCallback onOpenPurchaseOrders;
   final ValueChanged<String> onOpenPurchaseOrderDetail;
   final ValueChanged<String> onOpenWorkOrder;
+  final ValueChanged<String> onOpenWorkOrderCheckout;
   final VoidCallback onOpenDailyCash;
 
   FloorHubActions({
@@ -170,6 +172,7 @@ class FloorHubActions {
     VoidCallback? onOpenPurchaseOrders,
     ValueChanged<String>? onOpenPurchaseOrderDetail,
     ValueChanged<String>? onOpenWorkOrder,
+    ValueChanged<String>? onOpenWorkOrderCheckout,
     VoidCallback? onOpenDailyCash,
   }) : onRefresh = onRefresh ?? (() async {}),
        onClockIn = onClockIn ?? (() {}),
@@ -188,6 +191,7 @@ class FloorHubActions {
        onOpenPurchaseOrders = onOpenPurchaseOrders ?? (() {}),
        onOpenPurchaseOrderDetail = onOpenPurchaseOrderDetail ?? ((_) {}),
        onOpenWorkOrder = onOpenWorkOrder ?? ((_) {}),
+       onOpenWorkOrderCheckout = onOpenWorkOrderCheckout ?? ((_) {}),
        onOpenDailyCash = onOpenDailyCash ?? (() {});
 }
 
@@ -443,7 +447,7 @@ class FloorHubContent extends StatelessWidget {
     ];
   }
 
-  /// Caja: solo lo que no es cobrar. Las órdenes listas abren su detalle (el cobro es US37–US39).
+  /// Caja: las órdenes listas abren "Cobrar y entregar" (comprobante, cobros, pase y entrega; US37–US39).
   List<Widget> _cashierBlock(AppLocalizations strings, bool loading) {
     final ready = state.readyToBillOrders;
     return [
@@ -481,7 +485,7 @@ class FloorHubContent extends StatelessWidget {
               subtitle: order.bayName ?? strings.floorHubCashReadySubtitle,
               plate: order.plate,
               amount: order.totalAmount?.format(),
-              onClick: () => actions.onOpenWorkOrder(order.id.value),
+              onClick: () => actions.onOpenWorkOrderCheckout(order.id.value),
             ),
           ),
     ];

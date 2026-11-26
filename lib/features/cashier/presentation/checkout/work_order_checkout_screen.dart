@@ -12,6 +12,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_sha
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/lima_time_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
@@ -22,10 +23,12 @@ import 'package:atelier_mobile_crossplatform/features/cashier/presentation/check
 import 'package:atelier_mobile_crossplatform/features/cashier/presentation/checkout/work_order_checkout_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/work_order_labels.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
-/// Facturación electrónica SUNAT de una orden (US37).
-/// Sin el paso 2 de cobros (US38) ni pasos 3–4 de pase de salida y entrega (US39).
+/// "Cobrar y entregar": comprobante (US37) y cobros (US38) de una orden, con los pasos a la vista. Emitir y
+/// cobrar son irreversibles: se confirman en una hoja inferior con la placa y el monto. Todo es en línea; sin red
+/// las acciones se deshabilitan. Sin pase de salida ni entrega (US39).
 class WorkOrderCheckoutScreen extends StatefulWidget {
   final String workOrderId;
 
@@ -113,11 +116,14 @@ class _WorkOrderCheckoutScreenState extends State<WorkOrderCheckoutScreen> {
           onShareVoucherXml: vm.onShareVoucherXml,
           onShareVoucherCdr: vm.onShareVoucherCdr,
           onRefreshVoucherSunat: vm.onRefreshVoucherSunat,
+          onOpenPayment: vm.onOpenPayment,
         ),
       ),
     );
   }
 }
+
+void _noop() {}
 
 class WorkOrderCheckoutContent extends StatelessWidget {
   final WorkOrderCheckoutUiState state;
@@ -131,6 +137,7 @@ class WorkOrderCheckoutContent extends StatelessWidget {
   final ValueChanged<VoucherView> onShareVoucherXml;
   final ValueChanged<VoucherView> onShareVoucherCdr;
   final ValueChanged<VoucherView> onRefreshVoucherSunat;
+  final VoidCallback onOpenPayment;
 
   const WorkOrderCheckoutContent({
     super.key,
@@ -145,6 +152,7 @@ class WorkOrderCheckoutContent extends StatelessWidget {
     required this.onShareVoucherXml,
     required this.onShareVoucherCdr,
     required this.onRefreshVoucherSunat,
+    this.onOpenPayment = _noop,
   });
 
   @override
@@ -168,7 +176,9 @@ class WorkOrderCheckoutContent extends StatelessWidget {
                 )
               else ...[
                 ..._messages(strings),
-                _voucherStep(context, strings, showSkeleton),
+                if (state.canReadInvoices || state.canIssueVoucher) _voucherStep(context, strings, showSkeleton),
+                if (state.canReadInvoices || state.canRegisterPayment)
+                  _paymentsStep(context, strings, showSkeleton),
               ],
             ],
           ),
@@ -301,6 +311,159 @@ class WorkOrderCheckoutContent extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Tarjeta de un paso: elevada si es el paso en curso.
+  Widget _stepCard({required bool isActive, required List<Widget> children}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
+      child: AtelierSurface(
+        tier: isActive ? SurfaceTier.elevated : SurfaceTier.card,
+        shape: cardLargeShape,
+        contentPadding: const EdgeInsets.all(Spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Spacing.sm,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _stepHint(BuildContext context, String text) => Text(
+    text,
+    style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary),
+  );
+
+  /// Botón de un paso: en línea y sin otra acción en vuelo; en carga si es la suya.
+  Widget _stepAction({
+    required String text,
+    required VoidCallback onClick,
+    required CheckoutAction action,
+    AtelierButtonStyle style = AtelierButtonStyle.filled,
+    bool enabled = true,
+  }) {
+    return AtelierButton(
+      text: text,
+      onClick: onClick,
+      style: style,
+      enabled: enabled && state.isOnline && (state.busy == null || state.busy == action),
+      loading: state.busy == action,
+    );
+  }
+
+  /// Paso 2 (US38): cobrado, saldo, historial de abonos y "Registrar cobro" hasta saldar el comprobante.
+  Widget _paymentsStep(BuildContext context, AppLocalizations strings, bool showSkeleton) {
+    final voucher = state.activeVoucher;
+    final isActive = voucher != null && !state.isOrderPaid;
+    return _stepCard(
+      isActive: isActive,
+      children: [
+        AtelierSectionHeader(
+          title: strings.cashierStepTitle(2, strings.cashierStepPayments),
+          action: voucher != null
+              ? () {
+                  final (label, kind) = voucherPaymentStatusChip(strings, voucher.paymentStatus);
+                  return AtelierChip(text: label, kind: kind);
+                }()
+              : null,
+        ),
+        if (voucher == null) ...[
+          if (!showSkeleton && !state.showSkeleton) _stepHint(context, strings.cashierPaymentsNeedsVoucher),
+        ] else ...[
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AmountRow(
+                label: strings.cashierCollected,
+                value: formatCashierAmount(voucher.paid, voucher.currency),
+              ),
+              AmountRow(
+                label: strings.cashierBalance,
+                value: formatCashierAmount(voucher.pending, voucher.currency),
+                emphasized: true,
+              ),
+            ],
+          ),
+          if (state.payments.isEmpty)
+            _stepHint(context, strings.cashierPaymentsEmpty)
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < state.payments.length; i++)
+                  _PaymentRow(
+                    payment: state.payments[i],
+                    currency: voucher.currency,
+                    showDivider: i < state.payments.length - 1,
+                  ),
+              ],
+            ),
+          if (state.canRegisterPayment && voucher.pending > Decimal.zero)
+            _stepAction(
+              text: strings.cashierPaymentRegister,
+              onClick: onOpenPayment,
+              action: CheckoutAction.paying,
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Un abono del historial: medio, hora de Lima y referencia; monto a la derecha.
+class _PaymentRow extends StatelessWidget {
+  final Payment payment;
+  final String? currency;
+  final bool showDivider;
+
+  const _PaymentRow({required this.payment, required this.currency, required this.showDivider});
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final paidAt = payment.paidAt;
+    final reference = payment.transactionReference?.trim();
+    final subtitle = [
+      if (paidAt != null) formatLimaStamp(paidAt),
+      if (reference != null && reference.isNotEmpty) reference,
+    ].join(' · ');
+    final amountCurrency = payment.amount.currency.trim().isEmpty ? currency : payment.amount.currency;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+          child: Row(
+            spacing: 12,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 2,
+                  children: [
+                    Text(
+                      paymentMethodLabel(strings, payment.method),
+                      style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+                    ),
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary),
+                      ),
+                  ],
+                ),
+              ),
+              Text(
+                formatCashierAmount(payment.amount.amount, amountCurrency),
+                style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider) Divider(height: 1, thickness: 1, color: context.scheme.outlineVariant),
+      ],
     );
   }
 }

@@ -132,7 +132,7 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('US37: WorkOrderCheckoutContent muestra Paso 1 Comprobante SUNAT sin pasos US38/US39', (
+    testWidgets('US37: WorkOrderCheckoutContent muestra Paso 1 Comprobante SUNAT; sin permisos de cobro ni entrega', (
       tester,
     ) async {
       var refreshedSunat = 0;
@@ -203,8 +203,10 @@ void main() {
       expect(find.text('Actualizar estado SUNAT'), findsOneWidget);
       expect(find.text('Nota de crédito'), findsOneWidget);
       expect(find.text('Anular'), findsOneWidget);
-      // US38 y US39 siguen excluidos (pertenecen a Alvaro Rocha)
-      expect(find.text('2. Cobros'), findsNothing);
+      // Con `invoicing:invoices:read` el paso de cobros (US38) se ve en solo lectura, sin "Registrar cobro";
+      // sin `invoicing:exit_passes:issue` ni `operations:vehicle_handover:execute` no hay pasos 3 y 4 (US39).
+      expect(find.text('2. Cobros'), findsOneWidget);
+      expect(find.text('Registrar cobro'), findsNothing);
       expect(find.text('3. Pase de salida'), findsNothing);
       expect(find.text('4. Entrega'), findsNothing);
 
