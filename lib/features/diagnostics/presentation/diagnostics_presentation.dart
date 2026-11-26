@@ -8,6 +8,8 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/di
 import 'package:atelier_mobile_crossplatform/features/auth/application/request_notification_permission_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/freeze_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_latest_telemetry_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_vehicle_telemetry_history_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/reconnect_obd_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/start_live_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/stop_live_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/live/live_telemetry_view_model.dart';
@@ -94,8 +96,10 @@ void setupDiagnosticsPresentation() {
       observeSyncState: getIt<ObserveDiagnosticsSyncStateUseCase>(),
       startTelemetry: getIt<StartLiveTelemetryUseCase>(),
       stopTelemetry: getIt<StopLiveTelemetryUseCase>(),
+      reconnectObd: getIt<ReconnectObdUseCase>(),
       freezeTelemetry: getIt<FreezeTelemetryUseCase>(),
       getLatestTelemetry: getIt<GetLatestTelemetryUseCase>(),
+      getTelemetryHistory: getIt<GetVehicleTelemetryHistoryUseCase>(),
       requestNotificationPermission:
           getIt<RequestNotificationPermissionUseCase>(),
       connectivity: getIt<ConnectivityObserver>(),

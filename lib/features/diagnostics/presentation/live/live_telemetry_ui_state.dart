@@ -1,89 +1,100 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
-import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry_thresholds.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/domain/vehicle.dart';
 
 /// Telemetría en vivo de un vehículo (US18).
 class LiveTelemetryUiState {
   final String vehicleId;
   final String? plate;
+  final Vehicle? vehicle;
 
   /// `iot:telemetry:ingest` y el plan: conectar y muestrear.
-  final bool canIngest;
+  final bool canUseTelemetry;
 
-  /// `iot:telemetry:read` y el plan: ver la última lectura del servidor.
-  final bool canReadRemote;
-  final LiveTelemetry live;
-  final TelemetrySnapshot? frozen;
-  final TelemetrySample? remoteSample;
-  final bool isLoadingRemote;
+  /// `iot:telemetry:read` y el plan: ver la última lectura del servidor y su historial.
+  final bool canReadTelemetry;
+  final bool canReadFaults;
 
-  /// El servidor ya respondió (con o sin lectura).
-  final bool remoteLoaded;
-  final DiagnosticsSyncState? sync;
+  /// El plan incluye el módulo de telemetría; si no, solo se dice qué plan lo incluye.
+  final bool planIncludesTelemetry;
   final bool isOnline;
+  final ObdLinkState linkState;
+  final TelemetrySample? liveSample;
+  final Set<TelemetryWarning> liveWarnings;
+  final TelemetrySample? remoteTelemetry;
+  final List<TelemetryHistoryBucket> telemetryHistory;
+  final bool isLoadingRemote;
+  final TelemetrySnapshot? frozenSnapshot;
+  final DiagnosticsSyncState syncState;
+
+  /// La sesión del escáner está sobre otro vehículo: sus cifras no se muestran aquí.
+  final bool connectedToOtherVehicle;
+  final bool isReconnecting;
+
+  /// Arranque o parada del muestreo en curso.
   final bool isBusy;
   final UiText? error;
 
   const LiveTelemetryUiState({
     required this.vehicleId,
     this.plate,
-    this.canIngest = false,
-    this.canReadRemote = false,
-    this.live = const LiveTelemetry(),
-    this.frozen,
-    this.remoteSample,
-    this.isLoadingRemote = false,
-    this.remoteLoaded = false,
-    this.sync,
+    this.vehicle,
+    this.canUseTelemetry = false,
+    this.canReadTelemetry = false,
+    this.canReadFaults = false,
+    this.planIncludesTelemetry = true,
     this.isOnline = true,
+    this.linkState = ObdLinkState.disconnected,
+    this.liveSample,
+    this.liveWarnings = const {},
+    this.remoteTelemetry,
+    this.telemetryHistory = const [],
+    this.isLoadingRemote = false,
+    this.frozenSnapshot,
+    this.syncState = const DiagnosticsSyncState(pendingReadings: 0, pendingFaults: 0),
+    this.connectedToOtherVehicle = false,
+    this.isReconnecting = false,
     this.isBusy = false,
     this.error,
   });
 
-  bool get hasAnyPermission => canIngest || canReadRemote;
+  bool get isBluetoothSessionActive =>
+      linkState == ObdLinkState.connected ||
+      linkState == ObdLinkState.streaming ||
+      linkState == ObdLinkState.reconnecting ||
+      linkState == ObdLinkState.lost;
 
-  /// La sesión muestrea otro vehículo: sus cifras no se muestran aquí.
-  bool get isOtherVehicle => live.vehicleId != null && live.vehicleId != vehicleId;
+  bool get isStreaming => linkState == ObdLinkState.streaming || linkState == ObdLinkState.reconnecting;
 
-  bool get isStreamingHere =>
-      live.vehicleId == vehicleId &&
-      (live.state == ObdLinkState.streaming || live.state == ObdLinkState.reconnecting);
+  /// Sin sesión del escáner, quien puede leer ve lo último que llegó al servidor.
+  bool get isRemoteMode => !isBluetoothSessionActive && canReadTelemetry;
 
-  bool get canStart => canIngest && !isBusy && !isOtherVehicle && live.state == ObdLinkState.connected;
+  /// H23: sin temperatura del refrigerante la lectura se muestra pero no se guarda ni se envía.
+  bool get missingCoolantPid0105 => isBluetoothSessionActive && liveSample != null && !liveSample!.canBeSent;
 
-  /// Sin enlace: el adaptador se elige en el escáner.
-  bool get needsConnection =>
-      canIngest && (live.state == ObdLinkState.disconnected || live.state == ObdLinkState.lost);
-
-  TelemetrySample? get liveSample => isOtherVehicle ? null : live.sample;
-
-  bool get canFreeze => canIngest && !isBusy && liveSample != null;
-
-  /// Sin sesión OBD con datos, quien puede leer ve lo último que llegó al servidor.
-  bool get showRemote => canReadRemote && !isStreamingHere && liveSample == null;
-
-  TelemetrySample? get displayedSample => showRemote ? remoteSample : liveSample;
-
-  Set<TelemetryWarning> get displayedWarnings {
-    if (!showRemote) return isOtherVehicle ? const {} : live.warnings;
-    final sample = remoteSample;
-    return sample == null ? const {} : TelemetryThresholds.warningsFor(sample);
-  }
+  String get displayPlate => vehicle?.plate ?? plate ?? '';
 
   LiveTelemetryUiState copyWith({
     String? plate,
-    bool? canIngest,
-    bool? canReadRemote,
-    LiveTelemetry? live,
-    TelemetrySnapshot? frozen,
-    bool clearFrozen = false,
-    TelemetrySample? remoteSample,
-    bool clearRemoteSample = false,
-    bool? isLoadingRemote,
-    bool? remoteLoaded,
-    DiagnosticsSyncState? sync,
+    Vehicle? vehicle,
+    bool? canUseTelemetry,
+    bool? canReadTelemetry,
+    bool? canReadFaults,
+    bool? planIncludesTelemetry,
     bool? isOnline,
+    ObdLinkState? linkState,
+    TelemetrySample? liveSample,
+    bool clearLiveSample = false,
+    Set<TelemetryWarning>? liveWarnings,
+    TelemetrySample? remoteTelemetry,
+    List<TelemetryHistoryBucket>? telemetryHistory,
+    bool? isLoadingRemote,
+    TelemetrySnapshot? frozenSnapshot,
+    bool clearFrozenSnapshot = false,
+    DiagnosticsSyncState? syncState,
+    bool? connectedToOtherVehicle,
+    bool? isReconnecting,
     bool? isBusy,
     UiText? error,
     bool clearError = false,
@@ -91,15 +102,22 @@ class LiveTelemetryUiState {
     return LiveTelemetryUiState(
       vehicleId: vehicleId,
       plate: plate ?? this.plate,
-      canIngest: canIngest ?? this.canIngest,
-      canReadRemote: canReadRemote ?? this.canReadRemote,
-      live: live ?? this.live,
-      frozen: clearFrozen ? null : frozen ?? this.frozen,
-      remoteSample: clearRemoteSample ? null : remoteSample ?? this.remoteSample,
-      isLoadingRemote: isLoadingRemote ?? this.isLoadingRemote,
-      remoteLoaded: remoteLoaded ?? this.remoteLoaded,
-      sync: sync ?? this.sync,
+      vehicle: vehicle ?? this.vehicle,
+      canUseTelemetry: canUseTelemetry ?? this.canUseTelemetry,
+      canReadTelemetry: canReadTelemetry ?? this.canReadTelemetry,
+      canReadFaults: canReadFaults ?? this.canReadFaults,
+      planIncludesTelemetry: planIncludesTelemetry ?? this.planIncludesTelemetry,
       isOnline: isOnline ?? this.isOnline,
+      linkState: linkState ?? this.linkState,
+      liveSample: clearLiveSample ? null : liveSample ?? this.liveSample,
+      liveWarnings: liveWarnings ?? this.liveWarnings,
+      remoteTelemetry: remoteTelemetry ?? this.remoteTelemetry,
+      telemetryHistory: telemetryHistory ?? this.telemetryHistory,
+      isLoadingRemote: isLoadingRemote ?? this.isLoadingRemote,
+      frozenSnapshot: clearFrozenSnapshot ? null : frozenSnapshot ?? this.frozenSnapshot,
+      syncState: syncState ?? this.syncState,
+      connectedToOtherVehicle: connectedToOtherVehicle ?? this.connectedToOtherVehicle,
+      isReconnecting: isReconnecting ?? this.isReconnecting,
       isBusy: isBusy ?? this.isBusy,
       error: clearError ? null : error ?? this.error,
     );

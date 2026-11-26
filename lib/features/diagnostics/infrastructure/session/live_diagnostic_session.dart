@@ -85,6 +85,21 @@ class LiveDiagnosticSession implements DiagnosticSession {
   }
 
   @override
+  Future<ObdConnectionInfo> reconnect() async {
+    final vehicleId = _state.vehicleId;
+    _emit(LiveTelemetry(state: ObdLinkState.reconnecting, vehicleId: vehicleId));
+    try {
+      final info = await _locked(link.reconnect);
+      _sessionId ??= const Uuid().v4();
+      _emit(LiveTelemetry(state: ObdLinkState.connected, vehicleId: vehicleId));
+      return info;
+    } on Exception {
+      _emit(LiveTelemetry(state: ObdLinkState.lost, vehicleId: vehicleId));
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> startStreaming(String vehicleId) async {
     if (!link.isConnected) throw const ObdNotConnectedException();
     await stopStreaming();
