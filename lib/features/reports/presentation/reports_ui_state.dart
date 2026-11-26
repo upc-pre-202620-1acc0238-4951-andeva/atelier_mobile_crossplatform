@@ -67,6 +67,44 @@ class FleetCustomer {
   const FleetCustomer({required this.id, required this.name, this.taxId});
 }
 
+/// Hoja para elegir al cliente del informe de salud de flota (US43 E2).
+class FleetSheet {
+  final String query;
+  final List<FleetCustomer> results;
+  final bool hasSearched;
+  final bool isSearching;
+  final ReportPdfActionMode actionMode;
+  final UiText? error;
+
+  const FleetSheet({
+    this.query = '',
+    this.results = const [],
+    this.hasSearched = false,
+    this.isSearching = false,
+    this.actionMode = ReportPdfActionMode.open,
+    this.error,
+  });
+
+  FleetSheet copyWith({
+    String? query,
+    List<FleetCustomer>? results,
+    bool? hasSearched,
+    bool? isSearching,
+    ReportPdfActionMode? actionMode,
+    UiText? error,
+    bool clearError = false,
+  }) {
+    return FleetSheet(
+      query: query ?? this.query,
+      results: results ?? this.results,
+      hasSearched: hasSearched ?? this.hasSearched,
+      isSearching: isSearching ?? this.isSearching,
+      actionMode: actionMode ?? this.actionMode,
+      error: clearError ? null : error ?? this.error,
+    );
+  }
+}
+
 /// Reportes del taller: flujo de caja del periodo (todas las sedes, H30) y exportación PDF (US41), y el PDF
 /// consolidado de salud de la flota de un cliente (US43 E2).
 /// Nunca se muestran `totalExpenses` ni `accountsReceivable`: llegan siempre en 0 (H31).
@@ -83,10 +121,10 @@ class ReportsUiState {
 
   /// US43 E2: informes de salud (`iot:health_reports:read` con IA habilitada) y clientes (`crm:customers:read`).
   final bool canReadFleetHealth;
-  final String fleetQuery;
-  final List<FleetCustomer> fleetResults;
-  final bool isSearchingFleet;
-  final FleetCustomer? fleetCustomer;
+
+  /// El rol tiene el permiso de informes de salud pero el plan del taller no incluye la IA.
+  final bool fleetLockedByPlan;
+  final FleetSheet? fleetSheet;
   final bool showCustomRangePicker;
   final ReportDownload? busy;
   final File? pdf;
@@ -103,10 +141,8 @@ class ReportsUiState {
     this.error,
     this.canReadCashFlow = false,
     this.canReadFleetHealth = false,
-    this.fleetQuery = '',
-    this.fleetResults = const [],
-    this.isSearchingFleet = false,
-    this.fleetCustomer,
+    this.fleetLockedByPlan = false,
+    this.fleetSheet,
     this.showCustomRangePicker = false,
     this.busy,
     this.pdf,
@@ -114,7 +150,7 @@ class ReportsUiState {
     this.actionError,
   });
 
-  bool get hasAnyAccess => canReadCashFlow || canReadFleetHealth;
+  bool get hasAnyAccess => canReadCashFlow || canReadFleetHealth || fleetLockedByPlan;
 
   ReportsUiState copyWith({
     PeriodChoice? choice,
@@ -127,11 +163,9 @@ class ReportsUiState {
     bool clearError = false,
     bool? canReadCashFlow,
     bool? canReadFleetHealth,
-    String? fleetQuery,
-    List<FleetCustomer>? fleetResults,
-    bool? isSearchingFleet,
-    FleetCustomer? fleetCustomer,
-    bool clearFleetCustomer = false,
+    bool? fleetLockedByPlan,
+    FleetSheet? fleetSheet,
+    bool clearFleetSheet = false,
     bool? showCustomRangePicker,
     ReportDownload? busy,
     bool clearBusy = false,
@@ -151,12 +185,8 @@ class ReportsUiState {
       error: clearError ? null : (error ?? this.error),
       canReadCashFlow: canReadCashFlow ?? this.canReadCashFlow,
       canReadFleetHealth: canReadFleetHealth ?? this.canReadFleetHealth,
-      fleetQuery: fleetQuery ?? this.fleetQuery,
-      fleetResults: fleetResults ?? this.fleetResults,
-      isSearchingFleet: isSearchingFleet ?? this.isSearchingFleet,
-      fleetCustomer: clearFleetCustomer
-          ? null
-          : (fleetCustomer ?? this.fleetCustomer),
+      fleetLockedByPlan: fleetLockedByPlan ?? this.fleetLockedByPlan,
+      fleetSheet: clearFleetSheet ? null : (fleetSheet ?? this.fleetSheet),
       showCustomRangePicker:
           showCustomRangePicker ?? this.showCustomRangePicker,
       busy: clearBusy ? null : (busy ?? this.busy),

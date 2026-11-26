@@ -46,6 +46,9 @@ class ReportsViewModel extends ChangeNotifier {
           canReadFleetHealth:
               (session?.canReadAiReports() ?? false) &&
               (session?.has(Permission.customersRead) ?? false),
+          fleetLockedByPlan:
+              (session?.has(Permission.healthReportsRead) ?? false) &&
+              !(session?.canReadAiReports() ?? false),
         ),
       );
       if (canRead && !wasAllowed) load();
@@ -141,103 +144,71 @@ class ReportsViewModel extends ChangeNotifier {
 
   // ---- Salud de flota (US43 E2)
 
-  /// Busca al cliente por nombre o documento (con red en el backend; sin red, entre los ya vistos). Escribir de
-  /// nuevo suelta el cliente elegido. Una respuesta tardía de una búsqueda anterior se descarta.
-  Future<void> onFleetQueryChange(String query) async {
-    final seq = ++_searchSeq;
-    final text = query.trim();
+  void onOpenFleet() {
+    if (!_state.canReadFleetHealth) return;
+    _update(_state.copyWith(fleetSheet: const FleetSheet(), clearActionError: true));
+  }
+
+  void onFleetActionMode(ReportPdfActionMode mode) => _updateFleet((sheet) => sheet.copyWith(actionMode: mode));
+
+  void onFleetQuery(String value) => _updateFleet((sheet) => sheet.copyWith(query: value, clearError: true));
+
+  /// Busca al cliente por nombre o documento (con red en el backend; sin red, entre los ya vistos). Una respuesta
+  /// tardía de una búsqueda anterior se descarta.
+  Future<void> onFleetSearch() async {
+    final sheet = _state.fleetSheet;
     final search = searchCustomers;
-    if (text.length < 2 || search == null) {
-      _update(
-        _state.copyWith(
-          fleetQuery: query,
-          fleetResults: const [],
-          isSearchingFleet: false,
-          clearFleetCustomer: true,
-        ),
-      );
-      return;
-    }
-    _update(
-      _state.copyWith(
-        fleetQuery: query,
-        isSearchingFleet: true,
-        clearFleetCustomer: true,
-      ),
-    );
+    if (sheet == null || search == null || sheet.query.trim().isEmpty) return;
+    final seq = ++_searchSeq;
+    _updateFleet((s) => s.copyWith(isSearching: true, clearError: true));
     try {
-      final found = await search.execute(text);
+      final found = await search.execute(sheet.query.trim());
       if (seq != _searchSeq) return;
-      _update(
-        _state.copyWith(
-          fleetResults: [
-            for (final customer in found.take(5))
-              FleetCustomer(
-                id: customer.id,
-                name: customer.displayName,
-                taxId: customer.taxId,
-              ),
+      _updateFleet(
+        (s) => s.copyWith(
+          results: [
+            for (final customer in found.take(10))
+              FleetCustomer(id: customer.id, name: customer.displayName, taxId: customer.taxId),
           ],
-          isSearchingFleet: false,
+          hasSearched: true,
+          isSearching: false,
         ),
       );
-    } on Object {
+    } on Object catch (e) {
       if (seq != _searchSeq) return;
-      _update(_state.copyWith(fleetResults: const [], isSearchingFleet: false));
+      _updateFleet(
+        (s) => s.copyWith(results: const [], error: toUiText(e), hasSearched: true, isSearching: false),
+      );
     }
   }
 
-  void onSelectFleetCustomer(FleetCustomer customer) => _update(
-    _state.copyWith(
-      fleetCustomer: customer,
-      fleetQuery: customer.name,
-      fleetResults: const [],
-      clearActionError: true,
-    ),
-  );
-
-  void onClearFleetCustomer() => _update(
-    _state.copyWith(
-      fleetQuery: '',
-      fleetResults: const [],
-      clearFleetCustomer: true,
-    ),
-  );
-
-  Future<void> onDownloadFleetHealth([
-    ReportPdfActionMode mode = ReportPdfActionMode.open,
-  ]) async {
+  /// Elegir al cliente descarga de una vez el PDF con el modo (abrir o compartir) de la hoja.
+  Future<void> onFleetPick(FleetCustomer customer) async {
     final downloader = downloadFleetHealthPdf;
-    final customer = _state.fleetCustomer;
-    if (downloader == null ||
-        customer == null ||
-        !_state.canReadFleetHealth ||
-        !_state.isOnline ||
-        _state.busy != null) {
-      return;
-    }
-    _update(
-      _state.copyWith(
-        busy: ReportDownload.fleetHealth,
-        pdfActionMode: mode,
-        clearActionError: true,
-      ),
-    );
+    final mode = _state.fleetSheet?.actionMode ?? ReportPdfActionMode.open;
+    if (downloader == null || !_state.canReadFleetHealth || !_state.isOnline || _state.busy != null) return;
+    _update(_state.copyWith(busy: ReportDownload.fleetHealth, pdfActionMode: mode));
+    _updateFleet((s) => s.copyWith(clearError: true));
     try {
       final file = await downloader.execute(customer.id);
-      _update(_state.copyWith(pdf: file));
+      _update(_state.copyWith(pdf: file, clearFleetSheet: true));
     } on Object catch (e) {
-      _update(_state.copyWith(actionError: toUiText(e)));
+      _updateFleet((s) => s.copyWith(error: toUiText(e)));
     } finally {
       _update(_state.copyWith(clearBusy: true));
     }
   }
 
-  Future<void> onOpenFleetHealthPdf() =>
-      onDownloadFleetHealth(ReportPdfActionMode.open);
+  void onDismissFleet() {
+    if (_state.busy == ReportDownload.fleetHealth) return;
+    _update(_state.copyWith(clearFleetSheet: true));
+  }
 
-  Future<void> onShareFleetHealthPdf() =>
-      onDownloadFleetHealth(ReportPdfActionMode.share);
+  void _updateFleet(FleetSheet Function(FleetSheet sheet) change) {
+    final sheet = _state.fleetSheet;
+    if (sheet == null) return;
+    _update(_state.copyWith(fleetSheet: change(sheet)));
+  }
 
   Future<void> onOpenCashFlowPdf() =>
       onDownloadCashFlow(ReportPdfActionMode.open);

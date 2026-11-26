@@ -3712,15 +3712,6 @@
   "invReceiveErrNumber": "Ingresa el número del comprobante.",
   "invReceiveErrDate": "La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.",
   "invReceiveErrNotReceivable": "Solo se pueden recibir órdenes emitidas.",
-  "reportsFleetSelected": "Cliente: {name}",
-  "@reportsFleetSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "reportsFleetClear": "Quitar cliente",
   "floorHubStockAlertLine": "{p1} · Stock {p2} / mín. {p3}",
   "@floorHubStockAlertLine": {
     "placeholders": {

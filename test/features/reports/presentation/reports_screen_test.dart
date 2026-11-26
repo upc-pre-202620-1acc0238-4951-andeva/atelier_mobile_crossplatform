@@ -151,42 +151,91 @@ void main() {
       },
     );
 
-    testWidgets(
-      'salud de flota (US43 E2): elegir cliente habilita Abrir y Compartir PDF',
-      (tester) async {
-        final base = _state(summary: _summary());
-        final withFleet = ReportsUiState(
-          today: base.today,
-          choice: base.choice,
-          period: base.period,
-          summary: base.summary,
-          canReadCashFlow: true,
-          canReadFleetHealth: true,
-          fleetQuery: 'Rosa',
-          fleetResults: const [
-            FleetCustomer(id: 'c1', name: 'Rosa Quispe', taxId: '45678912'),
-          ],
-        );
-        FleetCustomer? picked;
-        await _pump(
-          tester,
-          ReportsContent(
-            state: withFleet,
-            onBack: () {},
-            onRetry: () async {},
-            onChoice: (_) {},
-            onOpenCustomRange: () {},
-            onSelectFleetCustomer: (c) => picked = c,
+    testWidgets('salud de flota (US43 E2): el botón abre la hoja de búsqueda', (tester) async {
+      final base = _state(summary: _summary());
+      final withFleet = ReportsUiState(
+        today: base.today,
+        choice: base.choice,
+        period: base.period,
+        summary: base.summary,
+        canReadCashFlow: true,
+        canReadFleetHealth: true,
+      );
+      var opened = false;
+      await _pump(
+        tester,
+        ReportsContent(
+          state: withFleet,
+          onBack: () {},
+          onRetry: () async {},
+          onChoice: (_) {},
+          onOpenCustomRange: () {},
+          onOpenFleet: () => opened = true,
+        ),
+      );
+      expect(find.text('Salud de flota'), findsOneWidget);
+      await tester.tap(find.text('PDF de salud de flota'));
+      expect(opened, isTrue);
+      await _teardown(tester);
+    });
+
+    testWidgets('salud de flota sin IA en el plan: solo el estado de plan', (tester) async {
+      final base = _state(summary: _summary());
+      final locked = ReportsUiState(
+        today: base.today,
+        choice: base.choice,
+        period: base.period,
+        summary: base.summary,
+        canReadCashFlow: true,
+        fleetLockedByPlan: true,
+      );
+      await _pump(
+        tester,
+        ReportsContent(
+          state: locked,
+          onBack: () {},
+          onRetry: () async {},
+          onChoice: (_) {},
+          onOpenCustomRange: () {},
+        ),
+      );
+      expect(find.text('La salud de flota con IA no está incluida en el plan de tu taller.'), findsOneWidget);
+      expect(find.text('PDF de salud de flota'), findsNothing);
+      await _teardown(tester);
+    });
+
+    testWidgets('la hoja busca, lista clientes y elegir uno lo descarga', (tester) async {
+      FleetCustomer? picked;
+      var searched = 0;
+      ReportPdfActionMode? mode;
+      await _pump(
+        tester,
+        Scaffold(
+          body: SingleChildScrollView(
+            child: FleetSheetContent(
+            sheet: const FleetSheet(
+              query: 'Rosa',
+              hasSearched: true,
+              results: [FleetCustomer(id: 'c1', name: 'Rosa Quispe', taxId: '45678912')],
+            ),
+            busy: false,
+            online: true,
+            onActionMode: (m) => mode = m,
+            onQuery: (_) {},
+            onSearch: () => searched++,
+            onPick: (c) => picked = c,
           ),
-        );
-        expect(find.text('Salud de flota'), findsOneWidget);
-        expect(find.text('Rosa Quispe'), findsOneWidget);
-        await tester.tap(find.text('Rosa Quispe'));
-        await tester.pump(const Duration(milliseconds: 400));
-        expect(picked?.id, 'c1');
-        await _teardown(tester);
-      },
-    );
+          ),
+        ),
+      );
+      await tester.tap(find.text('Buscar'));
+      expect(searched, 1);
+      await tester.tap(find.text('Compartir PDF'));
+      expect(mode, ReportPdfActionMode.share);
+      await tester.tap(find.text('Rosa Quispe'));
+      expect(picked?.id, 'c1');
+      await _teardown(tester);
+    });
 
     testWidgets('vacío: dice que no hay movimientos', (tester) async {
       await _pump(

@@ -6699,14 +6699,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo se pueden recibir órdenes emitidas.';
 
   @override
-  String reportsFleetSelected(String name) {
-    return 'Cliente: $name';
-  }
-
-  @override
-  String get reportsFleetClear => 'Quitar cliente';
-
-  @override
   String floorHubStockAlertLine(String p1, String p2, String p3) {
     return '$p1 · Stock $p2 / mín. $p3';
   }

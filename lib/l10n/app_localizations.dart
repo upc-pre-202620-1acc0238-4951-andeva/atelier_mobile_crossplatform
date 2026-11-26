@@ -11734,18 +11734,6 @@ abstract class AppLocalizations {
   /// **'Solo se pueden recibir órdenes emitidas.'**
   String get invReceiveErrNotReceivable;
 
-  /// No description provided for @reportsFleetSelected.
-  ///
-  /// In es, this message translates to:
-  /// **'Cliente: {name}'**
-  String reportsFleetSelected(String name);
-
-  /// No description provided for @reportsFleetClear.
-  ///
-  /// In es, this message translates to:
-  /// **'Quitar cliente'**
-  String get reportsFleetClear;
-
   /// No description provided for @floorHubStockAlertLine.
   ///
   /// In es, this message translates to:
