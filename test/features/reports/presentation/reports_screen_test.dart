@@ -35,7 +35,8 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
 }
 
 /// Quita del árbol las animaciones infinitas (huesos) antes de cerrar la prueba.
-Future<void> _teardown(WidgetTester tester) => tester.pumpWidget(const SizedBox());
+Future<void> _teardown(WidgetTester tester) =>
+    tester.pumpWidget(const SizedBox());
 
 const _today = '2026-11-16';
 
@@ -93,7 +94,11 @@ CashFlowSummary _summary({List<CashFlowMovement>? movements}) {
   );
 }
 
-ReportsContent _content(ReportsUiState state, {VoidCallback? onOpenCustomRange, ValueChanged<PeriodChoice>? onChoice}) {
+ReportsContent _content(
+  ReportsUiState state, {
+  VoidCallback? onOpenCustomRange,
+  ValueChanged<PeriodChoice>? onChoice,
+}) {
   return ReportsContent(
     state: state,
     onBack: () {},
@@ -107,34 +112,87 @@ void main() {
   setUpAll(_loadSatoshi);
 
   group('ReportsContent', () {
-    testWidgets('cargado: panel, avisos, periodo, descargas PDF flujo de caja (US41) y movimientos', (tester) async {
-      await _pump(tester, _content(_state(summary: _summary())));
+    testWidgets(
+      'cargado: panel, avisos, periodo, descargas PDF flujo de caja (US41) y movimientos',
+      (tester) async {
+        await _pump(tester, _content(_state(summary: _summary())));
 
-      expect(find.text('Reportes'), findsOneWidget);
-      expect(find.text('S/ 18,450.00'), findsOneWidget);
-      expect(find.text('movimientos'), findsOneWidget);
-      expect(find.text('El reporte suma todas las sedes del taller, no solo la tuya.'), findsOneWidget);
-      expect(find.textContaining('egresos y cuentas por cobrar no se contabilizan'), findsOneWidget);
-      expect(find.text('Este mes'), findsOneWidget);
-      expect(find.text('Rango'), findsOneWidget);
-      expect(find.text('01/11/2026 al 30/11/2026'), findsOneWidget);
-      expect(find.text('Movimientos · 2'), findsOneWidget);
-      expect(find.text('Cobro boleta B001-00000944'), findsOneWidget);
-      expect(find.text('S/ 1,200.00'), findsOneWidget);
-      // concepto en blanco: cae en la categoría; el negativo lleva signo menos.
-      expect(find.text('REFUND'), findsOneWidget);
-      expect(find.text('−S/ 354.50'), findsOneWidget);
+        expect(find.text('Reportes'), findsOneWidget);
+        expect(find.text('S/ 18,450.00'), findsOneWidget);
+        expect(find.text('movimientos'), findsOneWidget);
+        expect(
+          find.text(
+            'El reporte suma todas las sedes del taller, no solo la tuya.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            'egresos y cuentas por cobrar no se contabilizan',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Este mes'), findsOneWidget);
+        expect(find.text('Rango'), findsOneWidget);
+        expect(find.text('01/11/2026 al 30/11/2026'), findsOneWidget);
+        expect(find.text('Movimientos · 2'), findsOneWidget);
+        expect(find.text('Cobro boleta B001-00000944'), findsOneWidget);
+        expect(find.text('S/ 1,200.00'), findsOneWidget);
+        // concepto en blanco: cae en la categoría; el negativo lleva signo menos.
+        expect(find.text('REFUND'), findsOneWidget);
+        expect(find.text('−S/ 354.50'), findsOneWidget);
 
-      // US41: descargas PDF de flujo de caja presentes; US43 (flota) sigue excluido.
-      expect(find.text('Descargas'), findsOneWidget);
-      expect(find.text('Abrir PDF'), findsOneWidget);
-      expect(find.text('Compartir PDF'), findsOneWidget);
-      expect(find.textContaining('flota'), findsNothing);
-      await _teardown(tester);
-    });
+        // US41: descargas PDF de flujo de caja presentes; sin permiso de salud de flota no aparece la sección US43.
+        expect(find.text('Descargas'), findsOneWidget);
+        expect(find.text('Abrir PDF'), findsOneWidget);
+        expect(find.text('Compartir PDF'), findsOneWidget);
+        expect(find.textContaining('flota'), findsNothing);
+        await _teardown(tester);
+      },
+    );
+
+    testWidgets(
+      'salud de flota (US43 E2): elegir cliente habilita Abrir y Compartir PDF',
+      (tester) async {
+        final base = _state(summary: _summary());
+        final withFleet = ReportsUiState(
+          today: base.today,
+          choice: base.choice,
+          period: base.period,
+          summary: base.summary,
+          canReadCashFlow: true,
+          canReadFleetHealth: true,
+          fleetQuery: 'Rosa',
+          fleetResults: const [
+            FleetCustomer(id: 'c1', name: 'Rosa Quispe', taxId: '45678912'),
+          ],
+        );
+        FleetCustomer? picked;
+        await _pump(
+          tester,
+          ReportsContent(
+            state: withFleet,
+            onBack: () {},
+            onRetry: () async {},
+            onChoice: (_) {},
+            onOpenCustomRange: () {},
+            onSelectFleetCustomer: (c) => picked = c,
+          ),
+        );
+        expect(find.text('Salud de flota'), findsOneWidget);
+        expect(find.text('Rosa Quispe'), findsOneWidget);
+        await tester.tap(find.text('Rosa Quispe'));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(picked?.id, 'c1');
+        await _teardown(tester);
+      },
+    );
 
     testWidgets('vacío: dice que no hay movimientos', (tester) async {
-      await _pump(tester, _content(_state(summary: _summary(movements: const []))));
+      await _pump(
+        tester,
+        _content(_state(summary: _summary(movements: const []))),
+      );
 
       expect(find.text('No hay movimientos en este periodo.'), findsOneWidget);
       expect(find.text('Movimientos · 0'), findsOneWidget);
@@ -142,7 +200,10 @@ void main() {
     });
 
     testWidgets('error: muestra el mensaje y Reintentar', (tester) async {
-      await _pump(tester, _content(_state(error: const UiText.dynamic('Servicio no disponible'))));
+      await _pump(
+        tester,
+        _content(_state(error: const UiText.dynamic('Servicio no disponible'))),
+      );
 
       expect(find.text('Servicio no disponible'), findsOneWidget);
       expect(find.text('Reintentar'), findsOneWidget);
@@ -157,10 +218,15 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('sin permiso: solo el aviso, sin panel ni periodos', (tester) async {
+    testWidgets('sin permiso: solo el aviso, sin panel ni periodos', (
+      tester,
+    ) async {
       await _pump(tester, _content(_state(canRead: false)));
 
-      expect(find.text('Tu cuenta no tiene acceso a reportes.'), findsOneWidget);
+      expect(
+        find.text('Tu cuenta no tiene acceso a reportes.'),
+        findsOneWidget,
+      );
       expect(find.text('Este mes'), findsNothing);
       expect(find.textContaining('cobrado en el periodo'), findsNothing);
       await _teardown(tester);
@@ -173,7 +239,9 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('elegir un periodo y Rango avisan a quien llama', (tester) async {
+    testWidgets('elegir un periodo y Rango avisan a quien llama', (
+      tester,
+    ) async {
       PeriodChoice? chosen;
       var openedRange = false;
       await _pump(

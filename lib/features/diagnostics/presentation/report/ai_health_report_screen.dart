@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_banner.dart';
@@ -17,6 +18,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_sha
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/health_report.dart';
@@ -31,7 +33,7 @@ import 'package:flutter/physics.dart';
 
 const _analysisDayOptions = [7, 15, 30, 60, 90];
 
-/// Informe de salud vehicular con IA (US21). La descarga y el envío del PDF (US43) no se portan.
+/// Informe de salud vehicular con IA (US21), con Abrir y Compartir el PDF del informe (US43 E1).
 class AiHealthReportScreen extends StatefulWidget {
   final VehicleArgs args;
 
@@ -42,11 +44,45 @@ class AiHealthReportScreen extends StatefulWidget {
 }
 
 class _AiHealthReportScreenState extends State<AiHealthReportScreen> {
-  late final AiHealthReportViewModel viewModel = getIt<AiHealthReportViewModel>(param1: widget.args);
+  late final AiHealthReportViewModel viewModel = getIt<AiHealthReportViewModel>(
+    param1: widget.args,
+  );
   final AtelierHaptics _haptics = rememberAtelierHaptics();
+  File? _handlingPdf;
+
+  @override
+  void initState() {
+    super.initState();
+    viewModel.addListener(_onChange);
+  }
+
+  /// Cuando el PDF queda descargado se abre o se comparte según lo que pidió la persona.
+  void _onChange() {
+    final file = viewModel.state.pdf;
+    if (file != null && !identical(file, _handlingPdf)) {
+      _handlingPdf = file;
+      final mode = viewModel.state.pdfMode;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _handlePdf(file, mode),
+      );
+    }
+  }
+
+  Future<void> _handlePdf(File file, HealthPdfMode mode) async {
+    if (!mounted) return;
+    final title = AppLocalizations.of(context).reportsPdfChooser;
+    final done = switch (mode) {
+      HealthPdfMode.open => await DocumentIntents.openPdf(file, title),
+      HealthPdfMode.share => await DocumentIntents.sharePdf(file, title),
+    };
+    _handlingPdf = null;
+    if (!mounted) return;
+    done ? viewModel.onPdfHandled() : viewModel.onPdfOpenFailed();
+  }
 
   @override
   void dispose() {
+    viewModel.removeListener(_onChange);
     viewModel.dispose();
     super.dispose();
   }
@@ -74,6 +110,14 @@ class _AiHealthReportScreenState extends State<AiHealthReportScreen> {
           onBack: () => Navigator.of(context).maybePop(),
           onRefresh: viewModel.loadLatest,
           onOpenGenerate: viewModel.openGenerateSheet,
+          onOpenPdf: () {
+            _haptics.confirm();
+            viewModel.openPdf();
+          },
+          onSharePdf: () {
+            _haptics.confirm();
+            viewModel.sharePdf();
+          },
         ),
       ),
     );
@@ -85,6 +129,8 @@ class AiHealthReportContent extends StatelessWidget {
   final VoidCallback onBack;
   final Future<void> Function() onRefresh;
   final VoidCallback onOpenGenerate;
+  final VoidCallback? onOpenPdf;
+  final VoidCallback? onSharePdf;
 
   const AiHealthReportContent({
     super.key,
@@ -92,6 +138,8 @@ class AiHealthReportContent extends StatelessWidget {
     required this.onBack,
     required this.onRefresh,
     required this.onOpenGenerate,
+    this.onOpenPdf,
+    this.onSharePdf,
   });
 
   @override
@@ -99,23 +147,34 @@ class AiHealthReportContent extends StatelessWidget {
     final strings = AppLocalizations.of(context);
     final subtitle = _subtitleFor(strings);
     final vehicle = state.vehicle;
-    final vehicleTitle = vehicle == null ? '' : '${vehicle.brand} ${vehicle.model}'.trim();
+    final vehicleTitle = vehicle == null
+        ? ''
+        : '${vehicle.brand} ${vehicle.model}'.trim();
     final condition = state.detail?.diagnosis?.overallCondition;
     final showBottomBar = state.planIncludesAi && state.canGenerate;
     return AtelierMinTouchTarget(
       value: AtelierMinTouchTarget.floor,
       child: Scaffold(
-        bottomNavigationBar: showBottomBar ? _BottomBar(state: state, onOpenGenerate: onOpenGenerate) : null,
+        bottomNavigationBar: showBottomBar
+            ? _BottomBar(state: state, onOpenGenerate: onOpenGenerate)
+            : null,
         body: Column(
           children: [
             AtelierFichaPanel(
               onBack: onBack,
-              title: vehicleTitle.isEmpty ? strings.diagReportTitle : vehicleTitle,
+              title: vehicleTitle.isEmpty
+                  ? strings.diagReportTitle
+                  : vehicleTitle,
               subtitle: subtitle,
               identity: state.displayPlate.trim().isNotEmpty
                   ? AtelierPlate(plate: state.displayPlate, size: PlateSize.l)
                   : null,
-              status: condition == null ? null : AtelierChip(text: condition, kind: conditionChipKind(condition)),
+              status: condition == null
+                  ? null
+                  : AtelierChip(
+                      text: condition,
+                      kind: conditionChipKind(condition),
+                    ),
             ),
             Expanded(child: _body(context, strings)),
           ],
@@ -130,7 +189,9 @@ class AiHealthReportContent extends StatelessWidget {
       final generated = detail.generatedAt;
       final date = generated == null ? '' : formatLimaDateTime(generated);
       final days = detail.daysAnalyzed;
-      final text = days != null ? strings.diagReportDaysAnalyzed(days, date) : (date.trim().isEmpty ? null : date);
+      final text = days != null
+          ? strings.diagReportDaysAnalyzed(days, date)
+          : (date.trim().isEmpty ? null : date);
       if (text != null) return text;
     }
     final generated = state.latestSummary?.generatedAt;
@@ -139,10 +200,14 @@ class AiHealthReportContent extends StatelessWidget {
 
   Widget _body(BuildContext context, AppLocalizations strings) {
     if (!state.planIncludesAi) {
-      return _padded(AtelierPlanLockedState(text: strings.diagReportPlanLocked));
+      return _padded(
+        AtelierPlanLockedState(text: strings.diagReportPlanLocked),
+      );
     }
     if (!state.canRead && !state.canGenerate) {
-      return _padded(AtelierNoPermissionState(text: strings.diagReportNoPermission));
+      return _padded(
+        AtelierNoPermissionState(text: strings.diagReportNoPermission),
+      );
     }
     final hasReport = state.hasReport;
     final error = state.error;
@@ -151,49 +216,78 @@ class AiHealthReportContent extends StatelessWidget {
       loading: state.isLoading && state.latestSummary == null,
       builder: (context, showSkeleton) {
         final items = <Widget>[
-          if (error != null && hasReport) AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
+          if (error != null && hasReport)
+            AtelierBanner(
+              message: error.asString(strings),
+              icon: Icons.error_outline,
+            ),
           if (showSkeleton)
-            const _ScoreCard(score: 84, summary: 'Motor operando en rango normal.', loading: true)
+            const _ScoreCard(
+              score: 84,
+              summary: 'Motor operando en rango normal.',
+              loading: true,
+            )
           else if (!hasReport && error != null && !state.isOnline)
             AtelierOfflineState(onRetry: onRefresh)
           else if (!hasReport && error != null)
-            AtelierErrorState(message: error.asString(strings), onRetry: onRefresh)
+            AtelierErrorState(
+              message: error.asString(strings),
+              onRetry: onRefresh,
+            )
           else if (!hasReport)
             AtelierEmptyState(
               text: strings.diagReportEmpty,
-              actionLabel: state.canGenerate && state.isOnline ? strings.diagReportGenerate : null,
-              onAction: state.canGenerate && state.isOnline ? onOpenGenerate : null,
+              actionLabel: state.canGenerate && state.isOnline
+                  ? strings.diagReportGenerate
+                  : null,
+              onAction: state.canGenerate && state.isOnline
+                  ? onOpenGenerate
+                  : null,
             )
           else ...[
-            _ScoreCard(score: state.effectiveScore, summary: state.effectiveSummary, loading: false),
+            _ScoreCard(
+              score: state.effectiveScore,
+              summary: state.effectiveSummary,
+              loading: false,
+            ),
+            if (state.canDownloadPdf)
+              _PdfCard(
+                state: state,
+                onOpenPdf: onOpenPdf ?? () {},
+                onSharePdf: onSharePdf ?? () {},
+              ),
             if (diagnosis != null) ...[
               if (diagnosis.subsystemEvaluations.isNotEmpty) ...[
                 AtelierSectionHeader(
                   title: strings.diagReportSubsystemsSection,
                   count: diagnosis.subsystemEvaluations.length,
                 ),
-                for (final sub in diagnosis.subsystemEvaluations) _SubsystemCard(sub: sub),
+                for (final sub in diagnosis.subsystemEvaluations)
+                  _SubsystemCard(sub: sub),
               ],
               if (diagnosis.predictiveRisks.isNotEmpty) ...[
                 AtelierSectionHeader(
                   title: strings.diagReportRisksSection,
                   count: diagnosis.predictiveRisks.length,
                 ),
-                for (final risk in diagnosis.predictiveRisks) _RiskCard(risk: risk),
+                for (final risk in diagnosis.predictiveRisks)
+                  _RiskCard(risk: risk),
               ],
               if (diagnosis.recommendedActions.isNotEmpty) ...[
                 AtelierSectionHeader(
                   title: strings.diagReportActionsSection,
                   count: diagnosis.recommendedActions.length,
                 ),
-                for (final action in diagnosis.recommendedActions) _RecommendedActionCard(action: action),
+                for (final action in diagnosis.recommendedActions)
+                  _RecommendedActionCard(action: action),
               ],
               if (diagnosis.dtcCorrelations.isNotEmpty) ...[
                 AtelierSectionHeader(
                   title: strings.diagReportCorrelationsSection,
                   count: diagnosis.dtcCorrelations.length,
                 ),
-                for (final correlation in diagnosis.dtcCorrelations) _CorrelationCard(correlation: correlation),
+                for (final correlation in diagnosis.dtcCorrelations)
+                  _CorrelationCard(correlation: correlation),
               ],
             ],
           ],
@@ -219,7 +313,10 @@ class AiHealthReportContent extends StatelessWidget {
     );
   }
 
-  Widget _padded(Widget child) => Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: child);
+  Widget _padded(Widget child) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: child,
+  );
 }
 
 class _BottomBar extends StatelessWidget {
@@ -288,7 +385,9 @@ class GenerateReportSheet extends StatelessWidget {
       actions: [
         if (!state.isOnline) const AtelierRequiresConnection(),
         AtelierButton(
-          text: state.isGenerating ? strings.diagReportGenerating : strings.diagReportGenerate,
+          text: state.isGenerating
+              ? strings.diagReportGenerating
+              : strings.diagReportGenerate,
           onClick: onConfirm,
           enabled: state.isOnline && !state.isGenerating,
           loading: state.isGenerating,
@@ -304,7 +403,9 @@ class GenerateReportSheet extends StatelessWidget {
       content: [
         Text(
           strings.diagReportDaysLabel,
-          style: context.text.titleSmall?.copyWith(color: context.atelier.inkSecondary),
+          style: context.text.titleSmall?.copyWith(
+            color: context.atelier.inkSecondary,
+          ),
         ),
         Wrap(
           spacing: 8,
@@ -313,7 +414,9 @@ class GenerateReportSheet extends StatelessWidget {
             for (final days in _analysisDayOptions)
               FilterChip(
                 selected: state.daysToAnalyze == days,
-                onSelected: state.isGenerating ? null : (_) => onSelectDays(days),
+                onSelected: state.isGenerating
+                    ? null
+                    : (_) => onSelectDays(days),
                 shape: const RoundedRectangleBorder(borderRadius: chipRadius),
                 label: Text(strings.diagReportDaysOption(days)),
                 showCheckmark: true,
@@ -325,17 +428,25 @@ class GenerateReportSheet extends StatelessWidget {
           children: [
             Checkbox(
               value: state.includeResolvedDtcHistory,
-              onChanged: state.isGenerating ? null : (_) => onToggleResolvedDtc(),
+              onChanged: state.isGenerating
+                  ? null
+                  : (_) => onToggleResolvedDtc(),
             ),
             Expanded(
               child: Text(
                 strings.diagReportIncludeResolved,
-                style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface),
+                style: context.text.bodyLarge?.copyWith(
+                  color: context.scheme.onSurface,
+                ),
               ),
             ),
           ],
         ),
-        if (error != null) AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
+        if (error != null)
+          AtelierBanner(
+            message: error.asString(strings),
+            icon: Icons.error_outline,
+          ),
       ],
     );
   }
@@ -346,7 +457,11 @@ class _ScoreCard extends StatelessWidget {
   final String? summary;
   final bool loading;
 
-  const _ScoreCard({required this.score, required this.summary, required this.loading});
+  const _ScoreCard({
+    required this.score,
+    required this.summary,
+    required this.loading,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,18 +476,32 @@ class _ScoreCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 16,
         children: [
-          Text(strings.diagReportScoreLabel, style: context.text.labelLarge?.copyWith(color: colors.inkSecondary)),
-          Center(child: HealthScoreArc(score: score, loading: loading)),
+          Text(
+            strings.diagReportScoreLabel,
+            style: context.text.labelLarge?.copyWith(
+              color: colors.inkSecondary,
+            ),
+          ),
+          Center(
+            child: HealthScoreArc(score: score, loading: loading),
+          ),
           if (summary != null && summary.trim().isNotEmpty) ...[
             Divider(color: context.scheme.outlineVariant, height: 1),
             Text(
               strings.diagReportSummarySection,
-              style: context.text.titleSmall?.copyWith(color: colors.inkSecondary),
+              style: context.text.titleSmall?.copyWith(
+                color: colors.inkSecondary,
+              ),
             ),
             Bone(
               loading: loading,
               widthFraction: 0.9,
-              child: Text(summary, style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface)),
+              child: Text(
+                summary,
+                style: context.text.bodyLarge?.copyWith(
+                  color: context.scheme.onSurface,
+                ),
+              ),
             ),
           ],
         ],
@@ -393,10 +522,15 @@ class HealthScoreArc extends StatefulWidget {
   State<HealthScoreArc> createState() => _HealthScoreArcState();
 }
 
-class _HealthScoreArcState extends State<HealthScoreArc> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController.unbounded(vsync: this, value: _target);
+class _HealthScoreArcState extends State<HealthScoreArc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController.unbounded(
+    vsync: this,
+    value: _target,
+  );
 
-  double get _target => widget.loading ? 0 : (widget.score?.clamp(0, 100) ?? 0) / 100;
+  double get _target =>
+      widget.loading ? 0 : (widget.score?.clamp(0, 100) ?? 0) / 100;
 
   @override
   void didUpdateWidget(HealthScoreArc oldWidget) {
@@ -407,7 +541,12 @@ class _HealthScoreArcState extends State<HealthScoreArc> with SingleTickerProvid
       _controller.value = target;
     } else {
       _controller.animateWith(
-        SpringSimulation(AtelierSprings.criticallyDamped(), _controller.value, target, _controller.velocity),
+        SpringSimulation(
+          AtelierSprings.criticallyDamped(),
+          _controller.value,
+          target,
+          _controller.velocity,
+        ),
       );
     }
   }
@@ -437,7 +576,9 @@ class _HealthScoreArcState extends State<HealthScoreArc> with SingleTickerProvid
         : clamped >= 55
         ? colors.warn
         : colors.bad;
-    final description = clamped == null ? strings.diagReportScoreLabel : strings.pitReportScoreCd(clamped);
+    final description = clamped == null
+        ? strings.diagReportScoreLabel
+        : strings.pitReportScoreCd(clamped);
     return Semantics(
       container: true,
       label: description,
@@ -470,13 +611,17 @@ class _HealthScoreArcState extends State<HealthScoreArc> with SingleTickerProvid
                   widthFraction: 0.4,
                   child: Text(
                     clamped?.toString() ?? '—',
-                    style: context.text.displaySmall?.copyWith(color: textColor),
+                    style: context.text.displaySmall?.copyWith(
+                      color: textColor,
+                    ),
                   ),
                 ),
                 if (!widget.loading)
                   Text(
                     strings.pitReportScoreMax,
-                    style: context.text.labelLarge?.copyWith(color: colors.inkSecondary),
+                    style: context.text.labelLarge?.copyWith(
+                      color: colors.inkSecondary,
+                    ),
                   ),
               ],
             ),
@@ -507,8 +652,16 @@ class _ScoreArcPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const stroke = 12.0;
     const inset = stroke / 2 + 10;
-    final diameter = math.max(math.min(size.width, size.height) - inset * 2, 1.0);
-    final rect = Rect.fromLTWH((size.width - diameter) / 2, (size.height - diameter) / 2, diameter, diameter);
+    final diameter = math.max(
+      math.min(size.width, size.height) - inset * 2,
+      1.0,
+    );
+    final rect = Rect.fromLTWH(
+      (size.width - diameter) / 2,
+      (size.height - diameter) / 2,
+      diameter,
+      diameter,
+    );
     final startRad = _startDegrees * math.pi / 180;
     final sweepRad = _sweepDegrees * math.pi / 180;
 
@@ -539,7 +692,13 @@ class _ScoreArcPainter extends CustomPainter {
 
     canvas.drawArc(rect, startRad, sweepRad, false, arcPaint(trackColor));
     if (fraction > 0) {
-      canvas.drawArc(rect, startRad, sweepRad * fraction, false, arcPaint(arcColor));
+      canvas.drawArc(
+        rect,
+        startRad,
+        sweepRad * fraction,
+        false,
+        arcPaint(arcColor),
+      );
     }
   }
 
@@ -575,12 +734,20 @@ class _SubsystemCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   sub.subsystemName ?? '',
-                  style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+                  style: context.text.titleMedium?.copyWith(
+                    color: context.scheme.onSurface,
+                  ),
                 ),
               ),
               if (score != null)
-                Text('$score/100', style: context.text.titleMedium?.copyWith(color: colors.primaryText)),
-              if (status != null) AtelierChip(text: status, kind: conditionChipKind(status)),
+                Text(
+                  '$score/100',
+                  style: context.text.titleMedium?.copyWith(
+                    color: colors.primaryText,
+                  ),
+                ),
+              if (status != null)
+                AtelierChip(text: status, kind: conditionChipKind(status)),
             ],
           ),
           if (score != null)
@@ -596,7 +763,12 @@ class _SubsystemCard extends StatelessWidget {
               ),
             ),
           if (findings != null && findings.trim().isNotEmpty)
-            Text(findings, style: context.text.bodyMedium?.copyWith(color: colors.inkSecondary)),
+            Text(
+              findings,
+              style: context.text.bodyMedium?.copyWith(
+                color: colors.inkSecondary,
+              ),
+            ),
         ],
       ),
     );
@@ -612,7 +784,9 @@ class _RiskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final probability = risk.probability;
-    final probabilityPct = probability == null ? null : (probability * 100).round().clamp(0, 100);
+    final probabilityPct = probability == null
+        ? null
+        : (probability * 100).round().clamp(0, 100);
     final horizon = risk.timeHorizonDays;
     final consequences = risk.consequences;
     return AtelierSurface(
@@ -624,15 +798,24 @@ class _RiskCard extends StatelessWidget {
         children: [
           Text(
             risk.category ?? '',
-            style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+            style: context.text.titleMedium?.copyWith(
+              color: context.scheme.onSurface,
+            ),
           ),
           if (probabilityPct != null && horizon != null)
             Text(
               strings.diagReportRiskDetail(probabilityPct, horizon),
-              style: context.text.labelLarge?.copyWith(color: context.atelier.warn),
+              style: context.text.labelLarge?.copyWith(
+                color: context.atelier.warn,
+              ),
             ),
           if (consequences != null && consequences.trim().isNotEmpty)
-            Text(consequences, style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary)),
+            Text(
+              consequences,
+              style: context.text.bodyMedium?.copyWith(
+                color: context.atelier.inkSecondary,
+              ),
+            ),
         ],
       ),
     );
@@ -662,19 +845,32 @@ class _RecommendedActionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   action.serviceName ?? action.serviceCode ?? '',
-                  style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+                  style: context.text.titleMedium?.copyWith(
+                    color: context.scheme.onSurface,
+                  ),
                 ),
               ),
-              if (urgency != null) AtelierChip(text: urgency, kind: conditionChipKind(urgency)),
+              if (urgency != null)
+                AtelierChip(text: urgency, kind: conditionChipKind(urgency)),
             ],
           ),
           if (cost != null)
             Text(
-              Money(amount: cost < Decimal.zero ? Decimal.zero : cost, currency: Money.pen).format(),
-              style: context.text.labelLarge?.copyWith(color: context.atelier.primaryText),
+              Money(
+                amount: cost < Decimal.zero ? Decimal.zero : cost,
+                currency: Money.pen,
+              ).format(),
+              style: context.text.labelLarge?.copyWith(
+                color: context.atelier.primaryText,
+              ),
             ),
           if (rationale != null && rationale.trim().isNotEmpty)
-            Text(rationale, style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary)),
+            Text(
+              rationale,
+              style: context.text.bodyMedium?.copyWith(
+                color: context.atelier.inkSecondary,
+              ),
+            ),
         ],
       ),
     );
@@ -704,4 +900,77 @@ ChipKind conditionChipKind(String raw) {
   if (any(['MODERATE', 'WARN', 'MEDIUM', 'FAIR'])) return ChipKind.warn;
   if (any(['LOW', 'GOOD', 'OPTIMAL', 'HEALTHY', 'NORMAL'])) return ChipKind.ok;
   return ChipKind.info;
+}
+
+/// US43 E1: el informe del vehículo como PDF, con el semáforo de salud por subsistema. Abrir o compartir; en línea.
+class _PdfCard extends StatelessWidget {
+  final AiHealthReportUiState state;
+  final VoidCallback onOpenPdf;
+  final VoidCallback onSharePdf;
+
+  const _PdfCard({
+    required this.state,
+    required this.onOpenPdf,
+    required this.onSharePdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final busy = state.pdfBusy != null;
+    return AtelierSurface(
+      tier: SurfaceTier.elevated,
+      shape: cardLargeShape,
+      contentPadding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 10,
+        children: [
+          Text(
+            strings.diagReportPdfTitle,
+            style: context.text.titleSmall?.copyWith(
+              color: context.scheme.onSurface,
+            ),
+          ),
+          Text(
+            strings.diagReportPdfHint,
+            style: context.text.bodySmall?.copyWith(
+              color: context.atelier.inkSecondary,
+            ),
+          ),
+          Row(
+            spacing: 8,
+            children: [
+              Expanded(
+                child: AtelierButton(
+                  text: strings.reportsOpenPdf,
+                  onClick: onOpenPdf,
+                  style: AtelierButtonStyle.tonal,
+                  icon: Icons.picture_as_pdf_outlined,
+                  enabled: state.isOnline && !busy,
+                  loading: state.pdfBusy == HealthPdfMode.open,
+                ),
+              ),
+              Expanded(
+                child: AtelierButton(
+                  text: strings.reportsSharePdf,
+                  onClick: onSharePdf,
+                  style: AtelierButtonStyle.outlined,
+                  icon: Icons.share_outlined,
+                  enabled: state.isOnline && !busy,
+                  loading: state.pdfBusy == HealthPdfMode.share,
+                ),
+              ),
+            ],
+          ),
+          if (!state.isOnline) const AtelierRequiresConnection(),
+          if (state.pdfError case final err?)
+            AtelierBanner(
+              message: err.asString(strings),
+              icon: Icons.error_outline,
+            ),
+        ],
+      ),
+    );
+  }
 }

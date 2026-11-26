@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/download_health_report_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/generate_health_report_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_health_report_detail_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_latest_health_report_use_case.dart';
@@ -19,6 +21,7 @@ class AiHealthReportViewModel extends ChangeNotifier {
   final GetLatestHealthReportUseCase getLatestHealthReport;
   final GetHealthReportDetailUseCase getHealthReportDetail;
   final GenerateHealthReportUseCase generateHealthReport;
+  final DownloadHealthReportPdfUseCase? downloadHealthReportPdf;
   final String vehicleId;
 
   AiHealthReportViewModel({
@@ -28,9 +31,14 @@ class AiHealthReportViewModel extends ChangeNotifier {
     required this.getLatestHealthReport,
     required this.getHealthReportDetail,
     required this.generateHealthReport,
+    this.downloadHealthReportPdf,
     required this.vehicleId,
     String? plate,
-  }) : _state = AiHealthReportUiState(vehicleId: vehicleId, plate: plate, isOnline: connectivity.isOnline) {
+  }) : _state = AiHealthReportUiState(
+         vehicleId: vehicleId,
+         plate: plate,
+         isOnline: connectivity.isOnline,
+       ) {
     _subscriptions.add(
       observeSession.execute().listen((session) {
         final planAi = session?.plan?.aiDiagnosticsEnabled ?? true;
@@ -38,8 +46,17 @@ class AiHealthReportViewModel extends ChangeNotifier {
         final canRd =
             (session?.canReadAiReports() ?? false) ||
             ((session?.has(Permission.healthReportsRead) ?? false) && planAi);
-        _update(_state.copyWith(planIncludesAi: planAi, canGenerate: canGen, canRead: canRd));
-        if (planAi && canRd && _state.latestSummary == null && !_state.isLoading) {
+        _update(
+          _state.copyWith(
+            planIncludesAi: planAi,
+            canGenerate: canGen,
+            canRead: canRd,
+          ),
+        );
+        if (planAi &&
+            canRd &&
+            _state.latestSummary == null &&
+            !_state.isLoading) {
           loadLatest();
         }
       }),
@@ -60,7 +77,8 @@ class AiHealthReportViewModel extends ChangeNotifier {
   final List<StreamSubscription<Object?>> _subscriptions = [];
   bool _disposed = false;
 
-  void _onConnectivity() => _update(_state.copyWith(isOnline: connectivity.isOnline));
+  void _onConnectivity() =>
+      _update(_state.copyWith(isOnline: connectivity.isOnline));
 
   void _update(AiHealthReportUiState state) {
     if (_disposed) return;
@@ -70,12 +88,22 @@ class AiHealthReportViewModel extends ChangeNotifier {
 
   Future<void> loadLatest() async {
     final state = _state;
-    if (!state.planIncludesAi || !state.canRead || vehicleId.trim().isEmpty || state.isLoading) return;
+    if (!state.planIncludesAi ||
+        !state.canRead ||
+        vehicleId.trim().isEmpty ||
+        state.isLoading)
+      return;
     _update(_state.copyWith(isLoading: true, clearError: true));
     try {
       final latest = await getLatestHealthReport.execute(vehicleId);
       if (latest == null) {
-        _update(_state.copyWith(isLoading: false, clearLatestSummary: true, clearDetail: true));
+        _update(
+          _state.copyWith(
+            isLoading: false,
+            clearLatestSummary: true,
+            clearDetail: true,
+          ),
+        );
       } else {
         final detail = await _detailOrNull(latest.reportId);
         _update(
@@ -102,7 +130,8 @@ class AiHealthReportViewModel extends ChangeNotifier {
 
   void openGenerateSheet() {
     final state = _state;
-    if (!state.planIncludesAi || !state.canGenerate || state.isGenerating) return;
+    if (!state.planIncludesAi || !state.canGenerate || state.isGenerating)
+      return;
     _update(_state.copyWith(generateSheetOpen: true, clearError: true));
   }
 
@@ -114,7 +143,11 @@ class AiHealthReportViewModel extends ChangeNotifier {
   void selectDays(int days) => _update(_state.copyWith(daysToAnalyze: days));
 
   void toggleIncludeResolvedDtcHistory() {
-    _update(_state.copyWith(includeResolvedDtcHistory: !_state.includeResolvedDtcHistory));
+    _update(
+      _state.copyWith(
+        includeResolvedDtcHistory: !_state.includeResolvedDtcHistory,
+      ),
+    );
   }
 
   Future<void> confirmGenerate() async {
@@ -144,9 +177,46 @@ class AiHealthReportViewModel extends ChangeNotifier {
         ),
       );
     } on Object catch (e) {
-      _update(_state.copyWith(isGenerating: false, error: toDiagnosticsUiText(e)));
+      _update(
+        _state.copyWith(isGenerating: false, error: toDiagnosticsUiText(e)),
+      );
     }
   }
+
+  /// US43 E1: PDF del último informe del vehículo (semáforo por subsistema, riesgos y acciones). Solo en línea.
+  Future<void> downloadPdf([HealthPdfMode mode = HealthPdfMode.open]) async {
+    final downloader = downloadHealthReportPdf;
+    final reportId = _state.latestSummary?.reportId;
+    if (downloader == null ||
+        reportId == null ||
+        !_state.canDownloadPdf ||
+        !_state.isOnline ||
+        _state.pdfBusy != null) {
+      return;
+    }
+    _update(_state.copyWith(pdfBusy: mode, pdfMode: mode, clearPdfError: true));
+    try {
+      final file = await downloader.execute(reportId);
+      _update(_state.copyWith(pdf: file));
+    } on Object catch (e) {
+      _update(_state.copyWith(pdfError: toDiagnosticsUiText(e)));
+    } finally {
+      _update(_state.copyWith(clearPdfBusy: true));
+    }
+  }
+
+  Future<void> openPdf() => downloadPdf(HealthPdfMode.open);
+
+  Future<void> sharePdf() => downloadPdf(HealthPdfMode.share);
+
+  void onPdfHandled() => _update(_state.copyWith(clearPdf: true));
+
+  void onPdfOpenFailed() => _update(
+    _state.copyWith(
+      clearPdf: true,
+      pdfError: UiText.resource((s) => s.reportsPdfNoApp),
+    ),
+  );
 
   @override
   void dispose() {

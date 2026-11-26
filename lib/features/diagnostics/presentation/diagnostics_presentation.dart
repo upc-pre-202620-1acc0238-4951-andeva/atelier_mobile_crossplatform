@@ -11,6 +11,7 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/ge
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/start_live_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/stop_live_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/live/live_telemetry_view_model.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/download_health_report_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/generate_health_report_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_active_installation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_health_report_detail_use_case.dart';
@@ -95,7 +96,8 @@ void setupDiagnosticsPresentation() {
       stopTelemetry: getIt<StopLiveTelemetryUseCase>(),
       freezeTelemetry: getIt<FreezeTelemetryUseCase>(),
       getLatestTelemetry: getIt<GetLatestTelemetryUseCase>(),
-      requestNotificationPermission: getIt<RequestNotificationPermissionUseCase>(),
+      requestNotificationPermission:
+          getIt<RequestNotificationPermissionUseCase>(),
       connectivity: getIt<ConnectivityObserver>(),
     ),
   );
@@ -122,6 +124,7 @@ void setupDiagnosticsPresentation() {
       getLatestHealthReport: getIt<GetLatestHealthReportUseCase>(),
       getHealthReportDetail: getIt<GetHealthReportDetailUseCase>(),
       generateHealthReport: getIt<GenerateHealthReportUseCase>(),
+      downloadHealthReportPdf: getIt<DownloadHealthReportPdfUseCase>(),
       vehicleId: args.vehicleId,
       plate: args.plate,
     ),

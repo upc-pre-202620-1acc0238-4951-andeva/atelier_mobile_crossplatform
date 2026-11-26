@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/domain/cash_flow.dart';
 
-enum ReportDownload { cashFlow }
+enum ReportDownload { cashFlow, fleetHealth }
 
 enum ReportPdfActionMode { open, share }
 
@@ -35,7 +35,8 @@ class CustomChoice extends PeriodChoice {
   const CustomChoice(this.from, this.to);
 
   @override
-  bool operator ==(Object other) => other is CustomChoice && other.from == from && other.to == to;
+  bool operator ==(Object other) =>
+      other is CustomChoice && other.from == from && other.to == to;
 
   @override
   int get hashCode => Object.hash(from, to);
@@ -57,9 +58,18 @@ ReportPeriod periodFor(PeriodChoice choice, String today) {
   };
 }
 
-/// Reportes del taller: flujo de caja del periodo (todas las sedes, H30) y exportación PDF (US41).
+/// Cliente elegido para el consolidado de salud de flota (US43 E2).
+class FleetCustomer {
+  final String id;
+  final String name;
+  final String? taxId;
+
+  const FleetCustomer({required this.id, required this.name, this.taxId});
+}
+
+/// Reportes del taller: flujo de caja del periodo (todas las sedes, H30) y exportación PDF (US41), y el PDF
+/// consolidado de salud de la flota de un cliente (US43 E2).
 /// Nunca se muestran `totalExpenses` ni `accountsReceivable`: llegan siempre en 0 (H31).
-/// Salud de flota (US43) queda fuera de alcance.
 class ReportsUiState {
   /// Hoy en Lima, `yyyy-MM-dd`.
   final String today;
@@ -70,6 +80,13 @@ class ReportsUiState {
   final bool isOnline;
   final UiText? error;
   final bool canReadCashFlow;
+
+  /// US43 E2: informes de salud (`iot:health_reports:read` con IA habilitada) y clientes (`crm:customers:read`).
+  final bool canReadFleetHealth;
+  final String fleetQuery;
+  final List<FleetCustomer> fleetResults;
+  final bool isSearchingFleet;
+  final FleetCustomer? fleetCustomer;
   final bool showCustomRangePicker;
   final ReportDownload? busy;
   final File? pdf;
@@ -85,6 +102,11 @@ class ReportsUiState {
     this.isOnline = true,
     this.error,
     this.canReadCashFlow = false,
+    this.canReadFleetHealth = false,
+    this.fleetQuery = '',
+    this.fleetResults = const [],
+    this.isSearchingFleet = false,
+    this.fleetCustomer,
     this.showCustomRangePicker = false,
     this.busy,
     this.pdf,
@@ -92,7 +114,7 @@ class ReportsUiState {
     this.actionError,
   });
 
-  bool get hasAnyAccess => canReadCashFlow;
+  bool get hasAnyAccess => canReadCashFlow || canReadFleetHealth;
 
   ReportsUiState copyWith({
     PeriodChoice? choice,
@@ -104,6 +126,12 @@ class ReportsUiState {
     UiText? error,
     bool clearError = false,
     bool? canReadCashFlow,
+    bool? canReadFleetHealth,
+    String? fleetQuery,
+    List<FleetCustomer>? fleetResults,
+    bool? isSearchingFleet,
+    FleetCustomer? fleetCustomer,
+    bool clearFleetCustomer = false,
     bool? showCustomRangePicker,
     ReportDownload? busy,
     bool clearBusy = false,
@@ -122,7 +150,15 @@ class ReportsUiState {
       isOnline: isOnline ?? this.isOnline,
       error: clearError ? null : (error ?? this.error),
       canReadCashFlow: canReadCashFlow ?? this.canReadCashFlow,
-      showCustomRangePicker: showCustomRangePicker ?? this.showCustomRangePicker,
+      canReadFleetHealth: canReadFleetHealth ?? this.canReadFleetHealth,
+      fleetQuery: fleetQuery ?? this.fleetQuery,
+      fleetResults: fleetResults ?? this.fleetResults,
+      isSearchingFleet: isSearchingFleet ?? this.isSearchingFleet,
+      fleetCustomer: clearFleetCustomer
+          ? null
+          : (fleetCustomer ?? this.fleetCustomer),
+      showCustomRangePicker:
+          showCustomRangePicker ?? this.showCustomRangePicker,
       busy: clearBusy ? null : (busy ?? this.busy),
       pdf: clearPdf ? null : (pdf ?? this.pdf),
       pdfActionMode: pdfActionMode ?? this.pdfActionMode,

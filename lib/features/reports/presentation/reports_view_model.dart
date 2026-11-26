@@ -5,20 +5,27 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/domain/business_time.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reception/application/search_customers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/application/download_cash_flow_pdf_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/reports/application/download_fleet_health_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/application/get_cash_flow_summary_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/presentation/reports_ui_state.dart';
 import 'package:flutter/foundation.dart';
 
+/// Reportes del taller: flujo de caja (US41) y PDF consolidado de salud de flota por cliente (US43 E2).
 class ReportsViewModel extends ChangeNotifier {
   final GetCashFlowSummaryUseCase getCashFlow;
   final DownloadCashFlowPdfUseCase? downloadCashFlowPdf;
+  final DownloadFleetHealthPdfUseCase? downloadFleetHealthPdf;
+  final SearchCustomersUseCase? searchCustomers;
   final ObserveSessionUseCase observeSession;
   final ConnectivityObserver connectivity;
 
   ReportsViewModel({
     required this.getCashFlow,
     this.downloadCashFlowPdf,
+    this.downloadFleetHealthPdf,
+    this.searchCustomers,
     required this.observeSession,
     required this.connectivity,
     DateTime Function()? now,
@@ -33,7 +40,14 @@ class ReportsViewModel extends ChangeNotifier {
     _subscription = observeSession.execute().listen((session) {
       final wasAllowed = _state.canReadCashFlow;
       final canRead = session?.has(Permission.cashflowExportPdf) ?? false;
-      _update(_state.copyWith(canReadCashFlow: canRead));
+      _update(
+        _state.copyWith(
+          canReadCashFlow: canRead,
+          canReadFleetHealth:
+              (session?.canReadAiReports() ?? false) &&
+              (session?.has(Permission.customersRead) ?? false),
+        ),
+      );
       if (canRead && !wasAllowed) load();
     });
     connectivity.addListener(_onConnectivity);
@@ -44,11 +58,16 @@ class ReportsViewModel extends ChangeNotifier {
 
   StreamSubscription<Object?>? _subscription;
   int _loadSeq = 0;
+  int _searchSeq = 0;
   bool _disposed = false;
 
   void _onConnectivity() {
     final online = connectivity.isOnline;
-    final retry = online && !_state.isOnline && _state.canReadCashFlow && _state.summary == null;
+    final retry =
+        online &&
+        !_state.isOnline &&
+        _state.canReadCashFlow &&
+        _state.summary == null;
     _update(_state.copyWith(isOnline: online));
     if (retry) load();
   }
@@ -64,7 +83,13 @@ class ReportsViewModel extends ChangeNotifier {
       _update(_state.copyWith(summary: summary, isLoading: false));
     } on Object catch (e) {
       if (seq != _loadSeq) return;
-      _update(_state.copyWith(clearSummary: true, isLoading: false, error: toUiText(e)));
+      _update(
+        _state.copyWith(
+          clearSummary: true,
+          isLoading: false,
+          error: toUiText(e),
+        ),
+      );
     }
   }
 
@@ -81,13 +106,20 @@ class ReportsViewModel extends ChangeNotifier {
     load();
   }
 
-  void onOpenCustomRange() => _update(_state.copyWith(showCustomRangePicker: true));
+  void onOpenCustomRange() =>
+      _update(_state.copyWith(showCustomRangePicker: true));
 
-  void onDismissCustomRange() => _update(_state.copyWith(showCustomRangePicker: false));
+  void onDismissCustomRange() =>
+      _update(_state.copyWith(showCustomRangePicker: false));
 
-  Future<void> onDownloadCashFlow([ReportPdfActionMode mode = ReportPdfActionMode.open]) async {
+  Future<void> onDownloadCashFlow([
+    ReportPdfActionMode mode = ReportPdfActionMode.open,
+  ]) async {
     final downloader = downloadCashFlowPdf;
-    if (downloader == null || !_state.canReadCashFlow || !_state.isOnline || _state.busy != null) {
+    if (downloader == null ||
+        !_state.canReadCashFlow ||
+        !_state.isOnline ||
+        _state.busy != null) {
       return;
     }
     _update(
@@ -107,9 +139,111 @@ class ReportsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> onOpenCashFlowPdf() => onDownloadCashFlow(ReportPdfActionMode.open);
+  // ---- Salud de flota (US43 E2)
 
-  Future<void> onShareCashFlowPdf() => onDownloadCashFlow(ReportPdfActionMode.share);
+  /// Busca al cliente por nombre o documento (con red en el backend; sin red, entre los ya vistos). Escribir de
+  /// nuevo suelta el cliente elegido. Una respuesta tardía de una búsqueda anterior se descarta.
+  Future<void> onFleetQueryChange(String query) async {
+    final seq = ++_searchSeq;
+    final text = query.trim();
+    final search = searchCustomers;
+    if (text.length < 2 || search == null) {
+      _update(
+        _state.copyWith(
+          fleetQuery: query,
+          fleetResults: const [],
+          isSearchingFleet: false,
+          clearFleetCustomer: true,
+        ),
+      );
+      return;
+    }
+    _update(
+      _state.copyWith(
+        fleetQuery: query,
+        isSearchingFleet: true,
+        clearFleetCustomer: true,
+      ),
+    );
+    try {
+      final found = await search.execute(text);
+      if (seq != _searchSeq) return;
+      _update(
+        _state.copyWith(
+          fleetResults: [
+            for (final customer in found.take(5))
+              FleetCustomer(
+                id: customer.id,
+                name: customer.displayName,
+                taxId: customer.taxId,
+              ),
+          ],
+          isSearchingFleet: false,
+        ),
+      );
+    } on Object {
+      if (seq != _searchSeq) return;
+      _update(_state.copyWith(fleetResults: const [], isSearchingFleet: false));
+    }
+  }
+
+  void onSelectFleetCustomer(FleetCustomer customer) => _update(
+    _state.copyWith(
+      fleetCustomer: customer,
+      fleetQuery: customer.name,
+      fleetResults: const [],
+      clearActionError: true,
+    ),
+  );
+
+  void onClearFleetCustomer() => _update(
+    _state.copyWith(
+      fleetQuery: '',
+      fleetResults: const [],
+      clearFleetCustomer: true,
+    ),
+  );
+
+  Future<void> onDownloadFleetHealth([
+    ReportPdfActionMode mode = ReportPdfActionMode.open,
+  ]) async {
+    final downloader = downloadFleetHealthPdf;
+    final customer = _state.fleetCustomer;
+    if (downloader == null ||
+        customer == null ||
+        !_state.canReadFleetHealth ||
+        !_state.isOnline ||
+        _state.busy != null) {
+      return;
+    }
+    _update(
+      _state.copyWith(
+        busy: ReportDownload.fleetHealth,
+        pdfActionMode: mode,
+        clearActionError: true,
+      ),
+    );
+    try {
+      final file = await downloader.execute(customer.id);
+      _update(_state.copyWith(pdf: file));
+    } on Object catch (e) {
+      _update(_state.copyWith(actionError: toUiText(e)));
+    } finally {
+      _update(_state.copyWith(clearBusy: true));
+    }
+  }
+
+  Future<void> onOpenFleetHealthPdf() =>
+      onDownloadFleetHealth(ReportPdfActionMode.open);
+
+  Future<void> onShareFleetHealthPdf() =>
+      onDownloadFleetHealth(ReportPdfActionMode.share);
+
+  Future<void> onOpenCashFlowPdf() =>
+      onDownloadCashFlow(ReportPdfActionMode.open);
+
+  Future<void> onShareCashFlowPdf() =>
+      onDownloadCashFlow(ReportPdfActionMode.share);
 
   void onPdfHandled() => _update(_state.copyWith(clearPdf: true));
 
