@@ -208,7 +208,7 @@ void main() {
       expect(inbox.pending, isNull);
     });
 
-    testWidgets('la solicitud de suspensión (US29) abre la tarea', (
+    testWidgets('la solicitud de suspensión (US29) abre la orden', (
       tester,
     ) async {
       session.current = _session;
@@ -219,7 +219,7 @@ void main() {
       inbox.post(const TaskSuspensionReviewDestination('wo-1', 't-1'));
       await tester.pumpAndSettle();
 
-      expect(find.text('destino:taskDetail'), findsOneWidget);
+      expect(find.text('destino:workOrderDetail'), findsOneWidget);
       expect(inbox.pending, isNull);
     });
 
