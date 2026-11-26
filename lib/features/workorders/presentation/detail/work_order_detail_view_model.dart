@@ -1125,7 +1125,7 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
         busyAction: null,
         assignBayForm: null,
         detail: detail,
-        notice: UiText.resource((s) => s.baysAssignedNotice(bay.name)),
+        notice: UiText.resource((s) => s.orderBayAssignedNotice(bay.name)),
       ),
     );
   }
