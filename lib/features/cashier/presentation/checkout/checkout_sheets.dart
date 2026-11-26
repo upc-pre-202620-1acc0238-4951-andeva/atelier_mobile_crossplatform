@@ -15,8 +15,8 @@ import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
-/// Hojas de confirmación de "Cobrar y entregar": Emitir, Anular y Nota de Crédito (US37) y Registrar cobro
-/// (US38). Emitir y cobrar son irreversibles: llevan la placa a la vista.
+/// Hojas de confirmación de "Cobrar y entregar": Emitir, Anular y Nota de Crédito (US37), Registrar cobro
+/// (US38) y Entregar vehículo (US39). Emitir, cobrar y entregar son irreversibles: llevan la placa a la vista.
 class CheckoutSheetBody extends StatelessWidget {
   final WorkOrderCheckoutUiState state;
   final WorkOrderCheckoutViewModel vm;
@@ -80,6 +80,27 @@ class CheckoutSheetBody extends StatelessWidget {
             onPaymentMethod: vm.onPaymentMethod,
             onPaymentReference: vm.onPaymentReference,
           ),
+        ],
+      ),
+      DeliverCheckoutSheet() => AtelierBottomSheet(
+        title: strings.cashierDeliverTitle,
+        actions: _sheetActions(
+          strings: strings,
+          confirm: strings.cashierDeliverConfirm,
+          enabled: state.isOnline,
+          loading: state.busy == CheckoutAction.delivering,
+          online: state.isOnline,
+          onConfirm: vm.onConfirmDeliver,
+          onCancel: vm.onDismissSheet,
+        ),
+        content: [
+          _OrderIdentity(order: state.order),
+          Text(
+            strings.cashierDeliverBody,
+            style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface),
+          ),
+          if (state.sheetError != null)
+            AtelierBanner(message: state.sheetError!.asString(strings), icon: Icons.error_outline),
         ],
       ),
       VoidCheckoutSheet(:final voucher, :final form) => AtelierBottomSheet(

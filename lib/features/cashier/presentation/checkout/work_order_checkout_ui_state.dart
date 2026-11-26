@@ -15,6 +15,9 @@ enum CheckoutAction {
   preparing,
   issuing,
   paying,
+  markingPaid,
+  exitPass,
+  delivering,
   voiding,
   issuingCreditNote,
   refreshingSunat,
@@ -250,6 +253,11 @@ class PaymentCheckoutSheet extends CheckoutSheet {
   const PaymentCheckoutSheet(this.form);
 }
 
+/// Confirmar la entrega en patio (US39 E2).
+class DeliverCheckoutSheet extends CheckoutSheet {
+  const DeliverCheckoutSheet();
+}
+
 class IssueCheckoutSheet extends CheckoutSheet {
   final IssueForm form;
 
@@ -270,8 +278,8 @@ class CreditNoteCheckoutSheet extends CheckoutSheet {
   const CreditNoteCheckoutSheet({required this.voucher, required this.form});
 }
 
-/// "Cobrar y entregar": comprobante SUNAT (US37) y cobros multi-medio (US38) de una orden. Todo es en línea
-/// (docs/06-offline-sync.md); sin red solo se ve lo que hay en Drift. Sin pase de salida ni entrega (US39).
+/// "Cobrar y entregar": una orden `COMPLETED` pasa por comprobante (US37), cobros (US38), pase de salida y
+/// entrega (US39). Todo es en línea (docs/06-offline-sync.md); sin red solo se ve lo que hay en Drift.
 class WorkOrderCheckoutUiState {
   final String workOrderId;
   final WorkOrder? order;
@@ -289,10 +297,19 @@ class WorkOrderCheckoutUiState {
   final UiText? sheetError;
   final UiText? actionError;
   final UiText? notice;
+
+  /// El vehículo ya se entregó en esta pantalla (US39 E2): la orden `PAID` sale de la caché de la sede.
+  final bool delivered;
+
+  /// PDF del pase de salida recién descargado; la pantalla lo abre o comparte según [exitPassActionMode].
+  final File? exitPass;
+  final CheckoutDocumentActionMode exitPassActionMode;
   final PendingDocumentFile? pendingDocument;
   final bool canReadInvoices;
   final bool canIssueVoucher;
   final bool canRegisterPayment;
+  final bool canIssueExitPass;
+  final bool canDeliver;
 
   const WorkOrderCheckoutUiState({
     required this.workOrderId,
@@ -309,10 +326,15 @@ class WorkOrderCheckoutUiState {
     this.sheetError,
     this.actionError,
     this.notice,
+    this.delivered = false,
+    this.exitPass,
+    this.exitPassActionMode = CheckoutDocumentActionMode.open,
     this.pendingDocument,
     this.canReadInvoices = false,
     this.canIssueVoucher = false,
     this.canRegisterPayment = false,
+    this.canIssueExitPass = false,
+    this.canDeliver = false,
   });
 
   List<VoucherView> get vouchers => liveVouchers != null
@@ -339,7 +361,13 @@ class WorkOrderCheckoutUiState {
 
   bool get isCompleted => order?.status == WorkOrderStatus.completed;
   bool get isOrderPaid => order?.status == WorkOrderStatus.paid;
-  bool get hasAnyAccess => canReadInvoices || canIssueVoucher || canRegisterPayment;
+
+  /// El comprobante está saldado pero la orden todavía no figura pagada (US39 E2).
+  bool get canMarkPaid =>
+      canRegisterPayment && !isOrderPaid && activeVoucher?.paymentStatus == VoucherPaymentStatus.paid;
+
+  bool get hasAnyAccess =>
+      canReadInvoices || canIssueVoucher || canRegisterPayment || canIssueExitPass || canDeliver;
 
   /// Sin comprobantes en pantalla y todavía leyéndolos: esqueleto. Con caché se pinta Drift y basta la barra.
   bool get showSkeleton => !hasLoaded && vouchers.isEmpty && error == null;
@@ -358,10 +386,15 @@ class WorkOrderCheckoutUiState {
     Object? sheetError = _keep,
     Object? actionError = _keep,
     Object? notice = _keep,
+    bool? delivered,
+    Object? exitPass = _keep,
+    CheckoutDocumentActionMode? exitPassActionMode,
     Object? pendingDocument = _keep,
     bool? canReadInvoices,
     bool? canIssueVoucher,
     bool? canRegisterPayment,
+    bool? canIssueExitPass,
+    bool? canDeliver,
   }) => WorkOrderCheckoutUiState(
     workOrderId: workOrderId,
     order: identical(order, _keep) ? this.order : order as WorkOrder?,
@@ -379,11 +412,16 @@ class WorkOrderCheckoutUiState {
     sheetError: identical(sheetError, _keep) ? this.sheetError : sheetError as UiText?,
     actionError: identical(actionError, _keep) ? this.actionError : actionError as UiText?,
     notice: identical(notice, _keep) ? this.notice : notice as UiText?,
+    delivered: delivered ?? this.delivered,
+    exitPass: identical(exitPass, _keep) ? this.exitPass : exitPass as File?,
+    exitPassActionMode: exitPassActionMode ?? this.exitPassActionMode,
     pendingDocument: identical(pendingDocument, _keep)
         ? this.pendingDocument
         : pendingDocument as PendingDocumentFile?,
     canReadInvoices: canReadInvoices ?? this.canReadInvoices,
     canIssueVoucher: canIssueVoucher ?? this.canIssueVoucher,
     canRegisterPayment: canRegisterPayment ?? this.canRegisterPayment,
+    canIssueExitPass: canIssueExitPass ?? this.canIssueExitPass,
+    canDeliver: canDeliver ?? this.canDeliver,
   );
 }

@@ -4,11 +4,14 @@ import 'dart:io';
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/deliver_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/download_exit_pass_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_credit_note_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_voucher_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/mark_work_order_paid_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/observe_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/prepare_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/refresh_voucher_status_use_case.dart';
@@ -53,6 +56,12 @@ class _MockRefreshSunat extends Mock implements RefreshVoucherStatusUseCase {}
 class _MockGetPayments extends Mock implements GetVoucherPaymentsUseCase {}
 
 class _MockRegisterPayment extends Mock implements RegisterPaymentUseCase {}
+
+class _MockMarkPaid extends Mock implements MarkWorkOrderPaidUseCase {}
+
+class _MockDownloadExitPass extends Mock implements DownloadExitPassUseCase {}
+
+class _MockDeliver extends Mock implements DeliverVehicleUseCase {}
 
 class _FakeVoucherDraft extends Fake implements VoucherDraft {}
 
@@ -192,6 +201,9 @@ void main() {
     issueCreditNote: issueCreditNote,
     getPayments: getPayments,
     registerPayment: _MockRegisterPayment(),
+    markPaid: _MockMarkPaid(),
+    downloadExitPass: _MockDownloadExitPass(),
+    deliverVehicle: _MockDeliver(),
     connectivity: connectivity,
     downloadVoucherDocument: downloadDoc,
     refreshVoucherStatus: refreshSunat,

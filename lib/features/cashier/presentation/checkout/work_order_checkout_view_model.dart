@@ -5,11 +5,14 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/deliver_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/download_exit_pass_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/download_voucher_document_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_voucher_payments_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/get_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_credit_note_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/issue_voucher_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/cashier/application/mark_work_order_paid_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/observe_work_order_vouchers_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/prepare_voucher_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/application/refresh_voucher_status_use_case.dart';
@@ -30,8 +33,8 @@ import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_ord
 import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
-/// "Cobrar y entregar" de una orden: comprobante SUNAT (US37) y cobros multi-medio (US38). Todo en línea y de
-/// una acción a la vez (docs/06-offline-sync.md). Sin pase de salida ni entrega (US39).
+/// "Cobrar y entregar" de una orden: comprobante SUNAT (US37), cobros multi-medio (US38), pase de salida y
+/// entrega en patio (US39). Todo en línea y de una acción a la vez (docs/06-offline-sync.md).
 class WorkOrderCheckoutViewModel extends ChangeNotifier {
   final String workOrderId;
   final ObserveSessionUseCase observeSession;
@@ -45,6 +48,9 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
   final IssueCreditNoteUseCase issueCreditNote;
   final GetVoucherPaymentsUseCase getPayments;
   final RegisterPaymentUseCase registerPayment;
+  final MarkWorkOrderPaidUseCase markPaid;
+  final DownloadExitPassUseCase downloadExitPass;
+  final DeliverVehicleUseCase deliverVehicle;
   final ConnectivityObserver connectivity;
   final DownloadVoucherDocumentUseCase? downloadVoucherDocument;
   final RefreshVoucherStatusUseCase? refreshVoucherStatus;
@@ -62,6 +68,9 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
     required this.issueCreditNote,
     required this.getPayments,
     required this.registerPayment,
+    required this.markPaid,
+    required this.downloadExitPass,
+    required this.deliverVehicle,
     required this.connectivity,
     this.downloadVoucherDocument,
     this.refreshVoucherStatus,
@@ -100,6 +109,8 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
         canReadInvoices: canReadInvoices,
         canIssueVoucher: canIssueVoucher,
         canRegisterPayment: session?.has(Permission.paymentsCreate) == true,
+        canIssueExitPass: session?.has(Permission.exitPassesIssue) == true,
+        canDeliver: session?.has(Permission.vehicleHandoverExecute) == true,
       ),
     );
     if (canReadInvoices && !prevCanRead && !_state.isRefreshing) {
@@ -539,6 +550,91 @@ class WorkOrderCheckoutViewModel extends ChangeNotifier {
     } on PaymentOutcomeUnknownException catch (e) {
       _update(_state.copyWith(sheet: null, actionError: toCashierText(e)));
       await _load();
+    } on Object catch (e) {
+      _update(_state.copyWith(sheetError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  /// `POST /work-orders/{id}/mark-as-paid` (US39 E2). El backend rechaza si queda saldo: se muestra su `message`.
+  Future<void> onMarkPaid() async {
+    if (!_state.canMarkPaid || !_canAct) return;
+    _update(_state.copyWith(busy: CheckoutAction.markingPaid, actionError: null, notice: null));
+    try {
+      final order = await markPaid.execute(WorkOrderId(workOrderId));
+      _mergeOrder(order);
+      _update(_state.copyWith(notice: UiText.resource((s) => s.cashierMarkPaidDone)));
+    } on Object catch (e) {
+      _update(_state.copyWith(actionError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  // endregion
+
+  // region Pase de salida y entrega (US39)
+
+  /// `GET /work-orders/{id}/exit-pass/pdf`. Solo con la orden `PAID`; si no, el backend responde 422 (E3).
+  Future<void> onDownloadExitPass([
+    CheckoutDocumentActionMode mode = CheckoutDocumentActionMode.open,
+  ]) async {
+    if (!_state.canIssueExitPass || !_state.isOrderPaid || !_canAct) return;
+    _update(
+      _state.copyWith(
+        busy: CheckoutAction.exitPass,
+        exitPassActionMode: mode,
+        actionError: null,
+        notice: null,
+      ),
+    );
+    try {
+      final file = await downloadExitPass.execute(WorkOrderId(workOrderId));
+      _update(_state.copyWith(exitPass: file));
+    } on Object catch (e) {
+      _update(_state.copyWith(actionError: toCashierText(e)));
+    } finally {
+      _update(_state.copyWith(busy: null));
+    }
+  }
+
+  void onOpenExitPass() => onDownloadExitPass(CheckoutDocumentActionMode.open);
+
+  void onShareExitPass() => onDownloadExitPass(CheckoutDocumentActionMode.share);
+
+  void onExitPassHandled() => _update(_state.copyWith(exitPass: null));
+
+  void onExitPassOpenFailed() => _update(
+    _state.copyWith(exitPass: null, actionError: UiText.resource((s) => s.cashierExitPassNoApp)),
+  );
+
+  void onOpenDeliver() {
+    if (!_state.canDeliver || !_state.isOrderPaid || _state.delivered || !_canAct) return;
+    _update(
+      _state.copyWith(
+        sheet: const DeliverCheckoutSheet(),
+        sheetError: null,
+        notice: null,
+        actionError: null,
+      ),
+    );
+  }
+
+  /// `POST /work-orders/{id}/deliver`: entrega el vehículo y libera la bahía. Sin firma del cliente (H29).
+  Future<void> onConfirmDeliver() async {
+    if (_state.sheet is! DeliverCheckoutSheet || !_canAct) return;
+    _update(_state.copyWith(busy: CheckoutAction.delivering, sheetError: null));
+    try {
+      final order = await deliverVehicle.execute(WorkOrderId(workOrderId));
+      _mergeOrder(order);
+      _update(
+        _state.copyWith(
+          sheet: null,
+          delivered: true,
+          notice: UiText.resource((s) => s.cashierDeliverDone),
+        ),
+      );
     } on Object catch (e) {
       _update(_state.copyWith(sheetError: toCashierText(e)));
     } finally {
