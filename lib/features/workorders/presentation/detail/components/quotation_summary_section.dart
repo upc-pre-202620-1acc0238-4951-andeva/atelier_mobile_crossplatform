@@ -18,7 +18,7 @@ import 'package:flutter/material.dart';
 
 /// US22 + US23: una tarea con su desglose en cascada (mano de obra + repuestos imputados = total de la
 /// tarea). Sin tarjeta: la fila de la tarea abre su cronómetro y debajo van mecánico, mano de obra y
-/// repuestos, sangrados. Sin "Reanudar tarea" ni el chip de suspensión por aprobar (US29).
+/// repuestos, sangrados. US29: chip de suspensión por aprobar y, para quien la valida, revisar o reanudar.
 class TaskBlock extends StatelessWidget {
   final TaskDetail task;
   final WorkOrderDetailUiState state;
@@ -29,10 +29,14 @@ class TaskBlock extends StatelessWidget {
   final ValueChanged<TaskProduct> onReturnPart;
   final VoidCallback onAssignMechanic;
   final VoidCallback? onDeleteTask;
+  final VoidCallback? onReviewSuspension;
+  final VoidCallback? onResumeTask;
   final bool showOuterDivider;
 
   const TaskBlock({
     super.key,
+    this.onReviewSuspension,
+    this.onResumeTask,
     required this.task,
     required this.state,
     required this.onOpenTask,
@@ -69,10 +73,13 @@ class TaskBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             spacing: 4,
             children: [
-              AtelierChip(
-                text: taskStatusLabel(strings, task.status, task.holdReason),
-                kind: taskStatusChipKind(task.status, task.holdReason),
-              ),
+              if (task.hasPendingSuspension)
+                AtelierChip(text: strings.taskSuspensionPending, kind: ChipKind.wait)
+              else
+                AtelierChip(
+                  text: taskStatusLabel(strings, task.status, task.holdReason),
+                  kind: taskStatusChipKind(task.status, task.holdReason),
+                ),
               Text(
                 cascadeTotalOf(task, currency).format(),
                 style: context.text.titleMedium?.copyWith(color: scheme.onSurface),
@@ -110,6 +117,23 @@ class TaskBlock extends StatelessWidget {
                   canEdit: state.canEditTaskParts,
                   onEdit: () => onEditPart(product),
                   onReturn: () => onReturnPart(product),
+                ),
+              if (state.canValidateSuspension && task.hasPendingSuspension && onReviewSuspension != null)
+                AtelierButton(
+                  text: strings.ordersSuspensionTitle,
+                  onClick: onReviewSuspension!,
+                  style: AtelierButtonStyle.tonal,
+                  enabled: state.canReviewSuspension,
+                  icon: Icons.fact_check_outlined,
+                ),
+              if (state.canValidateSuspension && task.isSuspended && onResumeTask != null)
+                AtelierButton(
+                  text: strings.ordersResumeTask,
+                  onClick: onResumeTask!,
+                  style: AtelierButtonStyle.tonal,
+                  enabled: state.canReviewSuspension,
+                  loading: state.busyAction == WorkOrderDetailAction.resumeSuspended,
+                  icon: Icons.play_arrow_outlined,
                 ),
               if (state.canAddPartToTask ||
                   (state.canModifyTasks && task.status != TaskStatus.completed && onDeleteTask != null))

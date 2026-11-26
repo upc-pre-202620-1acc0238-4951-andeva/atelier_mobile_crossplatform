@@ -25,6 +25,7 @@ import 'package:atelier_mobile_crossplatform/features/team/application/get_branc
 import 'package:atelier_mobile_crossplatform/features/team/application/get_pending_justifications_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/team/application/reject_justification_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/team/domain/team_attendance.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/find_pending_suspensions_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
@@ -56,8 +57,10 @@ class AdminDashboardViewModel extends ChangeNotifier {
   final ConnectivityObserver connectivity;
   final BusinessTime time;
   final Duration linger;
+  final FindPendingSuspensionsUseCase? findPendingSuspensions;
 
   AdminDashboardViewModel({
+    this.findPendingSuspensions,
     required this.observeSession,
     required this.getBranches,
     required this.observeOrders,
@@ -156,6 +159,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
         canCreateWorkOrder: has(Permission.workOrdersCreate),
         canReadWorkOrders: has(Permission.workOrdersRead),
         canStartWorkOrders: has(Permission.workOrdersUpdate),
+        canValidateSuspension: has(Permission.tasksHoldValidate),
         canReadAppointments: has(Permission.appointmentsRead),
         canReadCustomers: has(Permission.customersRead),
         canRegisterCustomers: has(Permission.customersCreate),
@@ -224,6 +228,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
       } on Object catch (e) {
         failure = e;
       }
+      if (failure == null && has(Permission.tasksHoldValidate)) await _loadPendingSuspensions();
     }
     if (has(Permission.appointmentsRead)) {
       await _ignoring(() => refreshAppointments.execute(_today));
@@ -266,6 +271,16 @@ class AdminDashboardViewModel extends ChangeNotifier {
         error: failure == null ? null : toUiText(failure),
       ),
     );
+  }
+
+  /// US29 (H5): solicitudes de suspensión que esperan al supervisor en las órdenes activas.
+  Future<void> _loadPendingSuspensions() async {
+    final find = findPendingSuspensions;
+    if (find == null) return;
+    await _ignoring(() async {
+      final pending = await find.execute(await observeOrders.execute().first);
+      _update(_state.copyWith(pendingSuspensions: pending));
+    });
   }
 
   Future<void> _ignoring(Future<void> Function() run) async {

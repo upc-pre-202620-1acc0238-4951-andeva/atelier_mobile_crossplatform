@@ -237,7 +237,7 @@ void main() {
       );
     }
 
-    testWidgets('mecánico: tarea en curso, cola y accesos, sin bahías ni alertas de stock', (
+    testWidgets('mecánico: tarea en curso, cola y accesos (incluye bahías), sin alertas de stock', (
       tester,
     ) async {
       await _pump(
@@ -272,10 +272,10 @@ void main() {
       expect(find.text('Diagnóstico OBD-II'), findsOneWidget);
       expect(find.text('Reportar hallazgo'), findsOneWidget);
       expect(find.text('Consultar repuestos'), findsOneWidget);
-      // Fuera de esta versión: bahías (US40), alertas de stock (US34) y telemetría en vivo (US18).
-      expect(find.text('Tablero de bahías'), findsNothing);
+      expect(find.text('Tablero de bahías'), findsOneWidget);
+      // Fuera de esta versión: alertas de stock (US34).
       expect(find.text('Requieren reposición'), findsNothing);
-      expect(find.textContaining('Telemetría en vivo'), findsNothing);
+      expect(find.textContaining('Telemetría en vivo'), findsOneWidget);
       await _teardown(tester);
     });
 

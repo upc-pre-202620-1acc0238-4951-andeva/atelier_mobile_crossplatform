@@ -2,6 +2,8 @@
 
 Auditoría completa de los 207 archivos de UI en `atelier-mobile-android` (`core/designsystem`, `core/presentation`, `navigation` y `features/*/presentation`) frente a los 208 archivos equivalentes en `atelier_mobile_crossplatform` (rama `feature/presentation`), más revisión de cambios post-paso 9 en capas inferiores y barrido de alcanzabilidad de las historias excluidas según [08-presentation-port-plan.md](08-presentation-port-plan.md).
 
+> **Actualización (Sprint 3):** esta auditoría describe el cierre del paso 10. Después se portó la interfaz de US18, US28, US29, US30 y US40 (además de US36, US37 y US41), así que las filas, diferencias y exclusiones de este documento sobre esas historias ya no reflejan el código. El estado vigente está en [07-roadmap.md](07-roadmap.md#sprint-3--interfaz-de-us18-us28-us29-us30-y-us40). No se volvió a auditar archivo por archivo contra Android.
+
 ## Resumen cuantitativo
 
 - **Total archivos UI en Android:** 207

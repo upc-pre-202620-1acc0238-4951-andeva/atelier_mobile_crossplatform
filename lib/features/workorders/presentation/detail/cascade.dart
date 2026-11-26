@@ -154,10 +154,10 @@ extension WorkOrderCopy on WorkOrder {
 }
 
 extension WorkOrderDetailCopy on WorkOrderDetail {
-  WorkOrderDetail copyWith({WorkOrder? workOrder}) {
+  WorkOrderDetail copyWith({WorkOrder? workOrder, List<TaskDetail>? tasks}) {
     return WorkOrderDetail(
       workOrder: workOrder ?? this.workOrder,
-      tasks: tasks,
+      tasks: tasks ?? this.tasks,
       proposals: proposals,
       intakeImages: intakeImages,
       createdAt: createdAt,

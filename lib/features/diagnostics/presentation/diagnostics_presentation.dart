@@ -5,6 +5,12 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/cl
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/connect_obd_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/convert_alert_to_appointment_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/disconnect_obd_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/auth/application/request_notification_permission_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/freeze_telemetry_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_latest_telemetry_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/start_live_telemetry_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/stop_live_telemetry_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/live/live_telemetry_view_model.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/generate_health_report_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_active_installation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_health_report_detail_use_case.dart';
@@ -40,8 +46,8 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/obs
 import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 
-/// Pantallas y ViewModels de `diagnostics` (hub, fallas DTC e informe IA). Telemetría en vivo (US18) y
-/// exportación PDF (US43) quedan fuera de esta capa.
+/// Pantallas y ViewModels de `diagnostics` (hub, telemetría en vivo, fallas DTC e informe IA). La
+/// exportación PDF (US43) queda fuera de esta capa.
 void setupDiagnosticsPresentation() {
   registerDiagnosticsRoutes();
 
@@ -75,6 +81,22 @@ void setupDiagnosticsPresentation() {
       acknowledgePredictiveAlert: getIt<AcknowledgePredictiveAlertUseCase>(),
       convertAlertToAppointment: getIt<ConvertAlertToAppointmentUseCase>(),
       initialVehicleId: initialVehicleId,
+    ),
+  );
+  getIt.registerFactoryParam<LiveTelemetryViewModel, VehicleArgs, void>(
+    (args, _) => LiveTelemetryViewModel(
+      vehicleId: args.vehicleId,
+      plate: args.plate,
+      observeSession: getIt<ObserveSessionUseCase>(),
+      observeVehicle: getIt<ObserveVehicleUseCase>(),
+      observeLiveTelemetry: getIt<ObserveLiveTelemetryUseCase>(),
+      observeSyncState: getIt<ObserveDiagnosticsSyncStateUseCase>(),
+      startTelemetry: getIt<StartLiveTelemetryUseCase>(),
+      stopTelemetry: getIt<StopLiveTelemetryUseCase>(),
+      freezeTelemetry: getIt<FreezeTelemetryUseCase>(),
+      getLatestTelemetry: getIt<GetLatestTelemetryUseCase>(),
+      requestNotificationPermission: getIt<RequestNotificationPermissionUseCase>(),
+      connectivity: getIt<ConnectivityObserver>(),
     ),
   );
   getIt.registerFactoryParam<VehicleFaultsViewModel, VehicleArgs, void>(

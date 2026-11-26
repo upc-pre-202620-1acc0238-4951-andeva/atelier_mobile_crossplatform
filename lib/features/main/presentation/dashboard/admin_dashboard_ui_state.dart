@@ -3,11 +3,12 @@ import 'package:atelier_mobile_crossplatform/features/attendance/domain/today_at
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/appointment.dart';
 import 'package:atelier_mobile_crossplatform/features/team/domain/team_attendance.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/domain/pending_suspension.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
 
 /// "Hoy": el panel de la sede. Todo sale de listas (órdenes abiertas, citas, clientes, asistencia del día,
-/// escáneres OBD y descargos por revisar). Sin tablero de bahías, alertas de stock ni suspensiones: son
-/// historias fuera de esta versión (US34, US40, US29).
+/// escáneres OBD, descargos y suspensiones por revisar, US29). Sin tablero de bahías ni alertas de stock
+/// (US40, US34).
 class AdminDashboardUiState {
   /// Día de Lima `yyyy-MM-dd`; vacío mientras no se conoce.
   final String today;
@@ -52,7 +53,12 @@ class AdminDashboardUiState {
   final bool canWorkOwnTasks;
   final int activePersonalTasksCount;
 
+  final bool canValidateSuspension;
+  final List<PendingSuspension> pendingSuspensions;
+
   const AdminDashboardUiState({
+    this.canValidateSuspension = false,
+    this.pendingSuspensions = const [],
     this.today = '',
     this.fullName = '',
     this.tenantName = '',
@@ -110,8 +116,12 @@ class AdminDashboardUiState {
       ? orders.where((o) => o.status == WorkOrderStatus.draft).toList()
       : const [];
 
+  List<PendingSuspension> get suspensionDecisions => canValidateSuspension ? pendingSuspensions : const [];
+
   int get decisionsCount =>
-      draftOrders.length + justifications.where((j) => !resolved.containsKey(j.id)).length;
+      draftOrders.length +
+      suspensionDecisions.length +
+      justifications.where((j) => !resolved.containsKey(j.id)).length;
 
   /// Esqueleto solo sin caché: primera carga y nada que pintar todavía.
   bool get showSkeleton => !hasLoaded && orders.isEmpty;
@@ -157,8 +167,12 @@ class AdminDashboardUiState {
     TodayAttendance? personalTodayAttendance,
     bool? canWorkOwnTasks,
     int? activePersonalTasksCount,
+    bool? canValidateSuspension,
+    List<PendingSuspension>? pendingSuspensions,
   }) {
     return AdminDashboardUiState(
+      canValidateSuspension: canValidateSuspension ?? this.canValidateSuspension,
+      pendingSuspensions: pendingSuspensions ?? this.pendingSuspensions,
       today: today ?? this.today,
       fullName: fullName ?? this.fullName,
       tenantName: tenantName ?? this.tenantName,

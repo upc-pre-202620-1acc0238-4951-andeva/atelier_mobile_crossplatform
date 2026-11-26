@@ -1,5 +1,6 @@
 import 'package:atelier_mobile_crossplatform/features/attendance/presentation/attendance_presentation.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/presentation/auth_presentation.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/presentation/bays_presentation.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/presentation/cashier_presentation.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/diagnostics_presentation.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/inventory_presentation.dart';
@@ -26,4 +27,5 @@ void setupPresentation() {
   setupDiagnosticsPresentation();
   setupReportsPresentation();
   setupCashierPresentation();
+  setupBaysPresentation();
 }

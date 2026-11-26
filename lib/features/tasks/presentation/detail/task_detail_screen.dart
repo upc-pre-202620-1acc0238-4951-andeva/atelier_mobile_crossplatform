@@ -15,6 +15,8 @@ import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_status.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/chronometer_timer.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/part_sheets.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_evidence_section.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_photo_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_parts_section.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_pit_action_dock.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/components/task_sheets.dart';
@@ -27,7 +29,7 @@ import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
 
 /// US27, US23, US33: detalle de tarea con panel Ficha, cronómetro tabular, controles grandes de fosa, reapertura
-/// e imputación FIFO de repuestos. Sin evidencia fotográfica (US28), suspensiones (US29) ni cierre (US30).
+/// e imputación FIFO de repuestos. Incluye evidencia fotográfica (US28), suspensión (US29) y cierre (US30).
 class TaskDetailScreen extends StatefulWidget {
   final TaskDetailArgs args;
 
@@ -84,8 +86,88 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 
+  /// Hojas de cierre (US30), suspensión (US29) y evidencia (US28) alrededor de la pantalla.
+  Widget _storySheets({required Widget child}) {
+    final vm = viewModel;
+    return _sheet<CompleteTaskForm>(
+      value: () => vm.state.completeForm,
+      onDismiss: vm.onCompleteDismiss,
+      builder: (context, form) => CompleteTaskSheet(
+        form: form,
+        isOnline: vm.state.isOnline,
+        isSaving: vm.state.busyAction == TaskAction.complete,
+        invalidField: vm.state.invalidField,
+        error: vm.state.error,
+        onHoursChange: vm.onCompleteHoursChange,
+        onNotesChange: vm.onCompleteNotesChange,
+        onConfirm: vm.onCompleteConfirm,
+        onDismiss: vm.onCompleteDismiss,
+      ),
+      child: _sheet<RequestSuspensionForm>(
+        value: () => vm.state.suspensionForm,
+        onDismiss: vm.onRequestSuspensionDismiss,
+        builder: (context, form) => RequestSuspensionSheet(
+          form: form,
+          isOnline: vm.state.isOnline,
+          isSaving: vm.state.busyAction == TaskAction.requestSuspension,
+          invalidField: vm.state.invalidField,
+          error: vm.state.error,
+          onDescriptionChange: vm.onSuspensionDescriptionChange,
+          onPartQueryChange: vm.onSuspensionPartQueryChange,
+          onPartSelect: vm.onSuspensionPartSelect,
+          onPartClear: vm.onSuspensionPartClear,
+          onConfirm: vm.onRequestSuspensionConfirm,
+          onDismiss: vm.onRequestSuspensionDismiss,
+        ),
+        child: _sheet<ReviewSuspensionForm>(
+          value: () => vm.state.reviewForm,
+          onDismiss: vm.onReviewSuspensionDismiss,
+          builder: (context, _) => ReviewSuspensionSheet(
+            reason: vm.state.pendingSuspensionReason,
+            requestedAt: vm.state.pendingSuspensionRequestedAt,
+            isOnline: vm.state.isOnline,
+            busyAction: vm.state.busyAction,
+            error: vm.state.error,
+            onApprove: vm.onApproveSuspension,
+            onReject: vm.onRejectSuspension,
+            onDismiss: vm.onReviewSuspensionDismiss,
+          ),
+          child: _sheet<ResumeSuspensionForm>(
+            value: () => vm.state.resumeForm,
+            onDismiss: vm.onResumeSuspendedDismiss,
+            builder: (context, _) => ResumeSuspensionSheet(
+              isOnline: vm.state.isOnline,
+              isSaving: vm.state.busyAction == TaskAction.resumeSuspended,
+              error: vm.state.error,
+              onConfirm: vm.onResumeSuspendedConfirm,
+              onDismiss: vm.onResumeSuspendedDismiss,
+            ),
+            child: _sheet<EvidenceCaptureForm>(
+              value: () => vm.state.evidenceForm,
+              onDismiss: vm.onEvidenceDismiss,
+              builder: (context, form) => EvidenceCaptureSheet(
+                form: form,
+                isSaving: vm.state.busyAction == TaskAction.attachEvidence,
+                invalidField: vm.state.invalidField,
+                error: vm.state.error,
+                onKindChange: vm.onEvidenceKindChange,
+                onNoteChange: vm.onEvidenceNoteChange,
+                onCaptured: vm.onEvidenceCaptured,
+                onDenied: vm.onCameraDenied,
+                onDismiss: vm.onEvidenceDismiss,
+              ),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _storySheets(child: _baseSheets(context));
+
+  Widget _baseSheets(BuildContext context) {
     final vm = viewModel;
     return _sheet<PauseForm>(
       value: () => vm.state.pauseForm,
@@ -140,6 +222,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               builder: (context, _) => TaskDetailContent(
                 state: vm.state,
                 actions: TaskDetailActions(
+                  onCompleteClick: vm.onCompleteClick,
+                  onRequestSuspensionClick: vm.onRequestSuspensionClick,
+                  onReviewSuspensionClick: vm.onReviewSuspensionClick,
+                  onResumeSuspendedClick: vm.onResumeSuspendedClick,
+                  onAddEvidenceClick: vm.onAddEvidenceClick,
                   onBack: () => Navigator.of(context).maybePop(),
                   onRetry: vm.load,
                   onStart: vm.onStart,
@@ -236,7 +323,12 @@ class TaskDetailContent extends StatelessWidget {
     final onReportFinding = actions.onReportFinding;
     final showFinding = state.canReportFinding && onReportFinding != null && state.resolvedWorkOrderId.trim().isNotEmpty;
     final banners = _banners(strings);
-    final showReopen = state.canReopenTask && state.status == TaskStatus.completed;
+    final showControls =
+        (state.canReopenTask && state.status == TaskStatus.completed) ||
+        state.showRequestSuspension ||
+        state.showReviewSuspension ||
+        state.showResumeSuspended;
+    final showEvidence = state.detail != null || state.pendingEvidence.isNotEmpty || state.canAddEvidence;
     return [
       ...header,
       if (banners.isNotEmpty)
@@ -259,7 +351,7 @@ class TaskDetailContent extends StatelessWidget {
           loading: state.isLoading && !hasData,
         ),
       ),
-      if (showReopen) _padded(_PitControls(state: state, actions: actions)),
+      if (showControls) _padded(_PitControls(state: state, actions: actions)),
       if (showObd || showFinding)
         _padded(
           _QuickActions(
@@ -268,6 +360,14 @@ class TaskDetailContent extends StatelessWidget {
             showFinding: showFinding,
             onOpenObd: actions.onOpenObd,
             onReportFinding: onReportFinding,
+          ),
+        ),
+      if (showEvidence)
+        _padded(
+          TaskEvidenceSection(
+            images: state.evidenceImages,
+            pending: state.pendingEvidence,
+            onAdd: state.canAddEvidence && !state.isBusy ? actions.onAddEvidenceClick : null,
           ),
         ),
       if (state.detail != null || state.canChargeParts)
@@ -308,7 +408,7 @@ class TaskDetailContent extends StatelessWidget {
         ),
       if (!state.hasOpenSheet && error != null)
         AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
-      // Solo informativo: solicitar o revisar una suspensión (US29) no se hace desde el móvil.
+      // US29: aviso de solicitud en espera; quien valida la revisa desde "Control de labor".
       if (state.hasPendingSuspension)
         AtelierBanner(
           title: strings.tasksSeg2SuspensionPendingTitle,
@@ -318,7 +418,7 @@ class TaskDetailContent extends StatelessWidget {
           icon: Icons.hourglass_empty_outlined,
           kind: BannerKind.wait,
         ),
-      if (state.isSuspended)
+      if (state.isSuspended && !state.canValidateSuspension)
         AtelierBanner(
           message: strings.taskSuspendedNotice,
           icon: Icons.info_outline,
@@ -410,7 +510,7 @@ class _DescriptionCard extends StatelessWidget {
   }
 }
 
-/// Control de labor: hoy solo la reapertura de una tarea cerrada (la solicitud de suspensión es US29).
+/// Control de labor: suspensión por pieza (US29) y reapertura de una tarea cerrada.
 class _PitControls extends StatelessWidget {
   final TaskDetailUiState state;
   final TaskDetailActions actions;
@@ -422,27 +522,51 @@ class _PitControls extends StatelessWidget {
     final strings = AppLocalizations.of(context);
     final haptics = rememberAtelierHaptics();
     final hasDockAbove =
-        state.canTrackTime &&
-        (state.status == TaskStatus.assigned ||
-            state.isPausedByMechanic ||
-            state.status == TaskStatus.inProgress);
+        state.showComplete ||
+        (state.canTrackTime &&
+            (state.status == TaskStatus.assigned ||
+                state.isPausedByMechanic ||
+                state.status == TaskStatus.inProgress));
+    final enabled = !state.isBusy && state.isOnline;
+    Widget button(String text, IconData icon, VoidCallback onClick) => AtelierButton(
+      text: text,
+      onClick: () {
+        haptics.toggle();
+        onClick();
+      },
+      style: AtelierButtonStyle.outlined,
+      minHeight: 56,
+      enabled: enabled,
+      icon: icon,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
       children: [
         AtelierSectionHeader(title: strings.tasksSeg2ControlsSection),
-        AtelierButton(
-          text: strings.tasksSeg2ReopenBtn,
-          onClick: () {
-            haptics.toggle();
-            actions.onReopenClick();
-          },
-          style: AtelierButtonStyle.outlined,
-          minHeight: 56,
-          enabled: state.canReopen && state.isOnline,
-          loading: state.busyAction == TaskAction.reopen,
-          icon: Icons.restart_alt_outlined,
-        ),
+        if (state.showRequestSuspension)
+          button(
+            strings.tasksSeg2SuspensionRequestBtn,
+            Icons.report_problem_outlined,
+            actions.onRequestSuspensionClick,
+          ),
+        if (state.showReviewSuspension)
+          button(strings.ordersSuspensionTitle, Icons.fact_check_outlined, actions.onReviewSuspensionClick),
+        if (state.showResumeSuspended)
+          button(strings.ordersResumeTask, Icons.play_arrow_outlined, actions.onResumeSuspendedClick),
+        if (state.canReopenTask && state.status == TaskStatus.completed)
+          AtelierButton(
+            text: strings.tasksSeg2ReopenBtn,
+            onClick: () {
+              haptics.toggle();
+              actions.onReopenClick();
+            },
+            style: AtelierButtonStyle.outlined,
+            minHeight: 56,
+            enabled: state.canReopen && state.isOnline,
+            loading: state.busyAction == TaskAction.reopen,
+            icon: Icons.restart_alt_outlined,
+          ),
         if (!state.isOnline && !hasDockAbove) const AtelierRequiresConnection(),
       ],
     );

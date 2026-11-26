@@ -12,8 +12,8 @@ import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Dock de acción elevado en el tercio inferior para los controles primarios de fosa (Iniciar / Reanudar y
-/// Pausar), con baliza en vivo cuando la labor está corriendo y objetivos táctiles ≥ 56 dp. El botón "Terminar
-/// tarea" (US30) no se construye en el móvil.
+/// Pausar, y Terminar tarea de US30), con baliza en vivo cuando la labor está corriendo y objetivos táctiles
+/// ≥ 56 dp.
 class TaskPitActionDock extends StatelessWidget {
   final TaskDetailUiState state;
   final TaskDetailActions actions;
@@ -24,7 +24,8 @@ class TaskPitActionDock extends StatelessWidget {
   Widget build(BuildContext context) {
     final showStart = state.canTrackTime && (state.status == TaskStatus.assigned || state.isPausedByMechanic);
     final showPause = state.canTrackTime && state.status == TaskStatus.inProgress;
-    if (!showStart && !showPause) return const SizedBox.shrink();
+    final showComplete = state.showComplete;
+    if (!showStart && !showPause && !showComplete) return const SizedBox.shrink();
 
     final strings = AppLocalizations.of(context);
     final colors = context.atelier;
@@ -74,7 +75,7 @@ class TaskPitActionDock extends StatelessWidget {
                   loading: state.busyAction == TaskAction.start,
                   icon: Icons.play_arrow_outlined,
                 )
-              else
+              else if (showPause)
                 AtelierButton(
                   text: strings.taskPause,
                   onClick: () {
@@ -86,6 +87,19 @@ class TaskPitActionDock extends StatelessWidget {
                   enabled: state.canPause && state.isOnline,
                   loading: state.busyAction == TaskAction.pause,
                   icon: Icons.pause_outlined,
+                ),
+              if (showComplete)
+                AtelierButton(
+                  text: strings.taskComplete,
+                  onClick: () {
+                    haptics.toggle();
+                    actions.onCompleteClick();
+                  },
+                  style: AtelierButtonStyle.outlined,
+                  minHeight: 56,
+                  enabled: state.canComplete && state.isOnline,
+                  loading: state.busyAction == TaskAction.complete,
+                  icon: Icons.task_alt_outlined,
                 ),
             ],
           ),

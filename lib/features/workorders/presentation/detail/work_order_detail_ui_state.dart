@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
@@ -15,9 +16,20 @@ const _genericProductPrefix = 'Product ';
 
 const _keep = Object();
 
-/// Acción en línea en curso dentro del detalle/proforma de la orden. Sin las de bahía y suspensiones
-/// (US40 y US29).
+/// US40: hoja para asignar o cambiar la bahía de la orden.
+class AssignBayForm {
+  final bool isLoading;
+  final List<WorkBay> bays;
+
+  const AssignBayForm({this.isLoading = true, this.bays = const []});
+}
+
+/// Acción en línea en curso dentro del detalle/proforma de la orden.
 enum WorkOrderDetailAction {
+  approveSuspension,
+  rejectSuspension,
+  resumeSuspended,
+  assignBay,
   addTask,
   editLabor,
   deleteTask,
@@ -179,7 +191,18 @@ class WorkOrderDetailUiState {
   final bool canOpenObd;
   final bool hasCheckoutPermission;
 
+  /// US29: quien valida suspensiones y la tarea cuya solicitud está revisando.
+  final bool canValidateSuspension;
+  final TaskDetail? reviewingSuspensionTask;
+
+  final bool canReassignBays;
+  final AssignBayForm? assignBayForm;
+
   const WorkOrderDetailUiState({
+    this.canReassignBays = false,
+    this.assignBayForm,
+    this.canValidateSuspension = false,
+    this.reviewingSuspensionTask,
     this.cachedOrder,
     this.detail,
     this.services = const [],
@@ -252,7 +275,14 @@ class WorkOrderDetailUiState {
       assigningMechanicTask != null ||
       cancelForm != null ||
       showQuotationDecision ||
+      reviewingSuspensionTask != null ||
+      assignBayForm != null ||
       generatedPdf != null;
+
+  bool get showBayAction => canReassignBays && isEditableOrder;
+  bool get canAssignBay => showBayAction && isOnline && !isBusy;
+
+  bool get canReviewSuspension => canValidateSuspension && isOnline && !isBusy;
 
   CascadeBreakdown? get breakdown => detail?.cascadeBreakdown();
 
@@ -335,8 +365,18 @@ class WorkOrderDetailUiState {
     bool? canReadPartMovements,
     bool? canOpenObd,
     bool? hasCheckoutPermission,
+    bool? canValidateSuspension,
+    Object? reviewingSuspensionTask = _keep,
+    bool? canReassignBays,
+    Object? assignBayForm = _keep,
   }) {
     return WorkOrderDetailUiState(
+      canReassignBays: canReassignBays ?? this.canReassignBays,
+      assignBayForm: identical(assignBayForm, _keep) ? this.assignBayForm : assignBayForm as AssignBayForm?,
+      canValidateSuspension: canValidateSuspension ?? this.canValidateSuspension,
+      reviewingSuspensionTask: identical(reviewingSuspensionTask, _keep)
+          ? this.reviewingSuspensionTask
+          : reviewingSuspensionTask as TaskDetail?,
       cachedOrder: identical(cachedOrder, _keep) ? this.cachedOrder : cachedOrder as WorkOrder?,
       detail: identical(detail, _keep) ? this.detail : detail as WorkOrderDetail?,
       services: services ?? this.services,

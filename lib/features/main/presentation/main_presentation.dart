@@ -36,6 +36,7 @@ import 'package:atelier_mobile_crossplatform/features/team/application/approve_j
 import 'package:atelier_mobile_crossplatform/features/team/application/get_branch_daily_attendance_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/team/application/get_pending_justifications_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/team/application/reject_justification_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/find_pending_suspensions_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
@@ -75,6 +76,7 @@ void setupMainPresentation() {
       observePendingSyncCount: getIt<ObservePendingOperationCountUseCase>(),
       observePushHistory: getIt<ObservePushHistoryUseCase>(),
       connectivity: getIt<ConnectivityObserver>(),
+      findPendingSuspensions: getIt<FindPendingSuspensionsUseCase>(),
     ),
   );
   getIt.registerFactory<AdminAttendanceViewModel>(

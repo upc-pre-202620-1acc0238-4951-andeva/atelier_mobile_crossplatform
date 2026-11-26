@@ -51,6 +51,7 @@ enum AppRoute {
   // diagnostics
   diagnosticsHub, // DiagnosticsHubArgs?
   vehicleFaults, // VehicleArgs
+  liveTelemetry, // VehicleArgs
   aiHealthReport, // VehicleArgs
   // cashier
   dailyCash,
@@ -58,6 +59,8 @@ enum AppRoute {
   workOrderCheckout, // String workOrderId
   // reports
   reports,
+  // bays
+  bays,
 }
 
 class LoginArgs {

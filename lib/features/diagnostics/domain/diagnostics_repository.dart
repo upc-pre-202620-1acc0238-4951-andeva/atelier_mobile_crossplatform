@@ -59,6 +59,9 @@ abstract class DiagnosticsRepository {
 
   Stream<DiagnosticsSyncState> watchSyncState(String vehicleId);
 
+  /// `GET /iot/telemetry/vehicle/{id}/latest` (`iot:telemetry:read`); `null` sin lecturas (404). En línea.
+  Future<TelemetrySample?> getLatestTelemetry(String vehicleId);
+
   /// `GET /iot/faults/vehicle/{id}/active` → caché; conserva las fallas aún en cola.
   Future<void> refreshActiveFaults(String vehicleId);
 

@@ -19,6 +19,7 @@ import 'package:atelier_mobile_crossplatform/features/workorders/application/cre
 import 'package:atelier_mobile_crossplatform/features/workorders/application/delete_service_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/download_quotation_pdf_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/find_draft_work_order_for_vehicle_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/application/find_pending_suspensions_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_branch_mechanics_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_part_movements_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_profitability_use_case.dart';
@@ -108,6 +109,9 @@ void setupWorkOrdersDependencies() {
   );
   getIt.registerLazySingleton<GetWorkOrderDetailUseCase>(
     () => GetWorkOrderDetailUseCase(repository: getIt<WorkOrderRepository>()),
+  );
+  getIt.registerLazySingleton<FindPendingSuspensionsUseCase>(
+    () => FindPendingSuspensionsUseCase(repository: getIt<WorkOrderRepository>()),
   );
   getIt.registerLazySingleton<OpenWorkOrderUseCase>(
     () => OpenWorkOrderUseCase(repository: getIt<WorkOrderRepository>()),

@@ -242,6 +242,7 @@ class DiagnosticsHubViewModel extends ChangeNotifier {
       planIncludesAi: planAi,
       canUseTelemetry: session?.canUseTelemetry() ?? false,
       canReadTelemetry: session?.canReadTelemetry() ?? false,
+      canReadRemoteTelemetry: has(Permission.telemetryRead) && (session?.canReadTelemetry() ?? false),
       canUseAiDiagnostics: session?.canUseAiDiagnostics() ?? false,
       canReadAiReports: session?.canReadAiReports() ?? false,
       canReadDevices: has(Permission.devicesRead),

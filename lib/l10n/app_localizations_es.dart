@@ -1343,6 +1343,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskCompleteConfirm => 'Confirmar cierre';
 
   @override
+  String get taskCompletedNotice =>
+      'Tarea cerrada. Sale de tus tareas pendientes.';
+
+  @override
   String get taskFieldHours => 'Escribe un número de horas mayor o igual a 0.';
 
   @override
@@ -4399,6 +4403,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diagAlertTypeGeneric => 'Alerta predictiva';
 
   @override
+  String get diagActionLiveSub => 'RPM, temperatura, presión y voltaje en vivo';
+
+  @override
+  String get diagLivePidRpm => 'RPM';
+
+  @override
+  String get diagLivePidCoolant => 'Refrigerante';
+
+  @override
+  String get diagLivePidIntake => 'Presión de admisión';
+
+  @override
+  String get diagLivePidVoltage => 'Voltaje';
+
+  @override
+  String get diagLivePidSpeed => 'Velocidad';
+
+  @override
+  String get diagLivePidFuel => 'Combustible';
+
+  @override
+  String get diagLiveOutOfRange => 'Fuera de rango';
+
+  @override
+  String get diagLiveFrozenClose => 'Descartar muestra';
+
+  @override
+  String get diagLiveExitTitle => '¿Salir del muestreo?';
+
+  @override
+  String get diagLiveExitBody =>
+      'El muestreo está activo. Si sales, se detiene; lo ya capturado no se pierde.';
+
+  @override
+  String get diagLiveExitConfirm => 'Detener y salir';
+
+  @override
   String get diagLiveTitle => 'Telemetría';
 
   @override
@@ -6209,6 +6250,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get baysTapToAssign => 'Toca para ingresar una orden';
 
   @override
+  String get baysUnavailableError => 'Esa bahía no está libre. Elige otra.';
+
+  @override
+  String baysMovedNotice(String p1) {
+    return 'Orden movida a $p1.';
+  }
+
+  @override
+  String baysAssignedNotice(String p1) {
+    return 'Orden ingresada a $p1.';
+  }
+
+  @override
+  String get baysNoAssignableOrders => 'No hay órdenes activas sin bahía.';
+
+  @override
+  String get baysNoFreeTargets => 'No hay otras bahías registradas.';
+
+  @override
+  String get baysNameError => 'Escribe un nombre de hasta 100 caracteres.';
+
+  @override
   String get baysMechanicsSection => 'Mecánicos y faenas en bahía';
 
   @override
@@ -6428,6 +6491,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksSeg2EvidenceTakePhoto => 'Tomar foto';
+
+  @override
+  String get tasksSeg2EvidencePickGallery => 'Elegir de la galería';
 
   @override
   String get tasksSeg2EvidenceEmpty =>

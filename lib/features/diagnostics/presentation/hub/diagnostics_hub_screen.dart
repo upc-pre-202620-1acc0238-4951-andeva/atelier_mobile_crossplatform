@@ -119,6 +119,8 @@ class _DiagnosticsHubScreenState extends State<DiagnosticsHubScreen> {
               _haptics.toggle();
               vm.disconnectAdapter();
             },
+            onOpenLiveTelemetry: (vehicleId, plate) =>
+                _open(AppRoute.liveTelemetry, VehicleArgs(vehicleId: vehicleId, plate: plate)),
             onOpenVehicleFaults: (vehicleId, plate) =>
                 _open(AppRoute.vehicleFaults, VehicleArgs(vehicleId: vehicleId, plate: plate)),
             onOpenAiHealthReport: (vehicleId, plate) =>
@@ -337,6 +339,7 @@ class DiagnosticsHubActions {
   final ValueChanged<String> onSelectAdapter;
   final VoidCallback onConnectAdapter;
   final VoidCallback onDisconnectAdapter;
+  final void Function(String vehicleId, String? plate) onOpenLiveTelemetry;
   final void Function(String vehicleId, String? plate) onOpenVehicleFaults;
   final void Function(String vehicleId, String? plate) onOpenAiHealthReport;
   final ValueChanged<String> onReportFinding;
@@ -361,6 +364,7 @@ class DiagnosticsHubActions {
     required this.onSelectAdapter,
     required this.onConnectAdapter,
     required this.onDisconnectAdapter,
+    required this.onOpenLiveTelemetry,
     required this.onOpenVehicleFaults,
     required this.onOpenAiHealthReport,
     required this.onReportFinding,
@@ -388,6 +392,7 @@ class DiagnosticsHubActions {
       onSelectAdapter: (_) {},
       onConnectAdapter: () {},
       onDisconnectAdapter: () {},
+      onOpenLiveTelemetry: (_, _) {},
       onOpenVehicleFaults: (_, _) {},
       onOpenAiHealthReport: (_, _) {},
       onReportFinding: (_) {},
@@ -672,9 +677,18 @@ class _ScannerTabContent extends StatelessWidget {
     final showFinding = state.canReportFinding && workOrderId != null;
     final showFaults = state.planIncludesTelemetry && (state.canReadFaults || state.canUseTelemetry || state.canResolveFaults);
     final showAi = state.canUseAiDiagnostics || state.canReadAiReports || !state.planIncludesAi;
+    final showLive = state.planIncludesTelemetry && (state.canUseTelemetry || state.canReadRemoteTelemetry);
     return AtelierGroupedCard(
       title: strings.diagActionsSection,
       children: [
+        if (showLive)
+          AtelierGroupedRow(
+            title: strings.diagLiveTitle,
+            subtitle: strings.diagActionLiveSub,
+            icon: Icons.speed_outlined,
+            showDivider: showFaults || showAi || showFinding,
+            onClick: () => actions.onOpenLiveTelemetry(vehicleId, plate),
+          ),
         if (showFaults)
           AtelierGroupedRow(
             title: strings.diagActionFaultsTitle,
@@ -699,7 +713,7 @@ class _ScannerTabContent extends StatelessWidget {
             showDivider: false,
             onClick: () => actions.onReportFinding(workOrderId),
           )
-        else if (!showFaults && !showAi)
+        else if (!showLive && !showFaults && !showAi)
           Padding(
             padding: const EdgeInsets.all(16),
             child: AtelierNoPermissionState(text: strings.diagHubNoPermission),

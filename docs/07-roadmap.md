@@ -413,6 +413,28 @@ Comprobado y sin comprobar:
 
 ---
 
+## Sprint 3 — interfaz de US18, US28, US29, US30 y US40
+
+Rama `feature/sprint3-us18-us28-us29-us30-us40`, desde `develop`. Sin cambio de esquema Drift. Estas historias salen de la lista de exclusiones del paso 10 (US36, US37 y US41 ya habían salido en la rama `feature/sprint3-us36-us37-us41`).
+
+**Hecho.**
+
+- **US28:** evidencias en el detalle de tarea (confirmadas y en cola), con captura por cámara o galería. Funciona sin red.
+- **US29:** solicitar, aprobar, rechazar y reanudar en el detalle de tarea; aprobar, rechazar y reanudar en el detalle de orden; marca en la lista de órdenes y decisión en "Hoy"; el push `TASK_SUSPENSION_REQUESTED` abre la tarea.
+- **US30:** *Terminar tarea* con horas precargadas del cronómetro. Solo se ofrece con la tarea en curso o en una pausa propia. En pausa se sugiere el tiempo guardado al pausar; si no se conoce, el campo queda vacío.
+- **US40:** tablero de bahías con sondeo cada 30 s solo mientras se ve, mover, ingresar y liberar órdenes, registrar, poner en mantenimiento y restaurar bahías; asignar o cambiar bahía desde la orden. Accesos desde "Módulos" y el inicio de taller. Se agregaron `CreateWorkBay`, `SetBayMaintenance`, `RestoreBay` y `ReleaseBay`. El cambio de mecánico (US40 E1) sigue en el detalle de la orden, no en el tablero.
+- **US18:** pantalla de telemetría en vivo (umbrales, muestra congelada, aviso sin PID 0105, confirmación al salir con el muestreo activo) y lectura remota con `GetLatestTelemetry` para quien tiene `iot:telemetry:read`.
+
+**Cuidado (H5).** Como no hay endpoint que liste suspensiones pendientes, la lista de órdenes y "Hoy" llaman a `FindPendingSuspensionsUseCase`, que pide el detalle de cada orden activa, una por una, en cada recarga y solo con `operations:tasks:hold_validate`. Con muchas órdenes abiertas es una carga a vigilar. Una orden cuyo detalle falla se omite.
+
+Comprobado y sin comprobar:
+
+- **Comprobado en Windows** con Flutter 3.47.7: `flutter analyze` y `flutter test`.
+- **APK debug sin compilar:** en el equipo usado, Gradle no resolvió el plugin `org.gradle.kotlin.kotlin-dsl` 6.6.4 de las herramientas de Flutter, antes de llegar al código de la app. Queda pendiente repetirlo.
+- **Sin comprobar:** emulador y teléfono físico, backend real, Supabase, cámara y galería, ELM327 real, push real e **iOS** (`Info.plist` ya declara los permisos de cámara y galería; falta probarlos en una Mac).
+
+---
+
 ## Pendientes y riesgos conocidos
 
 | Tema | Detalle | Afecta |

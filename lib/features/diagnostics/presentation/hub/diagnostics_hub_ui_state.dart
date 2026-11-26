@@ -65,6 +65,9 @@ class DiagnosticsHubUiState {
   final bool planIncludesAi;
   final bool canUseTelemetry;
   final bool canReadTelemetry;
+
+  /// `iot:telemetry:read` (no basta con leer fallas): ver la última lectura remota (US18).
+  final bool canReadRemoteTelemetry;
   final bool canUseAiDiagnostics;
   final bool canReadAiReports;
   final bool canReadDevices;
@@ -133,6 +136,7 @@ class DiagnosticsHubUiState {
     this.planIncludesAi = true,
     this.canUseTelemetry = false,
     this.canReadTelemetry = false,
+    this.canReadRemoteTelemetry = false,
     this.canUseAiDiagnostics = false,
     this.canReadAiReports = false,
     this.canReadDevices = false,
@@ -241,6 +245,7 @@ class DiagnosticsHubUiState {
     bool? planIncludesAi,
     bool? canUseTelemetry,
     bool? canReadTelemetry,
+    bool? canReadRemoteTelemetry,
     bool? canUseAiDiagnostics,
     bool? canReadAiReports,
     bool? canReadDevices,
@@ -313,6 +318,7 @@ class DiagnosticsHubUiState {
       planIncludesAi: planIncludesAi ?? this.planIncludesAi,
       canUseTelemetry: canUseTelemetry ?? this.canUseTelemetry,
       canReadTelemetry: canReadTelemetry ?? this.canReadTelemetry,
+      canReadRemoteTelemetry: canReadRemoteTelemetry ?? this.canReadRemoteTelemetry,
       canUseAiDiagnostics: canUseAiDiagnostics ?? this.canUseAiDiagnostics,
       canReadAiReports: canReadAiReports ?? this.canReadAiReports,
       canReadDevices: canReadDevices ?? this.canReadDevices,

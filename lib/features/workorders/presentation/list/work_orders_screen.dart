@@ -177,7 +177,11 @@ class WorkOrdersContent extends StatelessWidget {
           )
         else
           for (final order in visible)
-            _OrderRow(order: order, onClick: () => onOpenOrder(order.id.value)),
+            _OrderRow(
+              order: order,
+              suspensionPending: state.pendingSuspensionOrderIds.contains(order.id.value),
+              onClick: () => onOpenOrder(order.id.value),
+            ),
       ],
     ];
   }
@@ -253,8 +257,9 @@ class _UpdatedLine extends StatelessWidget {
 class _OrderRow extends StatelessWidget {
   final WorkOrder order;
   final VoidCallback onClick;
+  final bool suspensionPending;
 
-  const _OrderRow({required this.order, required this.onClick});
+  const _OrderRow({required this.order, required this.onClick, required this.suspensionPending});
 
   @override
   Widget build(BuildContext context) {
@@ -273,10 +278,12 @@ class _OrderRow extends StatelessWidget {
       subtitle: subtitle.isEmpty ? null : subtitle,
       plate: order.plate,
       onClick: onClick,
-      trailing: AtelierChip(
-        text: workOrderStatusLabel(strings, order.status),
-        kind: workOrderStatusChipKind(order.status),
-      ),
+      trailing: suspensionPending
+          ? AtelierChip(text: strings.ordersPendingSuspensionChip, kind: ChipKind.wait)
+          : AtelierChip(
+              text: workOrderStatusLabel(strings, order.status),
+              kind: workOrderStatusChipKind(order.status),
+            ),
     );
   }
 }

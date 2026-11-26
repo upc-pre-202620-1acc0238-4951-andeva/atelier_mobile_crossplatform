@@ -2452,6 +2452,12 @@ abstract class AppLocalizations {
   /// **'Confirmar cierre'**
   String get taskCompleteConfirm;
 
+  /// No description provided for @taskCompletedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarea cerrada. Sale de tus tareas pendientes.'**
+  String get taskCompletedNotice;
+
   /// No description provided for @taskFieldHours.
   ///
   /// In es, this message translates to:
@@ -7714,6 +7720,78 @@ abstract class AppLocalizations {
   /// **'Alerta predictiva'**
   String get diagAlertTypeGeneric;
 
+  /// No description provided for @diagActionLiveSub.
+  ///
+  /// In es, this message translates to:
+  /// **'RPM, temperatura, presión y voltaje en vivo'**
+  String get diagActionLiveSub;
+
+  /// No description provided for @diagLivePidRpm.
+  ///
+  /// In es, this message translates to:
+  /// **'RPM'**
+  String get diagLivePidRpm;
+
+  /// No description provided for @diagLivePidCoolant.
+  ///
+  /// In es, this message translates to:
+  /// **'Refrigerante'**
+  String get diagLivePidCoolant;
+
+  /// No description provided for @diagLivePidIntake.
+  ///
+  /// In es, this message translates to:
+  /// **'Presión de admisión'**
+  String get diagLivePidIntake;
+
+  /// No description provided for @diagLivePidVoltage.
+  ///
+  /// In es, this message translates to:
+  /// **'Voltaje'**
+  String get diagLivePidVoltage;
+
+  /// No description provided for @diagLivePidSpeed.
+  ///
+  /// In es, this message translates to:
+  /// **'Velocidad'**
+  String get diagLivePidSpeed;
+
+  /// No description provided for @diagLivePidFuel.
+  ///
+  /// In es, this message translates to:
+  /// **'Combustible'**
+  String get diagLivePidFuel;
+
+  /// No description provided for @diagLiveOutOfRange.
+  ///
+  /// In es, this message translates to:
+  /// **'Fuera de rango'**
+  String get diagLiveOutOfRange;
+
+  /// No description provided for @diagLiveFrozenClose.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartar muestra'**
+  String get diagLiveFrozenClose;
+
+  /// No description provided for @diagLiveExitTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Salir del muestreo?'**
+  String get diagLiveExitTitle;
+
+  /// No description provided for @diagLiveExitBody.
+  ///
+  /// In es, this message translates to:
+  /// **'El muestreo está activo. Si sales, se detiene; lo ya capturado no se pierde.'**
+  String get diagLiveExitBody;
+
+  /// No description provided for @diagLiveExitConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Detener y salir'**
+  String get diagLiveExitConfirm;
+
   /// No description provided for @diagLiveTitle.
   ///
   /// In es, this message translates to:
@@ -10906,6 +10984,42 @@ abstract class AppLocalizations {
   /// **'Toca para ingresar una orden'**
   String get baysTapToAssign;
 
+  /// No description provided for @baysUnavailableError.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa bahía no está libre. Elige otra.'**
+  String get baysUnavailableError;
+
+  /// No description provided for @baysMovedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Orden movida a {p1}.'**
+  String baysMovedNotice(String p1);
+
+  /// No description provided for @baysAssignedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Orden ingresada a {p1}.'**
+  String baysAssignedNotice(String p1);
+
+  /// No description provided for @baysNoAssignableOrders.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay órdenes activas sin bahía.'**
+  String get baysNoAssignableOrders;
+
+  /// No description provided for @baysNoFreeTargets.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay otras bahías registradas.'**
+  String get baysNoFreeTargets;
+
+  /// No description provided for @baysNameError.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe un nombre de hasta 100 caracteres.'**
+  String get baysNameError;
+
   /// No description provided for @baysMechanicsSection.
   ///
   /// In es, this message translates to:
@@ -11271,6 +11385,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tomar foto'**
   String get tasksSeg2EvidenceTakePhoto;
+
+  /// No description provided for @tasksSeg2EvidencePickGallery.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir de la galería'**
+  String get tasksSeg2EvidencePickGallery;
 
   /// No description provided for @tasksSeg2EvidenceEmpty.
   ///

@@ -104,6 +104,16 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
   }
 
   @override
+  Future<TelemetrySample?> getLatestTelemetry(String vehicleId) async {
+    try {
+      return (await api.getLatestTelemetry(vehicleId)).toDomain();
+    } on ApiException catch (e) {
+      if (e.httpStatus == 404) return null;
+      rethrow;
+    }
+  }
+
+  @override
   Future<DeviceInstallation> installDevice({
     required String deviceId,
     required String vehicleId,

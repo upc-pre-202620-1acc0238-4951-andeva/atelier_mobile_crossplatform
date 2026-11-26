@@ -4,6 +4,14 @@ import 'package:atelier_mobile_crossplatform/features/main/application/observe_p
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/add_part_to_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/approve_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/attach_task_evidence_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/complete_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/observe_pending_evidence_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/reject_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/request_suspension_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/resume_suspended_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/application/suggest_labor_hours_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/get_task_detail_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/observe_my_tasks_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/observe_task_use_case.dart';
@@ -49,6 +57,14 @@ void setupTasksPresentation() {
       addPart: getIt<AddPartToTaskUseCase>(),
       updatePartQuantity: getIt<UpdateTaskPartQuantityUseCase>(),
       removePart: getIt<RemovePartFromTaskUseCase>(),
+      suggestLaborHours: getIt<SuggestLaborHoursUseCase>(),
+      completeTask: getIt<CompleteTaskUseCase>(),
+      attachTaskEvidence: getIt<AttachTaskEvidenceUseCase>(),
+      observePendingEvidence: getIt<ObservePendingEvidenceUseCase>(),
+      requestSuspension: getIt<RequestSuspensionUseCase>(),
+      approveSuspension: getIt<ApproveSuspensionUseCase>(),
+      rejectSuspension: getIt<RejectSuspensionUseCase>(),
+      resumeSuspendedTask: getIt<ResumeSuspendedTaskUseCase>(),
       pausedElapsed: getIt<PausedElapsedStore>(),
       connectivity: getIt<ConnectivityObserver>(),
     ),
