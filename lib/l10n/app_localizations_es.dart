@@ -6680,40 +6680,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get floorHubQuickObdSubNoLive => 'Fallas DTC e informe IA';
 
   @override
-  String get invReceiveBtn => 'Recibir compra';
-
-  @override
-  String get invReceiveTitle => 'Recibir compra';
-
-  @override
-  String get invReceiveBody =>
-      'Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.';
-
-  @override
-  String get invReceiveConfirm => 'Confirmar recepción';
-
-  @override
-  String get invReceiveNumberLabel => 'Número de comprobante';
-
-  @override
-  String get invReceiveDateLabel => 'Fecha de recepción (opcional)';
-
-  @override
-  String get invReceiveDateHint => 'AAAA-MM-DD';
-
-  @override
-  String get invReceivePhotoPreview => 'Foto del comprobante';
-
-  @override
-  String get invReceiveTakePhoto => 'Tomar foto del comprobante';
-
-  @override
-  String get invReceiveRetakePhoto => 'Tomar otra foto';
-
-  @override
-  String get invReceiveRemovePhoto => 'Quitar foto';
-
-  @override
   String get invReceiveCameraDenied =>
       'Sin permiso de cámara. Actívalo en los ajustes del teléfono para fotografiar el comprobante.';
 

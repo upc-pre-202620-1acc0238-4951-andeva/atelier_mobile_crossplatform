@@ -202,7 +202,7 @@ void main() {
       expect(find.text('Orden OC-0042'), findsOneWidget);
       expect(find.text('Filtro de aceite Bosch'), findsOneWidget);
       // Sin `inventory:batches:receive` no hay botón de recepción.
-      expect(find.text('Recibir compra'), findsNothing);
+      expect(find.text('Recibir orden'), findsNothing);
 
       await _pump(
         tester,
@@ -222,7 +222,7 @@ void main() {
           onOpenReceive: () {},
         ),
       );
-      expect(find.text('Recibir compra'), findsOneWidget);
+      expect(find.text('Recibir orden'), findsOneWidget);
       await _teardown(tester);
     });
   });
