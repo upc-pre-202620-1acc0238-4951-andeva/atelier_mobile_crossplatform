@@ -7,9 +7,13 @@ import 'package:atelier_mobile_crossplatform/core/data/remote/api_client.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/employee/employee_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/auth_refresh_api.dart';
 import 'package:atelier_mobile_crossplatform/core/data/remote/session/authenticated_user_dto.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/network_exception.dart';
+import 'package:atelier_mobile_crossplatform/core/domain/push_destination.dart';
+import 'package:atelier_mobile_crossplatform/core/media/temp_cache_cleaner.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/device_token_registrar.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/accept_invitation.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/auth_errors.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/domain/invalid_invitation_exception.dart';
@@ -28,6 +32,18 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import '../../../core/support/fake_session_store.dart';
 
 class _MockRegistrar extends Mock implements DeviceTokenRegistrar {}
+
+/// Registra con qué usuario y modo lo llamó el cierre de sesión (US04/US19).
+class _RecordingHook implements PreSyncHook {
+  final List<String> calls;
+
+  _RecordingHook(this.calls);
+
+  @override
+  Future<void> beforeSync(String userId, {bool forceFlushAll = false}) async {
+    calls.add('flush:$userId:$forceFlushAll');
+  }
+}
 
 http.Response _error(
   int status, {
@@ -68,7 +84,12 @@ void main() {
   });
   tearDown(() => database.close());
 
-  AuthRepositoryImpl repository(MockClientHandler handler) {
+  AuthRepositoryImpl repository(
+    MockClientHandler handler, {
+    PreSyncHookRegistry? hooks,
+    PushInbox? pushInbox,
+    TempCacheCleaner? tempCacheCleaner,
+  }) {
     final client = ApiClient(
       client: MockClient(handler),
       baseUrl: 'https://api.test',
@@ -82,6 +103,9 @@ void main() {
       cacheDao: database.cacheMaintenanceDao,
       pendingDao: database.pendingOperationDao,
       requestSync: () => syncs++,
+      preSyncHooks: hooks,
+      pushInbox: pushInbox,
+      tempCacheCleaner: tempCacheCleaner,
     );
   }
 
@@ -471,6 +495,50 @@ void main() {
       expect(calls, ['device-token', 'sign-out']);
       expect(body, {'refreshToken': 'new-refresh'});
       await expectSignedOut();
+    });
+
+    test('US04: empaqueta lo del usuario saliente antes de revocar y limpia avisos y temporales', () async {
+      final hooks = PreSyncHookRegistry()..register(() => _RecordingHook(calls));
+      final inbox = PushInbox()..record('Orden lista', 'BKR418', const WorkOrderDetailDestination('wo1'));
+      final temp = await Directory.systemTemp.createTemp('atelier_us04');
+      addTearDown(() => temp.delete(recursive: true));
+      final pdf = File('${temp.path}/pdfs/pase.pdf');
+      await pdf.create(recursive: true);
+      final kept = File('${temp.path}/otro.txt');
+      await kept.create();
+
+      await repository(
+        (request) async {
+          calls.add('sign-out');
+          return http.Response('{}', 200);
+        },
+        hooks: hooks,
+        pushInbox: inbox,
+        tempCacheCleaner: TempCacheCleaner(temporaryDirectory: () async => temp),
+      ).signOut();
+
+      expect(calls, ['flush:u1:true', 'device-token', 'sign-out']);
+      expect(inbox.history, isEmpty);
+      expect(await pdf.exists(), isFalse);
+      expect(await kept.exists(), isTrue);
+      await expectSignedOut();
+    });
+
+    test('US04: un gancho que falla no impide salir', () async {
+      final hooks = PreSyncHookRegistry()..register(() => throw StateError('roto'));
+
+      await repository((_) async => http.Response('{}', 200), hooks: hooks).signOut();
+
+      await expectSignedOut();
+    });
+
+    test('US04: el conteo del dispositivo no necesita sesión y cuenta a todos', () async {
+      await database.pendingOperationDao.enqueue(operation('op2', 'otro-usuario'));
+      final repo = repository((_) async => http.Response('{}', 200));
+      await repo.signOut();
+
+      expect(await repo.pendingOperationCount(), 0); // Sin sesión: el del usuario es 0.
+      expect(await repo.devicePendingOperationCount(), 2);
     });
 
     test('sin red igual se sale', () async {

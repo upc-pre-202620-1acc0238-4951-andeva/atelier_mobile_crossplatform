@@ -3,6 +3,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_the
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/dtc.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/health_report.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/obd_device.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/telemetry.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/domain/vehicle_fault.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/faults/vehicle_faults_screen.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/presentation/faults/vehicle_faults_ui_state.dart';
@@ -82,9 +83,29 @@ void main() {
       expect(find.text('Toyota Hilux'), findsOneWidget);
       expect(find.text('Códigos de falla (DTC)'), findsOneWidget);
       expect(find.text('Informe de salud con IA'), findsOneWidget);
-      // US18 / US19 excluidas
+      // US18 excluida; sin nada pendiente no hay aviso de sincronización (US19).
       expect(find.text('Telemetría en vivo'), findsNothing);
       expect(find.text('Sincronizar telemetría'), findsNothing);
+      expect(find.textContaining('pendientes de sincronizar'), findsNothing);
+      await _teardown(tester);
+    });
+
+    testWidgets('US19 E1: el vehículo muestra lo capturado sin señal que espera sincronizar', (tester) async {
+      await _pump(
+        tester,
+        DiagnosticsHubContent(
+          state: DiagnosticsHubUiState(
+            selectedVehicleId: 'v1',
+            workshopVehicles: const [VehicleWithOwner(vehicle: _vehicle)],
+            canUseTelemetry: true,
+            canReadFaults: true,
+            vehicleSyncState: const DiagnosticsSyncState(pendingReadings: 12, pendingFaults: 2),
+          ),
+          actions: DiagnosticsHubActions.none(),
+        ),
+      );
+
+      expect(find.text('14 lecturas pendientes de sincronizar'), findsOneWidget);
       await _teardown(tester);
     });
 

@@ -4,6 +4,7 @@ import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/cross_isolate_lock.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/operation_handler.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/pending_operation_dao.dart';
+import 'package:atelier_mobile_crossplatform/core/data/sync/pre_sync_hook.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_processor.dart';
 import 'package:atelier_mobile_crossplatform/core/data/sync/sync_scheduler.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/api_exception.dart';
@@ -27,6 +28,20 @@ class _Handler implements OperationHandler {
   Future<OperationResult> send(PendingOperationEntity operation) {
     sent.add(operation.id);
     return onSend(operation);
+  }
+}
+
+/// Encola una operación de prueba antes del envío, como el empaquetado de telemetría (US19).
+class _EnqueueHook implements PreSyncHook {
+  final Future<void> Function(String userId) onBefore;
+  final calls = <String>[];
+
+  _EnqueueHook(this.onBefore);
+
+  @override
+  Future<void> beforeSync(String userId, {bool forceFlushAll = false}) async {
+    calls.add('$userId:$forceFlushAll');
+    await onBefore(userId);
   }
 }
 
@@ -293,6 +308,50 @@ void main() {
     final row = (await dao.findById('a'))!;
     expect(row.status, 'PENDING');
     expect(row.attempts, 1);
+  });
+
+  group('PreSyncHook (US19)', () {
+    SyncProcessor withHooks(PreSyncHookRegistry hooks) => SyncProcessor(
+      dao: dao,
+      session: session,
+      lock: lock,
+      handlers: registry,
+      scheduler: scheduler,
+      maxAttemptsMessage: 'No se pudo sincronizar',
+      ensureFreshToken: session.getAuthToken,
+      preSyncHooks: hooks,
+      now: () => clock,
+    );
+
+    test('lo que el gancho encola sale en la misma corrida', () async {
+      final handler = respond(() async {});
+      final hook = _EnqueueHook((userId) => enqueue('lote', userId: userId));
+      final hooks = PreSyncHookRegistry()..register(() => hook);
+
+      expect(await withHooks(hooks).run(), SyncOutcome.completed);
+
+      expect(hook.calls, ['u1:false']);
+      expect(handler.sent, ['lote']);
+      expect(await dao.findById('lote'), isNull);
+    });
+
+    test('un gancho que falla no impide enviar la cola', () async {
+      final handler = respond(() async {});
+      await enqueue('a');
+      final hooks = PreSyncHookRegistry()..register(() => _EnqueueHook((_) => throw StateError('roto')));
+
+      expect(await withHooks(hooks).run(), SyncOutcome.completed);
+      expect(handler.sent, ['a']);
+    });
+
+    test('sin sesión no corre el gancho', () async {
+      final hook = _EnqueueHook((_) async {});
+      final hooks = PreSyncHookRegistry()..register(() => hook);
+      session.userId = null;
+
+      expect(await withHooks(hooks).run(), SyncOutcome.noSession);
+      expect(hook.calls, isEmpty);
+    });
   });
 
   test('sin sesión no hace nada y conserva la cola', () async {
