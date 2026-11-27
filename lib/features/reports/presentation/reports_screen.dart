@@ -6,6 +6,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_panels.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_segmented_control.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_sheet.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_skeleton.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_states.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_surface.dart';
@@ -18,6 +19,7 @@ import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/date_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/document_intents.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/state_sheet_host.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/domain/cash_flow.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/presentation/reports_ui_state.dart';
@@ -103,8 +105,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// `DateRangePicker` de Material 3 en un diálogo, con el periodo vigente preseleccionado.
   Future<void> _openRangePicker() async {
-    if (!mounted || _pickerOpen || !viewModel.state.showCustomRangePicker)
+    if (!mounted || _pickerOpen || !viewModel.state.showCustomRangePicker) {
       return;
+    }
     _pickerOpen = true;
     final strings = AppLocalizations.of(context);
     final period = viewModel.state.period;
@@ -112,10 +115,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       context: context,
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
-      initialDateRange: DateTimeRange(
-        start: _parseDay(period.from),
-        end: _parseDay(period.to),
-      ),
+      initialDateRange: DateTimeRange(start: _parseDay(period.from), end: _parseDay(period.to)),
       confirmText: strings.commonConfirm,
       cancelText: strings.commonCancel,
     );
@@ -129,33 +129,40 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    return StateSheetHost<FleetSheet>(
       listenable: viewModel,
-      builder: (context, _) => ReportsContent(
-        state: viewModel.state,
-        onBack: () => Navigator.of(context).maybePop(),
-        onRetry: viewModel.load,
-        onChoice: viewModel.onChoice,
-        onOpenCustomRange: viewModel.onOpenCustomRange,
-        onOpenCashFlowPdf: () {
+      value: () => viewModel.state.fleetSheet,
+      onDismiss: viewModel.onDismissFleet,
+      sheetBuilder: (context, sheet) => FleetSheetContent(
+        sheet: sheet,
+        busy: viewModel.state.busy == ReportDownload.fleetHealth,
+        online: viewModel.state.isOnline,
+        onActionMode: viewModel.onFleetActionMode,
+        onQuery: viewModel.onFleetQuery,
+        onSearch: viewModel.onFleetSearch,
+        onPick: (customer) {
           _haptics.confirm();
-          viewModel.onOpenCashFlowPdf();
+          viewModel.onFleetPick(customer);
         },
-        onShareCashFlowPdf: () {
-          _haptics.confirm();
-          viewModel.onShareCashFlowPdf();
-        },
-        onFleetQueryChange: viewModel.onFleetQueryChange,
-        onSelectFleetCustomer: viewModel.onSelectFleetCustomer,
-        onClearFleetCustomer: viewModel.onClearFleetCustomer,
-        onOpenFleetPdf: () {
-          _haptics.confirm();
-          viewModel.onOpenFleetHealthPdf();
-        },
-        onShareFleetPdf: () {
-          _haptics.confirm();
-          viewModel.onShareFleetHealthPdf();
-        },
+      ),
+      child: ListenableBuilder(
+        listenable: viewModel,
+        builder: (context, _) => ReportsContent(
+          state: viewModel.state,
+          onBack: () => Navigator.of(context).maybePop(),
+          onRetry: viewModel.load,
+          onChoice: viewModel.onChoice,
+          onOpenCustomRange: viewModel.onOpenCustomRange,
+          onOpenCashFlowPdf: () {
+            _haptics.confirm();
+            viewModel.onOpenCashFlowPdf();
+          },
+          onShareCashFlowPdf: () {
+            _haptics.confirm();
+            viewModel.onShareCashFlowPdf();
+          },
+          onOpenFleet: viewModel.onOpenFleet,
+        ),
       ),
     );
   }
@@ -178,11 +185,7 @@ class ReportsContent extends StatelessWidget {
   final VoidCallback onOpenCustomRange;
   final VoidCallback? onOpenCashFlowPdf;
   final VoidCallback? onShareCashFlowPdf;
-  final ValueChanged<String>? onFleetQueryChange;
-  final ValueChanged<FleetCustomer>? onSelectFleetCustomer;
-  final VoidCallback? onClearFleetCustomer;
-  final VoidCallback? onOpenFleetPdf;
-  final VoidCallback? onShareFleetPdf;
+  final VoidCallback? onOpenFleet;
 
   const ReportsContent({
     super.key,
@@ -193,22 +196,14 @@ class ReportsContent extends StatelessWidget {
     required this.onOpenCustomRange,
     this.onOpenCashFlowPdf,
     this.onShareCashFlowPdf,
-    this.onFleetQueryChange,
-    this.onSelectFleetCustomer,
-    this.onClearFleetCustomer,
-    this.onOpenFleetPdf,
-    this.onShareFleetPdf,
+    this.onOpenFleet,
   });
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final summary = state.summary;
-    final rawSkeleton =
-        state.canReadCashFlow &&
-        state.isLoading &&
-        summary == null &&
-        state.error == null;
+    final rawSkeleton = state.canReadCashFlow && state.isLoading && summary == null && state.error == null;
     return Scaffold(
       body: Column(
         children: [
@@ -221,13 +216,7 @@ class ReportsContent extends StatelessWidget {
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 24),
-                  children: _items(
-                    context,
-                    strings,
-                    summary,
-                    rawSkeleton,
-                    showSkeleton,
-                  ),
+                  children: _items(context, strings, summary, rawSkeleton, showSkeleton),
                 ),
               ),
             ),
@@ -257,9 +246,7 @@ class ReportsContent extends StatelessWidget {
               : [
                   PanelFigure(
                     value: summary.movements.length.toString(),
-                    label: strings.reportsMovementsLabel(
-                      summary.movements.length,
-                    ),
+                    label: strings.reportsMovementsLabel(summary.movements.length),
                   ),
                 ],
         ),
@@ -270,17 +257,9 @@ class ReportsContent extends StatelessWidget {
           child: AtelierNoPermissionState(text: strings.reportsNoAccess),
         )
       else ...[
-        if (state.canReadFleetHealth)
-          _FleetHealthSection(
-            state: state,
-            onQueryChange: onFleetQueryChange ?? (_) {},
-            onSelect: onSelectFleetCustomer ?? (_) {},
-            onClear: onClearFleetCustomer ?? () {},
-            onOpenPdf: onOpenFleetPdf ?? () {},
-            onSharePdf: onShareFleetPdf ?? () {},
-          ),
-        if (state.canReadCashFlow)
-          ..._cashFlow(context, strings, summary, rawSkeleton, showSkeleton),
+        if (state.canReadFleetHealth || state.fleetLockedByPlan)
+          _FleetHealthSection(state: state, onOpenFleet: onOpenFleet ?? () {}),
+        if (state.canReadCashFlow) ..._cashFlow(context, strings, summary, rawSkeleton, showSkeleton),
       ],
     ];
   }
@@ -301,16 +280,10 @@ class ReportsContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 8,
             children: [
-              AtelierBanner(
-                message: strings.reportsScopeNote,
-                icon: Icons.info_outlined,
-                kind: BannerKind.info,
-              ),
+              AtelierBanner(message: strings.reportsScopeNote, icon: Icons.info_outlined, kind: BannerKind.info),
               Text(
                 strings.reportsH31IncomeOnlyNote,
-                style: context.text.bodySmall?.copyWith(
-                  color: context.atelier.inkSecondary,
-                ),
+                style: context.text.bodySmall?.copyWith(color: context.atelier.inkSecondary),
               ),
             ],
           ),
@@ -328,28 +301,18 @@ class ReportsContent extends StatelessWidget {
         ),
         Padding(
           padding: side,
-          child: AtelierSectionHeader(
-            title: strings.reportsMovementsHeader,
-            count: summary?.movements.length,
-          ),
+          child: AtelierSectionHeader(title: strings.reportsMovementsHeader, count: summary?.movements.length),
         ),
         if (showSkeleton)
           for (var i = 0; i < 3; i++)
-            const AtelierListRow(
-              title: 'Concepto del cobro',
-              subtitle: '16/11/2026',
-              loading: true,
-            )
+            const AtelierListRow(title: 'Concepto del cobro', subtitle: '16/11/2026', loading: true)
         else if (rawSkeleton)
           const SizedBox.shrink()
         else if (summary == null)
           Padding(
             padding: side,
             child: state.isOnline
-                ? AtelierErrorState(
-                    message: state.error?.asString(strings) ?? '',
-                    onRetry: () => onRetry(),
-                  )
+                ? AtelierErrorState(message: state.error?.asString(strings) ?? '', onRetry: () => onRetry())
                 : AtelierOfflineState(onRetry: () => onRetry()),
           )
         else if (summary.movements.isEmpty)
@@ -361,18 +324,11 @@ class ReportsContent extends StatelessWidget {
           for (final movement in summary.movements)
             AtelierListRow(
               key: ValueKey(movement.transactionId),
-              title: movement.concept.trim().isEmpty
-                  ? movement.category
-                  : movement.concept,
-              subtitle: strings.reportsMovementDetail(
-                movement.movementDate.formatLimaDate(),
-                movement.referenceNumber,
-              ),
+              title: movement.concept.trim().isEmpty ? movement.category : movement.concept,
+              subtitle: strings.reportsMovementDetail(movement.movementDate.formatLimaDate(), movement.referenceNumber),
               trailing: Text(
                 _movementAmount(movement.amount, summary.currency),
-                style: context.text.titleMedium?.copyWith(
-                  color: context.scheme.onSurface,
-                ),
+                style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
               ),
             ),
       ],
@@ -382,10 +338,7 @@ class ReportsContent extends StatelessWidget {
 
 /// Importe con símbolo; los negativos llevan el signo menos tipográfico delante.
 String _movementAmount(Decimal amount, String currency) {
-  final money = Money(
-    amount: amount.abs(),
-    currency: currency == Money.usd ? Money.usd : Money.pen,
-  ).format();
+  final money = Money(amount: amount.abs(), currency: currency == Money.usd ? Money.usd : Money.pen).format();
   return amount < Decimal.zero ? '−$money' : money;
 }
 
@@ -394,11 +347,7 @@ class _Downloads extends StatelessWidget {
   final VoidCallback onOpenCashFlowPdf;
   final VoidCallback onShareCashFlowPdf;
 
-  const _Downloads({
-    required this.state,
-    required this.onOpenCashFlowPdf,
-    required this.onShareCashFlowPdf,
-  });
+  const _Downloads({required this.state, required this.onOpenCashFlowPdf, required this.onShareCashFlowPdf});
 
   @override
   Widget build(BuildContext context) {
@@ -420,9 +369,7 @@ class _Downloads extends StatelessWidget {
               children: [
                 Text(
                   strings.reportsDownloadCashflow,
-                  style: context.text.titleSmall?.copyWith(
-                    color: context.scheme.onSurface,
-                  ),
+                  style: context.text.titleSmall?.copyWith(color: context.scheme.onSurface),
                 ),
                 AtelierAdaptiveRow(
                   equalWidthInRow: true,
@@ -432,9 +379,7 @@ class _Downloads extends StatelessWidget {
                       onClick: onOpenCashFlowPdf,
                       style: AtelierButtonStyle.tonal,
                       enabled: state.isOnline && state.busy == null,
-                      loading:
-                          state.busy == ReportDownload.cashFlow &&
-                          state.pdfActionMode == ReportPdfActionMode.open,
+                      loading: state.busy == ReportDownload.cashFlow && state.pdfActionMode == ReportPdfActionMode.open,
                     ),
                     AtelierButton(
                       text: strings.reportsSharePdf,
@@ -442,17 +387,13 @@ class _Downloads extends StatelessWidget {
                       style: AtelierButtonStyle.outlined,
                       enabled: state.isOnline && state.busy == null,
                       loading:
-                          state.busy == ReportDownload.cashFlow &&
-                          state.pdfActionMode == ReportPdfActionMode.share,
+                          state.busy == ReportDownload.cashFlow && state.pdfActionMode == ReportPdfActionMode.share,
                     ),
                   ],
                 ),
                 if (!state.isOnline) const AtelierRequiresConnection(),
                 if (state.actionError != null)
-                  AtelierBanner(
-                    message: state.actionError!.asString(strings),
-                    icon: Icons.error_outline,
-                  ),
+                  AtelierBanner(message: state.actionError!.asString(strings), icon: Icons.error_outline),
               ],
             ),
           ),
@@ -493,9 +434,7 @@ class _PeriodSelector extends StatelessWidget {
               selected: _tabOf(choice),
               onSelect: (tab) => switch (tab) {
                 _PeriodTab.thisMonth => onChoice(PeriodChoice.thisMonth),
-                _PeriodTab.previousMonth => onChoice(
-                  PeriodChoice.previousMonth,
-                ),
+                _PeriodTab.previousMonth => onChoice(PeriodChoice.previousMonth),
                 _PeriodTab.thisYear => onChoice(PeriodChoice.thisYear),
                 _PeriodTab.custom => onOpenCustomRange(),
               },
@@ -507,13 +446,8 @@ class _PeriodSelector extends StatelessWidget {
               },
             ),
             Text(
-              strings.reportsPeriodRange(
-                _formatDay(period.from),
-                _formatDay(period.to),
-              ),
-              style: context.text.bodyMedium?.copyWith(
-                color: context.atelier.inkSecondary,
-              ),
+              strings.reportsPeriodRange(_formatDay(period.from), _formatDay(period.to)),
+              style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary),
             ),
           ],
         ),
@@ -522,30 +456,17 @@ class _PeriodSelector extends StatelessWidget {
   }
 }
 
-/// US43 E2: elegir al cliente y bajar el PDF consolidado de salud de su flota (semáforo por vehículo). Solo en línea.
+/// US43 E2: botón que abre la hoja para elegir al cliente y bajar el PDF consolidado de salud de su flota. Con el
+/// permiso pero sin IA en el plan, solo se dice que no está incluida. Solo en línea.
 class _FleetHealthSection extends StatelessWidget {
   final ReportsUiState state;
-  final ValueChanged<String> onQueryChange;
-  final ValueChanged<FleetCustomer> onSelect;
-  final VoidCallback onClear;
-  final VoidCallback onOpenPdf;
-  final VoidCallback onSharePdf;
+  final VoidCallback onOpenFleet;
 
-  const _FleetHealthSection({
-    required this.state,
-    required this.onQueryChange,
-    required this.onSelect,
-    required this.onClear,
-    required this.onOpenPdf,
-    required this.onSharePdf,
-  });
+  const _FleetHealthSection({required this.state, required this.onOpenFleet});
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    final colors = context.atelier;
-    final customer = state.fleetCustomer;
-    final busy = state.busy != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
@@ -560,93 +481,88 @@ class _FleetHealthSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 10,
               children: [
-                Text(
-                  strings.reportsFleetHint,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: colors.inkSecondary,
+                if (state.canReadFleetHealth)
+                  AtelierButton(
+                    text: strings.reportsDownloadFleet,
+                    onClick: onOpenFleet,
+                    style: AtelierButtonStyle.outlined,
+                    enabled: state.isOnline && state.busy == null,
                   ),
-                ),
-                Text(
-                  strings.reportsFleetScopeNote,
-                  style: context.text.bodySmall?.copyWith(
-                    color: colors.inkSecondary,
-                  ),
-                ),
-                AtelierTextField(
-                  label: strings.reportsFleetSearch,
-                  value: state.fleetQuery,
-                  onValueChange: onQueryChange,
-                  leadingIcon: Icons.search,
-                  enabled: !busy,
-                  trailing: customer == null
-                      ? null
-                      : IconButton(
-                          tooltip: strings.reportsFleetClear,
-                          icon: const Icon(Icons.close),
-                          onPressed: onClear,
-                        ),
-                ),
-                if (state.isSearchingFleet)
-                  const LinearProgressIndicator(minHeight: 2)
-                else if (customer == null &&
-                    state.fleetQuery.trim().length >= 2 &&
-                    state.fleetResults.isEmpty)
-                  Text(
-                    strings.reportsFleetEmpty,
-                    style: context.text.bodySmall?.copyWith(
-                      color: colors.inkSecondary,
-                    ),
-                  ),
-                for (final result in state.fleetResults)
-                  AtelierListRow(
-                    key: ValueKey('fleet-customer-${result.id}'),
-                    title: result.name,
-                    subtitle: result.taxId,
-                    onClick: () => onSelect(result),
-                  ),
-                if (customer != null)
-                  Text(
-                    strings.reportsFleetSelected(customer.name),
-                    style: context.text.titleSmall?.copyWith(
-                      color: context.scheme.onSurface,
-                    ),
-                  ),
-                AtelierAdaptiveRow(
-                  equalWidthInRow: true,
-                  children: [
-                    AtelierButton(
-                      text: strings.reportsOpenPdf,
-                      onClick: onOpenPdf,
-                      style: AtelierButtonStyle.tonal,
-                      enabled: customer != null && state.isOnline && !busy,
-                      loading:
-                          state.busy == ReportDownload.fleetHealth &&
-                          state.pdfActionMode == ReportPdfActionMode.open,
-                    ),
-                    AtelierButton(
-                      text: strings.reportsSharePdf,
-                      onClick: onSharePdf,
-                      style: AtelierButtonStyle.outlined,
-                      enabled: customer != null && state.isOnline && !busy,
-                      loading:
-                          state.busy == ReportDownload.fleetHealth &&
-                          state.pdfActionMode == ReportPdfActionMode.share,
-                    ),
-                  ],
-                ),
+                if (state.fleetLockedByPlan) AtelierPlanLockedState(text: strings.reportsFleetLocked),
                 if (!state.isOnline) const AtelierRequiresConnection(),
-                if (state.actionError != null &&
-                    state.canReadFleetHealth &&
-                    !state.canReadCashFlow)
-                  AtelierBanner(
-                    message: state.actionError!.asString(strings),
-                    icon: Icons.error_outline,
-                  ),
+                if (state.actionError != null && !state.canReadCashFlow)
+                  AtelierBanner(message: state.actionError!.asString(strings), icon: Icons.error_outline),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Hoja de salud de flota: modo (abrir o compartir), búsqueda del cliente y resultados; elegir uno descarga el PDF.
+class FleetSheetContent extends StatelessWidget {
+  final FleetSheet sheet;
+  final bool busy;
+  final bool online;
+  final ValueChanged<ReportPdfActionMode> onActionMode;
+  final ValueChanged<String> onQuery;
+  final VoidCallback onSearch;
+  final ValueChanged<FleetCustomer> onPick;
+
+  const FleetSheetContent({
+    super.key,
+    required this.sheet,
+    required this.busy,
+    required this.online,
+    required this.onActionMode,
+    required this.onQuery,
+    required this.onSearch,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = context.atelier;
+    final error = sheet.error;
+    return AtelierBottomSheet(
+      title: strings.reportsFleetTitle,
+      actions: [
+        AtelierButton(
+          text: strings.reportsFleetSearchAction,
+          onClick: onSearch,
+          enabled: sheet.query.trim().isNotEmpty && !busy,
+          loading: sheet.isSearching,
+        ),
+        if (!online) const AtelierRequiresConnection(),
+      ],
+      content: [
+        Text(strings.reportsFleetHint, style: context.text.bodyLarge?.copyWith(color: colors.inkSecondary)),
+        Text(strings.reportsFleetScopeNote, style: context.text.bodySmall?.copyWith(color: colors.inkSecondary)),
+        AtelierSegmentedControl<ReportPdfActionMode>(
+          options: ReportPdfActionMode.values,
+          selected: sheet.actionMode,
+          onSelect: onActionMode,
+          label: (mode) => switch (mode) {
+            ReportPdfActionMode.open => strings.reportsOpenPdf,
+            ReportPdfActionMode.share => strings.reportsSharePdf,
+          },
+        ),
+        AtelierTextField(label: strings.reportsFleetSearch, value: sheet.query, onValueChange: onQuery),
+        if (error != null) AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
+        if (sheet.hasSearched && sheet.results.isEmpty && error == null)
+          AtelierEmptyState(text: strings.reportsFleetEmpty)
+        else
+          for (final customer in sheet.results)
+            AtelierListRow(
+              key: ValueKey('fleet-customer-${customer.id}'),
+              title: customer.name,
+              subtitle: customer.taxId,
+              onClick: online && !busy ? () => onPick(customer) : null,
+            ),
+      ],
     );
   }
 }

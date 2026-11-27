@@ -370,6 +370,7 @@ void main() {
         onOpenPushRecord: (_) {},
         onOpenOrder: (_) {},
         onOpenAttendanceReview: () {},
+        onOpenStockAlerts: () {},
         onOpenSyncQueue: () {},
       );
     }

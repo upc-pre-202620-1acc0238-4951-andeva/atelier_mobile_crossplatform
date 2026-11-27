@@ -8,6 +8,7 @@ import 'package:atelier_mobile_crossplatform/features/bays/application/create_wo
 import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/poll_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_bay_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_task_mechanic_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/release_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/restore_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/set_bay_maintenance_use_case.dart';
@@ -32,6 +33,7 @@ class BaysViewModel extends ChangeNotifier {
   final RefreshBranchWorkOrdersUseCase refreshOrders;
   final GetBranchMechanicsUseCase getMechanics;
   final ReassignBayUseCase reassignBay;
+  final ReassignTaskMechanicUseCase reassignTaskMechanic;
   final ReleaseBayUseCase releaseBay;
   final CreateWorkBayUseCase createBay;
   final SetBayMaintenanceUseCase setBayMaintenance;
@@ -46,6 +48,7 @@ class BaysViewModel extends ChangeNotifier {
     required this.refreshOrders,
     required this.getMechanics,
     required this.reassignBay,
+    required this.reassignTaskMechanic,
     required this.releaseBay,
     required this.createBay,
     required this.setBayMaintenance,
@@ -55,9 +58,7 @@ class BaysViewModel extends ChangeNotifier {
     _state = BaysUiState(isOnline: connectivity.isOnline);
     _subscriptions.add(observeSession.execute().listen(_onSession));
     _subscriptions.add(observeBoard.execute().listen(_onBoard, onError: _onBoardError));
-    _subscriptions.add(
-      observeOrders.execute().listen((orders) => _update(_state.copyWith(orders: orders))),
-    );
+    _subscriptions.add(observeOrders.execute().listen((orders) => _update(_state.copyWith(orders: orders))));
     connectivity.addListener(_onConnectivity);
     _loadReferences();
   }
@@ -83,7 +84,9 @@ class BaysViewModel extends ChangeNotifier {
     _update(
       _state.copyWith(
         canRead: session?.has(Permission.baysRead) == true,
-        canReassign: session?.has(Permission.baysReassign) == true,
+        canReadWorkOrders: session?.has(Permission.workOrdersRead) == true,
+        canAssignBay: session?.has(Permission.baysReassign) == true,
+        canReleaseBay: session?.has(Permission.baysReassign) == true,
         canManage: session?.has(Permission.baysManage) == true,
       ),
     );
@@ -124,27 +127,29 @@ class BaysViewModel extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    _update(_state.copyWith(clearError: true, clearNotice: true));
+    _update(_state.copyWith(isRefreshing: true, clearError: true, clearNotice: true));
     if (_visible) _startPolling();
     await _loadReferences();
+    _update(_state.copyWith(isRefreshing: false));
   }
 
-  /// Órdenes (placa y número) y nombres de mecánicos. Sin red o sin permiso se sigue con lo que haya.
+  /// Órdenes (placa y número, solo con `WORK_ORDERS_READ`) y mecánicos de la sede. Sin red o sin permiso se
+  /// sigue con lo que haya.
   Future<void> _loadReferences() async {
-    try {
-      await refreshOrders.execute();
-    } on Object {
-      // Se sigue con la caché.
+    if (_state.canReadWorkOrders) {
+      try {
+        await refreshOrders.execute();
+      } on Object {
+        // Se sigue con la caché.
+      }
     }
-    try {
-      final mechanics = await getMechanics.execute();
-      _update(
-        _state.copyWith(
-          mechanicNamesById: {for (final m in mechanics) m.membershipId: m.displayName},
-        ),
-      );
-    } on Object {
-      // El tablero se muestra sin nombres.
+    if (_state.availableMechanics.isEmpty) {
+      try {
+        final mechanics = await getMechanics.execute();
+        _update(_state.copyWith(availableMechanics: mechanics));
+      } on Object {
+        // El tablero se muestra sin nombres.
+      }
     }
   }
 
@@ -157,6 +162,7 @@ class BaysViewModel extends ChangeNotifier {
     _update(
       _state.copyWith(
         sheet: BaySheet(bayId: bay.id),
+        clearReassigningTask: true,
         clearError: true,
         clearNotice: true,
         clearInvalidField: true,
@@ -166,12 +172,19 @@ class BaysViewModel extends ChangeNotifier {
 
   void onDismissSheet() {
     if (_state.sheet == null) return;
-    _update(_state.copyWith(clearSheet: true, clearError: true, clearInvalidField: true));
+    _update(_state.copyWith(clearSheet: true, clearReassigningTask: true, clearError: true, clearInvalidField: true));
   }
 
   void onMaintenanceClick() => _editSheet('');
 
   void onMaintenanceReasonChange(String value) => _editSheet(value);
+
+  /// Vuelve de la captura del motivo a la hoja de la bahía libre.
+  void onMaintenanceBack() {
+    final sheet = _state.sheet;
+    if (sheet == null || _state.isBusy) return;
+    _update(_state.copyWith(sheet: BaySheet(bayId: sheet.bayId), clearError: true, clearInvalidField: true));
+  }
 
   void _editSheet(String reason) {
     final sheet = _state.sheet;
@@ -188,34 +201,62 @@ class BaysViewModel extends ChangeNotifier {
   /// US40 E1: lleva la orden de la bahía abierta a [target].
   Future<void> onMoveOrder(WorkBay target) async {
     final occupant = _state.selectedItem?.occupant;
-    if (occupant == null || !_state.canReassign) return;
+    if (occupant == null || !_state.canAssignBay) return;
     await _run(
       BayAction.move,
       () => reassignBay.execute(occupant.workOrderId, target),
-      UiText.resource((s) => s.baysMovedNotice(target.name)),
+      UiText.resource((s) => s.orderBayAssignedNotice(target.name)),
     );
   }
 
   /// Ingresa una orden sin bahía a la bahía libre abierta.
   Future<void> onAssignOrder(String workOrderId) async {
     final bay = _state.selectedItem?.bay;
-    if (bay == null || !_state.canReassign) return;
+    if (bay == null || !_state.canAssignBay) return;
     await _run(
       BayAction.assign,
       () => reassignBay.execute(workOrderId, bay),
-      UiText.resource((s) => s.baysAssignedNotice(bay.name)),
+      UiText.resource((s) => s.orderBayAssignedNotice(bay.name)),
     );
   }
 
   Future<void> onRelease() async {
     final item = _state.selectedItem;
     final occupant = item?.occupant;
-    if (item == null || occupant == null || !_state.canReassign) return;
+    if (item == null || occupant == null || !_state.canReleaseBay) return;
     await _run(
       BayAction.release,
       () => releaseBay.execute(occupant.workOrderId),
       UiText.resource((s) => s.baysReleasedNotice(item.bay.name)),
     );
+  }
+
+  /// Abre (o cierra, con `null`) la lista de mecánicos de una tarea de la orden que ocupa la bahía.
+  void onOpenReassignTaskMechanic(String? taskId) {
+    if (_state.isBusy) return;
+    _update(_state.copyWith(reassigningTaskId: taskId, clearReassigningTask: taskId == null, clearError: true));
+  }
+
+  /// US40 E1: cambia el mecánico de una tarea. En línea; la hoja sigue abierta y la lista se cierra.
+  Future<void> onConfirmReassignTaskMechanic(String taskId, String mechanicId) async {
+    if (!_state.canReleaseBay || !_state.canAct) return;
+    var mechanicName = '';
+    for (final mechanic in _state.availableMechanics) {
+      if (mechanic.membershipId == mechanicId) mechanicName = mechanic.displayName;
+    }
+    _update(_state.copyWith(busyAction: BayAction.reassignMechanic, clearError: true, clearNotice: true));
+    try {
+      await reassignTaskMechanic.execute(taskId, mechanicId);
+      _update(
+        _state.copyWith(
+          clearBusyAction: true,
+          clearReassigningTask: true,
+          notice: UiText.resource((s) => s.orderMechanicAssignedNotice(mechanicName)),
+        ),
+      );
+    } on Object catch (error) {
+      _update(_state.copyWith(clearBusyAction: true, error: toUiText(error)));
+    }
   }
 
   Future<void> onConfirmMaintenance() async {
@@ -244,12 +285,7 @@ class BaysViewModel extends ChangeNotifier {
   void onCreateClick() {
     if (!_state.canManage || _state.isBusy) return;
     _update(
-      _state.copyWith(
-        createForm: const CreateBayForm(),
-        clearError: true,
-        clearNotice: true,
-        clearInvalidField: true,
-      ),
+      _state.copyWith(createForm: const CreateBayForm(), clearError: true, clearNotice: true, clearInvalidField: true),
     );
   }
 
@@ -282,20 +318,14 @@ class BaysViewModel extends ChangeNotifier {
   /// Al salir bien se cierran las hojas; con error quedan abiertas y la asignación previa intacta (US40 E2).
   Future<void> _run(BayAction action, Future<void> Function() call, UiText notice) async {
     if (!_state.canAct) return;
-    _update(
-      _state.copyWith(busyAction: action, clearError: true, clearNotice: true, clearInvalidField: true),
-    );
+    _update(_state.copyWith(busyAction: action, clearError: true, clearNotice: true, clearInvalidField: true));
     try {
       await call();
-      _update(
-        _state.copyWith(clearBusyAction: true, clearSheet: true, clearCreateForm: true, notice: notice),
-      );
+      _update(_state.copyWith(clearBusyAction: true, clearSheet: true, clearCreateForm: true, notice: notice));
     } on InvalidBayInputException catch (error) {
       _update(_state.copyWith(clearBusyAction: true, invalidField: error.field));
     } on BayUnavailableException {
-      _update(
-        _state.copyWith(clearBusyAction: true, error: UiText.resource((s) => s.baysUnavailableError)),
-      );
+      _update(_state.copyWith(clearBusyAction: true, error: UiText.resource((s) => s.baysUnavailableError)));
     } on Object catch (error) {
       _update(_state.copyWith(clearBusyAction: true, error: toUiText(error)));
     }

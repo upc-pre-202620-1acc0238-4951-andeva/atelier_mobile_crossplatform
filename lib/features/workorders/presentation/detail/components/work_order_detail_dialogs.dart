@@ -14,6 +14,7 @@ import 'package:atelier_mobile_crossplatform/core/domain/money.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/date_format.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/lima_time_format.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/presentation/bay_labels.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/presentation/detail/cascade.dart';
@@ -585,19 +586,24 @@ class AssignBaySheet extends StatelessWidget {
         else if (form.bays.isEmpty)
           Text(strings.baysEmpty, style: secondary),
         for (final bay in form.bays)
-          AtelierSelectionCard(
+          PickRow(
             title: bay.name,
-            subtitle: bay.id == currentBayId
-                ? strings.orderBayCurrent
-                : switch (bay.status) {
-                    BayStatus.available => strings.bayStatusAvailableDesc,
-                    BayStatus.occupied => strings.bayStatusOccupiedDesc,
-                    BayStatus.maintenance => strings.bayStatusMaintenanceDesc,
-                    null => null,
-                  },
+            subtitle: bayTypeLabel(strings, bay.type),
             selected: bay.id == currentBayId,
-            enabled: bay.canReceive && isOnline && !isSaving,
+            enabled: bay.canReceive && bay.id != currentBayId && isOnline && !isSaving,
             onClick: () => onSelect(bay),
+            trailing: bay.id == currentBayId
+                ? AtelierChip(text: strings.orderBayCurrent, kind: ChipKind.info)
+                : bayStatusLabel(strings, bay.status) == null
+                ? null
+                : AtelierChip(
+                    text: bayStatusLabel(strings, bay.status)!,
+                    kind: switch (bay.status) {
+                      BayStatus.available => ChipKind.ok,
+                      BayStatus.occupied => ChipKind.info,
+                      _ => ChipKind.wait,
+                    },
+                  ),
           ),
         _SheetError(error),
       ],

@@ -12,6 +12,10 @@ class TelemetrySample {
   final double? fuelPercentage;
   final int? intakePressureKpa;
 
+  /// `0104` (carga calculada del motor) y `0111` (posición del acelerador): solo se muestran, el lote no los trae.
+  final double? engineLoadPercentage;
+  final double? throttlePositionPercentage;
+
   const TelemetrySample({
     required this.timestamp,
     this.engineTempCelsius,
@@ -20,6 +24,8 @@ class TelemetrySample {
     this.batteryVoltage,
     this.fuelPercentage,
     this.intakePressureKpa,
+    this.engineLoadPercentage,
+    this.throttlePositionPercentage,
   });
 
   bool get canBeSent => engineTempCelsius != null;
@@ -81,4 +87,27 @@ class DiagnosticsSyncState {
   });
 
   bool get isSynced => pendingReadings == 0 && pendingFaults == 0;
+}
+
+/// Ventana histórica agregada por `time_bucket` (`TelemetryHistoryBucketResponse`, `iot:telemetry:read`).
+class TelemetryHistoryBucket {
+  final DateTime? bucketTime;
+  final String vehicleId;
+  final int? avgSpeedKmh;
+  final double? avgEngineTempCelsius;
+  final int? avgEngineRpm;
+  final double? avgFuelPercentage;
+  final double? avgBatteryVoltage;
+  final int sampleCount;
+
+  const TelemetryHistoryBucket({
+    required this.bucketTime,
+    required this.vehicleId,
+    this.avgSpeedKmh,
+    this.avgEngineTempCelsius,
+    this.avgEngineRpm,
+    this.avgFuelPercentage,
+    this.avgBatteryVoltage,
+    this.sampleCount = 0,
+  });
 }

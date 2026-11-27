@@ -168,6 +168,12 @@ class Elm327ObdLink implements ObdLink {
         intakePressureKpa: ObdResponseParser.intakePressure(
           await _command('010B'),
         ),
+        engineLoadPercentage: ObdResponseParser.engineLoad(
+          await _command('0104'),
+        ),
+        throttlePositionPercentage: ObdResponseParser.throttlePosition(
+          await _command('0111'),
+        ),
       );
     });
   }

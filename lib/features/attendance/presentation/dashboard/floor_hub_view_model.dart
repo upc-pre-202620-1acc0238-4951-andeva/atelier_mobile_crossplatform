@@ -17,6 +17,8 @@ import 'package:atelier_mobile_crossplatform/features/cashier/application/get_da
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_obd_devices_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/get_purchase_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/observe_parts_catalog_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_stock_alerts_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/observe_stock_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/application/refresh_parts_catalog_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
@@ -45,6 +47,8 @@ class FloorHubViewModel extends ChangeNotifier {
   final RefreshBranchWorkOrdersUseCase refreshBranchOrders;
   final ObservePartsCatalogUseCase observePartsCatalog;
   final RefreshPartsCatalogUseCase refreshPartsCatalog;
+  final ObserveStockAlertsUseCase observeStockAlerts;
+  final GetStockAlertsUseCase getStockAlerts;
   final GetPurchaseOrdersUseCase getPurchaseOrders;
   final GetDailyCashSummaryUseCase getDailyCashSummary;
   final GetObdDevicesUseCase getObdDevices;
@@ -68,6 +72,8 @@ class FloorHubViewModel extends ChangeNotifier {
     required this.refreshBranchOrders,
     required this.observePartsCatalog,
     required this.refreshPartsCatalog,
+    required this.observeStockAlerts,
+    required this.getStockAlerts,
     required this.getPurchaseOrders,
     required this.getDailyCashSummary,
     required this.getObdDevices,
@@ -106,6 +112,12 @@ class FloorHubViewModel extends ChangeNotifier {
     _subscriptions.add(
       observePartsCatalog.execute().listen((parts) => _update(_state.copyWith(catalogSize: parts.length))),
     );
+    // La caché pinta de entrada; la consulta en línea manda una vez que llega.
+    _subscriptions.add(
+      observeStockAlerts.execute().listen((cached) {
+        if (_state.stockAlerts.isEmpty) _update(_state.copyWith(stockAlerts: cached));
+      }),
+    );
     _subscriptions.add(
       observePendingCount.execute().listen((count) => _update(_state.copyWith(pendingSyncCount: count))),
     );
@@ -141,6 +153,8 @@ class FloorHubViewModel extends ChangeNotifier {
       if (has(Permission.appointmentsRead)) _ignoring(() => refreshAppointments.execute(_today)),
       if (has(Permission.workOrdersRead)) _ignoring(refreshBranchOrders.execute),
       if (has(Permission.partsRead)) _ignoring(() => refreshPartsCatalog.execute()),
+      if (has(Permission.alertsRead))
+        _ignoring(() async => _update(_state.copyWith(stockAlerts: await getStockAlerts.execute()))),
       if (has(Permission.purchaseOrdersRead))
         _ignoring(() async {
           final orders = await getPurchaseOrders.execute(status: PurchaseOrderStatus.issued);

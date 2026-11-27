@@ -1,24 +1,30 @@
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_banner.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_chip.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_live_beacon.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_navigation_bar.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_panels.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_sheet.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_skeleton.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_states.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_surface.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_top_bar.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_shapes.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/alerts/stock_alerts_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/alerts/stock_alerts_view_model.dart';
-import 'package:atelier_mobile_crossplatform/features/inventory/presentation/inventory_labels.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/presentation/inventory_navigation.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
-/// Alertas de stock mínimo (US34): repuestos con existencias en el mínimo o por debajo. Cada fila abre la ficha
-/// del repuesto. Cuando la compra se recibe, la alerta sale de la lista sin recargar (E2). Requiere `ALERTS_READ`.
+/// US34 E1: repuestos en el mínimo o debajo. Tocar uno abre el repuesto. Sin botón falso de resolver (H13); ofrece
+/// crear una orden de compra (`PURCHASE_ORDERS_CREATE`). Cuando la compra se recibe, la alerta sale de la lista sin
+/// recargar (E2). Requiere `ALERTS_READ`.
 class StockAlertsScreen extends StatefulWidget {
   const StockAlertsScreen({super.key});
 
@@ -43,8 +49,8 @@ class _StockAlertsScreenState extends State<StockAlertsScreen> {
         state: viewModel.state,
         onBack: inventoryBack(context),
         onRefresh: viewModel.refresh,
-        onOpenPart: (alert) =>
-            AppNavigator.push(context, AppRoute.partDetail, alert.itemId),
+        onOpenPart: (alert) => AppNavigator.push(context, AppRoute.partDetail, alert.itemId),
+        onCreatePurchaseOrder: () => AppNavigator.push(context, AppRoute.purchaseOrders),
       ),
     );
   }
@@ -55,6 +61,7 @@ class StockAlertsContent extends StatelessWidget {
   final VoidCallback onBack;
   final Future<void> Function() onRefresh;
   final ValueChanged<StockAlert> onOpenPart;
+  final VoidCallback onCreatePurchaseOrder;
 
   const StockAlertsContent({
     super.key,
@@ -62,124 +69,142 @@ class StockAlertsContent extends StatelessWidget {
     required this.onBack,
     required this.onRefresh,
     required this.onOpenPart,
+    required this.onCreatePurchaseOrder,
   });
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    final outCount = state.alerts
-        .where((a) => a.currentStock <= Decimal.zero)
-        .length;
     return Scaffold(
       backgroundColor: context.scheme.surface,
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            AtelierTopBar(title: strings.stockAlertsTitle, onBack: onBack),
-            if (!state.canRead)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AtelierNoPermissionState(
-                  text: strings.stockAlertsNoPermission,
-                ),
-              )
-            else ...[
-              AtelierReportPanel(
-                context: strings.stockAlertsContext,
-                legend: state.alerts.length.toString(),
-                caption: strings.stockAlertsCaption,
-                loading: state.isLoading && state.alerts.isEmpty,
-                figures: [
-                  PanelFigure(
-                    value: outCount.toString(),
-                    label: strings.stockAlertsOut,
-                  ),
-                  PanelFigure(
-                    value: (state.alerts.length - outCount).toString(),
-                    label: strings.stockAlertsLow,
-                  ),
-                ],
-              ),
-              AtelierRefreshBar(
-                visible: state.isLoading && state.alerts.isNotEmpty,
-              ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: onRefresh,
-                  child: DelayedLoading(
-                    loading: state.isLoading && state.alerts.isEmpty,
-                    builder: (context, showBones) =>
-                        _list(context, strings, showBones),
-                  ),
+      floatingActionButton: state.canRead && state.canCreatePurchaseOrder
+          ? AtelierFab(
+              text: strings.invSeg2AlertsCreatePoFab,
+              icon: Icons.shopping_cart_outlined,
+              onClick: onCreatePurchaseOrder,
+            ).floatingBarPadding()
+          : null,
+      body: Column(
+        children: [
+          AtelierTopBar(title: strings.inventoryAlertsTitle, onBack: onBack),
+          if (!state.canRead)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AtelierNoPermissionState(text: strings.inventoryAlertsNoPermission),
+            )
+          else ...[
+            AtelierRefreshBar(visible: state.isLoading && state.alerts.isNotEmpty),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: onRefresh,
+                child: DelayedLoading(
+                  loading: state.isLoading && state.alerts.isEmpty,
+                  builder: (context, showBones) => _list(context, strings, showBones),
                 ),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _list(BuildContext context, AppLocalizations strings, bool showBones) {
+    const side = EdgeInsets.symmetric(horizontal: 16);
     final error = state.error;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: EdgeInsets.only(bottom: state.canCreatePurchaseOrder ? 96 : 24),
       children: [
+        if (!state.isOnline)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: AtelierBanner(
+              message: strings.inventoryAlertsOffline,
+              icon: Icons.info_outline,
+              kind: BannerKind.info,
+            ),
+          ),
+        Padding(
+          padding: side,
+          child: AtelierSectionHeader(
+            title: strings.inventoryAlertsHeader,
+            count: state.alerts.isEmpty ? null : state.alerts.length,
+          ),
+        ),
         if (showBones)
           for (var i = 0; i < 4; i++)
-            const AtelierListRow(
-              title: 'Pastillas de freno',
-              subtitle: 'SKU-0001',
-              loading: true,
-            )
-        else if (state.alerts.isEmpty && !state.isOnline && error != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: AtelierOfflineState(onRetry: onRefresh),
-          )
+            const AtelierListRow(title: 'Filtro de aceite', subtitle: 'SKU FLT-001 · 2 de 6', loading: true)
         else if (state.alerts.isEmpty && error != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: AtelierErrorState(
-              message: error.asString(strings),
-              onRetry: onRefresh,
-            ),
+            padding: side,
+            child: AtelierErrorState(message: error.asString(strings), onRetry: onRefresh),
           )
-        else if (state.alerts.isEmpty)
+        else if (state.alerts.isEmpty && !state.isLoading)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: AtelierEmptyState(text: strings.stockAlertsEmpty),
+            padding: side,
+            child: AtelierEmptyState(text: strings.inventoryAlertsEmpty),
           )
         else
           for (final alert in state.alerts)
-            AtelierListRow(
-              key: ValueKey('alert-${alert.itemId}'),
-              title: alert.name,
-              subtitle: _subtitle(strings, alert),
-              onClick: () => onOpenPart(alert),
-              trailing: AtelierChip(
-                text: alert.currentStock <= Decimal.zero
-                    ? strings.stockAlertsChipOut
-                    : strings.stockAlertsChipLow,
-                kind: alert.currentStock <= Decimal.zero
-                    ? ChipKind.bad
-                    : ChipKind.wait,
-              ),
-            ),
+            _AlertRow(key: ValueKey('alert-${alert.itemId}'), alert: alert, onClick: () => onOpenPart(alert)),
       ],
     );
   }
+}
 
-  /// `SKU · Frenos` y, debajo en la misma línea, `Stock 1 · mínimo 5 · faltan 4`.
-  String _subtitle(AppLocalizations strings, StockAlert alert) {
-    final head = [alert.sku, ?alert.category?.label(strings)].join(' · ');
-    final detail = strings.stockAlertsDetail(
-      alert.currentStock.formatQuantity(),
-      alert.minimumStock.formatQuantity(),
-      alert.deficit.formatQuantity(),
+/// Fila de una alerta: stock actual contra el mínimo, con barra métrica y marca en el mínimo.
+class _AlertRow extends StatelessWidget {
+  final StockAlert alert;
+  final VoidCallback onClick;
+
+  const _AlertRow({super.key, required this.alert, required this.onClick});
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = context.atelier;
+    final out = alert.currentStock <= Decimal.zero;
+    final minimum = alert.minimumStock.toDouble() < 1 ? 1.0 : alert.minimumStock.toDouble();
+    final current = alert.currentStock.toDouble() < 0 ? 0.0 : alert.currentStock.toDouble();
+    final progress = (current / minimum).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: AtelierSurface(
+        tier: SurfaceTier.card,
+        shape: cardLargeShape,
+        onClick: onClick,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 4,
+          children: [
+            AtelierListRow(
+              title: alert.name,
+              subtitle: strings.inventoryAlertSubtitle(
+                alert.sku,
+                alert.currentStock.formatQuantity(),
+                alert.minimumStock.formatQuantity(),
+              ),
+              showDivider: false,
+              trailing: out
+                  ? AtelierChip(text: strings.stockOut, kind: ChipKind.bad)
+                  : AtelierChip(
+                      text: strings.inventoryAlertMissing(alert.deficit.formatQuantity()),
+                      kind: ChipKind.warn,
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: AtelierMetricBar(
+                progress: progress,
+                color: out ? colors.badMark : colors.warnMark,
+                height: 6,
+                markerAt: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-    return '$head\n$detail';
   }
 }

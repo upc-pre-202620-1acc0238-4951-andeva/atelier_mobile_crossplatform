@@ -171,6 +171,7 @@ class BayRepositoryImpl implements BayRepository {
         ...{...?tasks?.map((task) => task.mechanicId).nonNulls},
       ],
       laborElapsed: tasks == null ? null : laborElapsed(tasks, at),
+      tasks: tasks ?? const [],
     );
   }
 

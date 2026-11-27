@@ -24,6 +24,8 @@ import 'package:atelier_mobile_crossplatform/features/diagnostics/application/ge
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_latest_telemetry_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_obd_devices_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_paired_obd_adapters_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_vehicle_telemetry_history_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/diagnostics/application/reconnect_obd_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/install_obd_device_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_diagnostics_sync_state_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/observe_live_telemetry_use_case.dart';
@@ -241,6 +243,12 @@ void setupDiagnosticsDependencies() {
     () => ObserveDiagnosticsSyncStateUseCase(
       repository: getIt<DiagnosticsRepository>(),
     ),
+  );
+  getIt.registerLazySingleton<GetVehicleTelemetryHistoryUseCase>(
+    () => GetVehicleTelemetryHistoryUseCase(repository: getIt<DiagnosticsRepository>()),
+  );
+  getIt.registerLazySingleton<ReconnectObdUseCase>(
+    () => ReconnectObdUseCase(session: getIt<DiagnosticSession>()),
   );
   getIt.registerLazySingleton<GetLatestTelemetryUseCase>(
     () => GetLatestTelemetryUseCase(repository: getIt<DiagnosticsRepository>()),

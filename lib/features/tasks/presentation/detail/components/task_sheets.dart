@@ -11,6 +11,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/pause_reason.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/presentation/detail/task_detail_ui_state.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -259,6 +260,7 @@ class RequestSuspensionSheet extends StatelessWidget {
 /// US29 E1/E2: el supervisor audita el motivo y aprueba o desestima.
 class ReviewSuspensionSheet extends StatelessWidget {
   final String? reason;
+  final String? missingItemDescription;
   final DateTime? requestedAt;
   final bool isOnline;
   final TaskAction? busyAction;
@@ -270,6 +272,7 @@ class ReviewSuspensionSheet extends StatelessWidget {
   const ReviewSuspensionSheet({
     super.key,
     required this.reason,
+    this.missingItemDescription,
     required this.requestedAt,
     required this.isOnline,
     required this.busyAction,
@@ -317,6 +320,11 @@ class ReviewSuspensionSheet extends StatelessWidget {
           reason != null && reason.trim().isNotEmpty ? reason : strings.ordersSuspensionNoReason,
           style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface),
         ),
+        if (missingItemDescription != null && missingItemDescription!.trim().isNotEmpty)
+          Text(
+            strings.ordersSuspensionMissingItem(missingItemDescription!),
+            style: context.text.bodyMedium?.copyWith(color: context.atelier.inkSecondary),
+          ),
         if (requestedAt != null)
           Text(
             strings.tasksSeg2SuspensionRequestedAt(formatLimaDayTime(requestedAt)),
@@ -437,6 +445,80 @@ class ReopenTaskSheet extends StatelessWidget {
           textInputAction: TextInputAction.done,
         ),
         if (error != null) AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
+      ],
+    );
+  }
+}
+
+/// Hoja para reintentar o descartar una evidencia fotográfica cuya subida falló en `pending_operations`.
+class FailedEvidenceSheet extends StatelessWidget {
+  final PendingEvidence evidence;
+  final VoidCallback onRetry;
+  final VoidCallback onDiscard;
+  final VoidCallback onDismiss;
+
+  const FailedEvidenceSheet({
+    super.key,
+    required this.evidence,
+    required this.onRetry,
+    required this.onDiscard,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final error = evidence.lastErrorMessage;
+    return AtelierBottomSheet(
+      title: strings.tasksSeg2EvidenceFailedSheetTitle,
+      actions: [
+        AtelierButton(text: strings.syncRetryBtn, onClick: onRetry, minHeight: 56, icon: Icons.refresh_outlined),
+        AtelierButton(
+          text: strings.syncDiscardBtn,
+          onClick: onDiscard,
+          style: AtelierButtonStyle.destructive,
+          minHeight: 56,
+          icon: Icons.delete_outline,
+        ),
+        AtelierButton(text: strings.proposalsCancel, onClick: onDismiss, style: AtelierButtonStyle.text),
+      ],
+      content: [
+        Text(
+          evidence.description ?? '',
+          style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+        ),
+        if (error != null && error.trim().isNotEmpty) AtelierBanner(message: error, icon: Icons.error_outline),
+      ],
+    );
+  }
+}
+
+/// Confirmación al retroceder con una nota de evidencia escrita y aún no fotografiada.
+class UnsavedEvidenceExitSheet extends StatelessWidget {
+  final VoidCallback onConfirmExit;
+  final VoidCallback onDismiss;
+
+  const UnsavedEvidenceExitSheet({super.key, required this.onConfirmExit, required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    return AtelierBottomSheet(
+      title: strings.tasksSeg2UnsavedExitTitle,
+      actions: [
+        AtelierButton(
+          text: strings.tasksSeg2UnsavedExitConfirm,
+          onClick: onConfirmExit,
+          style: AtelierButtonStyle.destructive,
+          minHeight: 56,
+        ),
+        AtelierButton(text: strings.proposalsCancel, onClick: onDismiss, style: AtelierButtonStyle.text),
+      ],
+      content: [
+        Text(
+          strings.tasksSeg2UnsavedExitBody,
+          style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurface),
+        ),
       ],
     );
   }

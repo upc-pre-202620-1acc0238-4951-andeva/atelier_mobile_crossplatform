@@ -83,8 +83,8 @@ void main() {
       expect(find.text('Toyota Hilux'), findsOneWidget);
       expect(find.text('Códigos de falla (DTC)'), findsOneWidget);
       expect(find.text('Informe de salud con IA'), findsOneWidget);
-      // US18 excluida; sin nada pendiente no hay aviso de sincronización (US19).
-      expect(find.text('Telemetría en vivo'), findsNothing);
+      // US18 ya está en el hub; sin nada pendiente no hay aviso de sincronización (US19).
+      expect(find.text('Telemetría en vivo'), findsOneWidget);
       expect(find.text('Sincronizar telemetría'), findsNothing);
       expect(find.textContaining('pendientes de sincronizar'), findsNothing);
       await _teardown(tester);

@@ -1,4 +1,6 @@
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/evidence_kind.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/part_option.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/pending_evidence.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/pause_reason.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_product.dart';
 import 'package:flutter/foundation.dart';
@@ -10,6 +12,9 @@ class TaskDetailActions {
   final VoidCallback onReviewSuspensionClick;
   final VoidCallback onResumeSuspendedClick;
   final VoidCallback onAddEvidenceClick;
+  final ValueChanged<EvidenceKind> onEvidenceKindChange;
+  final ValueChanged<String> onEvidenceNoteChange;
+  final ValueChanged<PendingEvidence> onSelectFailedEvidence;
   final VoidCallback onBack;
   final Future<void> Function() onRetry;
   final VoidCallback onStart;
@@ -44,6 +49,9 @@ class TaskDetailActions {
     this.onReviewSuspensionClick = _noop,
     this.onResumeSuspendedClick = _noop,
     this.onAddEvidenceClick = _noop,
+    this.onEvidenceKindChange = _noop1,
+    this.onEvidenceNoteChange = _noop1,
+    this.onSelectFailedEvidence = _noop1,
     this.onBack = _noop,
     this.onRetry = _noopAsync,
     this.onStart = _noop,

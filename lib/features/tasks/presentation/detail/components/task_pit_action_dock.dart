@@ -1,3 +1,4 @@
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_adaptive_row.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_live_beacon.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_states.dart';
@@ -63,48 +64,65 @@ class TaskPitActionDock extends StatelessWidget {
                 ],
               ),
               if (!state.isOnline) const AtelierRequiresConnection(),
-              if (showStart)
-                AtelierButton(
-                  text: state.isPausedByMechanic ? strings.taskResume : strings.taskStart,
-                  onClick: () {
-                    haptics.confirm();
-                    actions.onStart();
-                  },
-                  minHeight: 56,
-                  enabled: state.canStart && state.isOnline,
-                  loading: state.busyAction == TaskAction.start,
-                  icon: Icons.play_arrow_outlined,
-                )
-              else if (showPause)
-                AtelierButton(
-                  text: strings.taskPause,
-                  onClick: () {
-                    haptics.toggle();
-                    actions.onPauseClick();
-                  },
-                  style: AtelierButtonStyle.tonal,
-                  minHeight: 56,
-                  enabled: state.canPause && state.isOnline,
-                  loading: state.busyAction == TaskAction.pause,
-                  icon: Icons.pause_outlined,
-                ),
-              if (showComplete)
-                AtelierButton(
-                  text: strings.taskComplete,
-                  onClick: () {
-                    haptics.toggle();
-                    actions.onCompleteClick();
-                  },
-                  style: AtelierButtonStyle.outlined,
-                  minHeight: 56,
-                  enabled: state.canComplete && state.isOnline,
-                  loading: state.busyAction == TaskAction.complete,
-                  icon: Icons.task_alt_outlined,
-                ),
+              ..._actions(strings, haptics, showStart, showPause, showComplete),
             ],
           ),
         ),
       ),
     );
   }
+  /// Iniciar o Pausar y Terminar comparten fila de ancho igual; con fuente grande pasan a una columna.
+  List<Widget> _actions(AppLocalizations strings, AtelierHaptics haptics, bool showStart, bool showPause, bool showComplete) {
+    final Widget? startOrPause = showStart
+        ? AtelierButton(
+            text: state.isPausedByMechanic ? strings.taskResume : strings.taskStart,
+            onClick: () {
+              haptics.confirm();
+              actions.onStart();
+            },
+            minHeight: 56,
+            enabled: state.canStart && state.isOnline,
+            loading: state.busyAction == TaskAction.start,
+            icon: Icons.play_arrow_outlined,
+          )
+        : showPause
+        ? AtelierButton(
+            text: strings.taskPause,
+            onClick: () {
+              haptics.toggle();
+              actions.onPauseClick();
+            },
+            style: AtelierButtonStyle.tonal,
+            minHeight: 56,
+            enabled: state.canPause && state.isOnline,
+            loading: state.busyAction == TaskAction.pause,
+            icon: Icons.pause_outlined,
+          )
+        : null;
+    final Widget? complete = showComplete
+        ? AtelierButton(
+            text: strings.taskComplete,
+            onClick: () {
+              haptics.confirm();
+              actions.onCompleteClick();
+            },
+            minHeight: 56,
+            enabled: state.canComplete && state.isOnline,
+            loading: state.busyAction == TaskAction.complete,
+            icon: Icons.check_circle_outline,
+          )
+        : null;
+    if (startOrPause != null && complete != null) {
+      return [
+        AtelierAdaptiveRow(
+          horizontalSpacing: 12,
+          verticalSpacing: 8,
+          equalWidthInRow: true,
+          children: [startOrPause, complete],
+        ),
+      ];
+    }
+    return [?startOrPause, ?complete];
+  }
 }
+

@@ -331,7 +331,7 @@ class PurchaseOrderDetailContent extends StatelessWidget {
             children: [
               if (!state.isOnline) const AtelierRequiresConnection(),
               AtelierButton(
-                text: strings.invReceiveBtn,
+                text: strings.inventoryPoReceive,
                 onClick: onOpenReceive,
                 icon: Icons.inventory_2_outlined,
                 enabled: state.isOnline && !state.isMutating,
@@ -618,11 +618,11 @@ class _ReceiveOrderSheet extends StatelessWidget {
     final enabled = !state.isReceiving;
     final photo = state.receiptPhoto;
     return AtelierBottomSheet(
-      title: strings.invReceiveTitle,
+      title: strings.inventoryPoReceiveTitle,
       actions: [
         if (!state.isOnline) const AtelierRequiresConnection(),
         AtelierButton(
-          text: strings.invReceiveConfirm,
+          text: strings.inventoryPoReceiveConfirm,
           onClick: onConfirm,
           enabled: state.isOnline && enabled,
           loading: state.isReceiving,
@@ -636,11 +636,11 @@ class _ReceiveOrderSheet extends StatelessWidget {
       ],
       content: [
         Text(
-          strings.invReceiveBody,
+          strings.inventoryPoReceiveBody,
           style: context.text.bodyMedium?.copyWith(color: colors.inkSecondary),
         ),
         AtelierTextField(
-          label: strings.invReceiveNumberLabel,
+          label: strings.inventoryPoReceiptNumber,
           value: state.receiptNumber,
           onValueChange: onNumberChange,
           isError: state.receiptNumberError != null,
@@ -648,43 +648,17 @@ class _ReceiveOrderSheet extends StatelessWidget {
           enabled: enabled,
           textCapitalization: TextCapitalization.characters,
         ),
-        AtelierTextField(
-          label: strings.invReceiveDateLabel,
-          value: state.receiptDate,
-          onValueChange: onDateChange,
-          placeholder: strings.invReceiveDateHint,
-          isError: state.receiptDateError != null,
-          errorText: state.receiptDateError?.asString(strings),
-          enabled: enabled,
-          keyboardType: TextInputType.datetime,
-        ),
-        if (photo != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              photo,
-              height: 160,
-              fit: BoxFit.cover,
-              semanticLabel: strings.invReceivePhotoPreview,
-            ),
-          ),
+        if (photo != null) AtelierChip(text: strings.inventoryPoPhotoAttached, kind: ChipKind.ok),
         AtelierButton(
           text: photo == null
-              ? strings.invReceiveTakePhoto
-              : strings.invReceiveRetakePhoto,
+              ? strings.inventoryPoPhotoTake
+              : strings.inventoryPoPhotoRetake,
           onClick: () =>
               takePhoto(onCaptured: onPhotoCaptured, onDenied: onPhotoDenied),
           style: AtelierButtonStyle.outlined,
           icon: Icons.photo_camera_outlined,
           enabled: enabled,
         ),
-        if (photo != null)
-          AtelierButton(
-            text: strings.invReceiveRemovePhoto,
-            onClick: onRemovePhoto,
-            style: AtelierButtonStyle.text,
-            enabled: enabled,
-          ),
         if (state.cameraDenied)
           AtelierBanner(
             message: strings.invReceiveCameraDenied,

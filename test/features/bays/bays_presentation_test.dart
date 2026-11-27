@@ -8,6 +8,7 @@ import 'package:atelier_mobile_crossplatform/features/bays/application/create_wo
 import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/poll_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_bay_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/reassign_task_mechanic_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/release_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/restore_bay_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/application/set_bay_maintenance_use_case.dart';
@@ -17,10 +18,14 @@ import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart'
 import 'package:atelier_mobile_crossplatform/features/bays/presentation/bays_screen.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/presentation/bays_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/presentation/bays_view_model.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/presentation/bay_action_sheets.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_detail.dart';
+import 'package:atelier_mobile_crossplatform/features/tasks/domain/task_id.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/get_branch_mechanics_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/observe_branch_work_orders_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/application/refresh_branch_work_orders_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_references.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
@@ -54,16 +59,24 @@ const _board = [
   BayBoardItem(bay: _broken),
 ];
 
-const _allPermissions = {'operations:bays:read', 'operations:bays:reassign', 'operations:bays:manage'};
+const _allPermissions = {
+  'operations:bays:read',
+  'operations:bays:reassign',
+  'operations:bays:manage',
+  'operations:work_orders:read',
+};
 
 void main() {
   final strings = lookupAppLocalizations(const Locale('es'));
   late _Repository repository;
+  late _RefreshOrders refreshOrdersMock;
+  var mechanicsList = <MechanicOption>[];
 
   setUpAll(() => registerFallbackValue(BayType.lift));
 
   setUp(() {
     repository = _Repository();
+    mechanicsList = [];
     when(() => repository.observeBoard()).thenAnswer((_) => Stream.value(_board));
     when(() => repository.canReadBoard()).thenAnswer((_) async => true);
     when(() => repository.refreshBranchBays()).thenAnswer((_) async {});
@@ -88,10 +101,10 @@ void main() {
     );
     final orders = _ObserveOrders();
     when(() => orders.execute()).thenAnswer((_) => Stream.value(const []));
-    final refreshOrders = _RefreshOrders();
+    final refreshOrders = refreshOrdersMock = _RefreshOrders();
     when(() => refreshOrders.execute()).thenAnswer((_) async {});
     final mechanics = _Mechanics();
-    when(() => mechanics.execute()).thenAnswer((_) async => []);
+    when(() => mechanics.execute()).thenAnswer((_) async => mechanicsList);
     return BaysViewModel(
       observeSession: session,
       observeBoard: ObserveBayBoardUseCase(repository: repository),
@@ -100,6 +113,7 @@ void main() {
       refreshOrders: refreshOrders,
       getMechanics: mechanics,
       reassignBay: ReassignBayUseCase(repository: repository),
+      reassignTaskMechanic: ReassignTaskMechanicUseCase(repository: repository),
       releaseBay: ReleaseBayUseCase(repository: repository),
       createBay: CreateWorkBayUseCase(repository: repository),
       setBayMaintenance: SetBayMaintenanceUseCase(repository: repository),
@@ -148,7 +162,7 @@ void main() {
 
       verify(() => repository.reassignBay('wo1', 'b1')).called(1);
       expect(vm.state.sheet, isNull);
-      expect(vm.state.notice?.asString(strings), strings.baysMovedNotice('Elevador 1'));
+      expect(vm.state.notice?.asString(strings), strings.orderBayAssignedNotice('Elevador 1'));
       vm.dispose();
     });
 
@@ -210,6 +224,52 @@ void main() {
       vm.dispose();
     });
 
+    test('reasigna el mecánico de una tarea, avisa y cierra la lista', () async {
+      when(() => repository.reassignMechanic(any(), any())).thenAnswer((_) async {});
+      mechanicsList = const [MechanicOption(membershipId: 'm9', name: 'Luis Rojas')];
+      final vm = build();
+      await settle();
+      vm.onBayClick(_busy);
+      vm.onOpenReassignTaskMechanic('t1');
+      expect(vm.state.reassigningTaskId, 't1');
+      await vm.onConfirmReassignTaskMechanic('t1', 'm9');
+
+      verify(() => repository.reassignMechanic('t1', 'm9')).called(1);
+      expect(vm.state.reassigningTaskId, isNull);
+      expect(vm.state.sheet, isNotNull);
+      expect(vm.state.notice?.asString(strings), strings.orderMechanicAssignedNotice('Luis Rojas'));
+      vm.dispose();
+    });
+
+    test('sin red o sin permiso de reasignar no cambia el mecánico', () async {
+      final vm = build(permissions: {'operations:bays:read', 'operations:work_orders:read'});
+      await settle();
+      await vm.onConfirmReassignTaskMechanic('t1', 'm9');
+      verifyNever(() => repository.reassignMechanic(any(), any()));
+      vm.dispose();
+    });
+
+    test('permisos separados: leer órdenes, asignar y liberar', () async {
+      final vm = build();
+      await settle();
+      expect(vm.state.canReadWorkOrders, isTrue);
+      expect(vm.state.canAssignBay, isTrue);
+      expect(vm.state.canReleaseBay, isTrue);
+      vm.dispose();
+      final readOnly = build(permissions: {'operations:bays:read'});
+      await settle();
+      expect(readOnly.state.canReadWorkOrders, isFalse);
+      expect(readOnly.state.canAssignBay, isFalse);
+      readOnly.dispose();
+    });
+
+    test('sin permiso de órdenes no las refresca', () async {
+      final vm = build(permissions: {'operations:bays:read'});
+      await settle();
+      verifyNever(() => refreshOrdersMock.execute());
+      vm.dispose();
+    });
+
     test('sin permisos de escritura no actúa', () async {
       final vm = build(permissions: {'operations:bays:read'});
       await settle();
@@ -253,7 +313,7 @@ void main() {
       WorkBay? tapped;
       await pump(
         tester,
-        const BaysUiState(items: _board, isLoading: false, canManage: true),
+        const BaysUiState(items: _board, isLoading: false, canManage: true, canReleaseBay: true),
         onBay: (bay) => tapped = bay,
       );
 
@@ -264,6 +324,90 @@ void main() {
       expect(find.text('Nueva bahía'), findsOneWidget);
       await tester.tap(find.text('Elevador 2'));
       expect(tapped?.id, 'b2');
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('resume la ocupación de la sede', (tester) async {
+      await pump(tester, const BaysUiState(items: _board, isLoading: false));
+      expect(find.text(strings.baysOccupancyTitle), findsOneWidget);
+      expect(find.text(strings.baysOccupancyFraction(1, 3)), findsOneWidget);
+      expect(find.text(strings.baysOccupancyBreakdown(1, 1)), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('la hoja de la bahía ocupada lista las tareas y deja reasignar el mecánico', (tester) async {
+      String? picked;
+      final item = BayBoardItem(
+        bay: _busy,
+        occupant: BayOccupant(
+          workOrderId: 'wo1',
+          internalNumber: 7,
+          plate: 'BKL482',
+          tasks: const [
+            TaskDetail(
+              id: TaskId('t1'),
+              workOrderId: 'wo1',
+              serviceName: 'Cambio de aceite',
+              mechanicId: 'm1',
+              description: 'Aceite',
+              totalPausedSeconds: 0,
+            ),
+          ],
+        ),
+      );
+      final state = BaysUiState(
+        items: [item],
+        isLoading: false,
+        canReadWorkOrders: true,
+        canReleaseBay: true,
+        canAssignBay: true,
+        availableMechanics: const [
+          MechanicOption(membershipId: 'm1', name: 'Ana Pérez'),
+          MechanicOption(membershipId: 'm2', name: 'Luis Rojas'),
+        ],
+        reassigningTaskId: 't1',
+        sheet: const BaySheet(bayId: 'b2'),
+      );
+      tester.view.physicalSize = const Size(390 * 3, 2400 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AtelierTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('es'),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BayDetailSheet(
+                state: state,
+                item: item,
+                actions: BaySheetActions(
+                  onOpenOrder: (_) {},
+                  onMoveOrder: (_) {},
+                  onAssignOrder: (_) {},
+                  onRelease: () {},
+                  onOpenReassignTaskMechanic: (_) {},
+                  onConfirmReassignTaskMechanic: (task, mechanic) => picked = '$task:$mechanic',
+                  onMaintenanceClick: () {},
+                  onMaintenanceBack: () {},
+                  onMaintenanceReasonChange: (_) {},
+                  onConfirmMaintenance: () {},
+                  onRestore: () {},
+                  onDismiss: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text(strings.baysMechanicsSection), findsOneWidget);
+      expect(find.text('Cambio de aceite'), findsOneWidget);
+      expect(find.text(strings.orderReassignMechanicBtn), findsOneWidget);
+      await tester.tap(find.text('Luis Rojas'));
+      expect(picked, 't1:m2');
       await tester.pumpWidget(const SizedBox());
     });
 

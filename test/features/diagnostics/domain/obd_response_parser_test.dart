@@ -35,6 +35,9 @@ void main() {
     expect(ObdResponseParser.speed('SEARCHING...\r410D32\r'), 50);
     expect(ObdResponseParser.fuelLevel('412FFF'), closeTo(100.0, 0.001));
     expect(ObdResponseParser.intakePressure('410B65'), 101);
+    expect(ObdResponseParser.engineLoad('41047F'), closeTo(49.8, 0.1));
+    expect(ObdResponseParser.throttlePosition('4111FF'), 100);
+    expect(ObdResponseParser.engineLoad('NO DATA'), isNull);
     expect(ObdResponseParser.voltage('12.6V\r\r>'), 12.6);
     expect(ObdResponseParser.coolantTemp('NO DATA'), isNull);
     expect(ObdResponseParser.engineRpm('410C1A'), isNull);

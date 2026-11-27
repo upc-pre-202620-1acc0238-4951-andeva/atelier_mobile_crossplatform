@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:atelier_mobile_crossplatform/core/data/local/app_database.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_inbox.dart';
+import 'package:atelier_mobile_crossplatform/core/notifications/auth_deep_link_source.dart';
 import 'package:atelier_mobile_crossplatform/core/notifications/push_inbox.dart';
 import 'package:atelier_mobile_crossplatform/navigation/presentation_setup.dart';
 import 'package:atelier_mobile_crossplatform/core/data/local/session_manager.dart';
@@ -43,6 +44,10 @@ Future<void> main() async {
     sync: getIt<SyncProcessor>().runDetached,
   );
   await _bestEffort('Disparadores', getIt<SyncTriggers>().start);
+  await _bestEffort(
+    'Enlaces de autenticación',
+    AuthDeepLinkSource(inbox: getIt<AuthDeepLinkInbox>()).start,
+  );
 
   setupPresentation();
 

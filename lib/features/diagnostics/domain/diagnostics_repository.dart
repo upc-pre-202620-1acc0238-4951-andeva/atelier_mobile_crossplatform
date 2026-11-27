@@ -62,6 +62,14 @@ abstract class DiagnosticsRepository {
   /// `GET /iot/telemetry/vehicle/{id}/latest` (`iot:telemetry:read`); `null` sin lecturas (404). En línea.
   Future<TelemetrySample?> getLatestTelemetry(String vehicleId);
 
+  /// `GET /iot/telemetry/vehicle/{id}/history` (`iot:telemetry:read`): promedios por ventana de tiempo. En línea.
+  Future<List<TelemetryHistoryBucket>> getVehicleTelemetryHistory(
+    String vehicleId, {
+    DateTime? from,
+    DateTime? to,
+    String? bucket,
+  });
+
   /// `GET /iot/faults/vehicle/{id}/active` → caché; conserva las fallas aún en cola.
   Future<void> refreshActiveFaults(String vehicleId);
 

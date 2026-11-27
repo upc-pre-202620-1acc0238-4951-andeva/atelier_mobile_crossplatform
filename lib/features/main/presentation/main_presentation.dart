@@ -1,5 +1,8 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/refresh_bay_board_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_stock_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/observe_today_attendance_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/is_notification_permission_granted_use_case.dart';
@@ -60,6 +63,9 @@ void setupMainPresentation() {
       getBranches: getIt<GetSelectableBranchesUseCase>(),
       observeOrders: getIt<ObserveBranchWorkOrdersUseCase>(),
       refreshOrders: getIt<RefreshBranchWorkOrdersUseCase>(),
+      observeBayBoard: getIt<ObserveBayBoardUseCase>(),
+      refreshBayBoard: getIt<RefreshBayBoardUseCase>(),
+      getStockAlerts: getIt<GetStockAlertsUseCase>(),
       enrichReferences: getIt<EnrichReceptionReferencesUseCase>(),
       observeAppointments: getIt<ObserveAppointmentsUseCase>(),
       refreshAppointments: getIt<RefreshAppointmentsUseCase>(),
@@ -97,6 +103,7 @@ void setupMainPresentation() {
       openPushNotification: getIt<OpenPushNotificationUseCase>(),
       markAllPushNotificationsRead: getIt<MarkAllPushNotificationsReadUseCase>(),
       getBranchDailyAttendance: getIt<GetBranchDailyAttendanceUseCase>(),
+      getStockAlerts: getIt<GetStockAlertsUseCase>(),
       observeOrders: getIt<ObserveBranchWorkOrdersUseCase>(),
       observePendingSyncCount: getIt<ObservePendingOperationCountUseCase>(),
       isNotificationPermissionGranted: getIt<IsNotificationPermissionGrantedUseCase>(),

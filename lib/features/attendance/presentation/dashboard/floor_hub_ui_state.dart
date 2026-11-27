@@ -1,9 +1,11 @@
+import 'package:decimal/decimal.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/today_attendance.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/domain/weekly_schedule.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/inventory/domain/purchase_order.dart';
 import 'package:atelier_mobile_crossplatform/features/reception/domain/appointment.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/domain/task.dart';
@@ -22,6 +24,7 @@ class FloorHubUiState {
   final List<Task> assignedTasks;
   final List<Appointment> appointments;
   final List<WorkOrder> branchOrders;
+  final List<StockAlert> stockAlerts;
   final List<PurchaseOrder> issuedPurchaseOrders;
   final int catalogSize;
   final DailyCashSummary? dailyCash;
@@ -43,6 +46,7 @@ class FloorHubUiState {
     this.assignedTasks = const [],
     this.appointments = const [],
     this.branchOrders = const [],
+    this.stockAlerts = const [],
     this.issuedPurchaseOrders = const [],
     this.catalogSize = 0,
     this.dailyCash,
@@ -71,6 +75,8 @@ class FloorHubUiState {
       _has(Permission.partsManage) ||
       _has(Permission.purchaseOrdersCreate) ||
       _has(Permission.batchesReceive);
+  int get outOfStockCount => stockAlerts.where((a) => a.currentStock <= Decimal.zero).length;
+
   bool get canOperateCash => _has(Permission.invoicesIssueSunat) || _has(Permission.paymentsCreate);
 
   bool get canReportFinding => _has(Permission.proposalsCreate);
@@ -127,6 +133,7 @@ class FloorHubUiState {
     List<Task>? assignedTasks,
     List<Appointment>? appointments,
     List<WorkOrder>? branchOrders,
+    List<StockAlert>? stockAlerts,
     List<PurchaseOrder>? issuedPurchaseOrders,
     int? catalogSize,
     DailyCashSummary? dailyCash,
@@ -150,6 +157,7 @@ class FloorHubUiState {
       assignedTasks: assignedTasks ?? this.assignedTasks,
       appointments: appointments ?? this.appointments,
       branchOrders: branchOrders ?? this.branchOrders,
+      stockAlerts: stockAlerts ?? this.stockAlerts,
       issuedPurchaseOrders: issuedPurchaseOrders ?? this.issuedPurchaseOrders,
       catalogSize: catalogSize ?? this.catalogSize,
       dailyCash: dailyCash ?? this.dailyCash,

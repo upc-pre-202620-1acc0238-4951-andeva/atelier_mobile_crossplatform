@@ -39,6 +39,7 @@ dependencies:
   sqlite3: ^3.9.0
   package_info_plus: ^10.2.2
   mobile_scanner: ^7.5.0
+  app_links: ^7.2.2
 
 dev_dependencies:
   flutter_test:
@@ -69,21 +70,6 @@ flutter:
           weight: 700
         - asset: assets/fonts/satoshi_black.otf
           weight: 900
-    - family: PlusJakartaSans
-      fonts:
-        - asset: assets/fonts/plus_jakarta_sans_regular.ttf
-        - asset: assets/fonts/plus_jakarta_sans_medium.ttf
-          weight: 500
-        - asset: assets/fonts/plus_jakarta_sans_semibold.ttf
-          weight: 600
-        - asset: assets/fonts/plus_jakarta_sans_bold.ttf
-          weight: 700
-        - asset: assets/fonts/plus_jakarta_sans_extrabold.ttf
-          weight: 800
-    - family: JetBrainsMono
-      fonts:
-        - asset: assets/fonts/jetbrains_mono_medium.ttf
-          weight: 500
     - family: AlbertSans
       fonts:
         - asset: assets/fonts/albert_sans_extrabold.ttf

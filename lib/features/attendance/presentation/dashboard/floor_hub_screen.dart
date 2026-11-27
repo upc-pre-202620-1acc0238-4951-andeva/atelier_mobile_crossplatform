@@ -39,8 +39,7 @@ import 'package:flutter/material.dart';
 /// Hub de Piso y Mostrador ("Turno") del Segmento 2. Compone su panel de cabecera y bloques operativos
 /// exclusivamente desde los permisos de la sesión, siguiendo el sistema visual "La vía señalizada".
 ///
-/// Sin accesos a bahías ni alertas de stock (US40, US34) ni a la telemetría en vivo (US18). Las órdenes listas
-/// para cobrar abren "Cobrar y entregar" (US37–US39).
+/// Las órdenes listas para cobrar abren "Cobrar y entregar" (US37–US39).
 class FloorHubScreen extends StatefulWidget {
   const FloorHubScreen({super.key});
 
@@ -122,6 +121,8 @@ class _FloorHubScreenState extends State<FloorHubScreen> {
             onRegisterWalkIn: () => _open(AppRoute.registerCustomer, const RegisterCustomerArgs()),
             onOpenInventory: () => _open(AppRoute.partsCatalog),
             onOpenBays: () => _open(AppRoute.bays),
+            onOpenStockAlerts: () => _open(AppRoute.stockAlerts),
+            onOpenPartDetail: (id) => _open(AppRoute.partDetail, id),
             onOpenPurchaseOrders: () => _open(AppRoute.purchaseOrders),
             onOpenPurchaseOrderDetail: (id) => _open(AppRoute.purchaseOrderDetail, id),
             onOpenWorkOrder: (id) => _open(AppRoute.workOrderDetail, id),
@@ -150,6 +151,8 @@ class FloorHubActions {
   final VoidCallback onRegisterWalkIn;
   final VoidCallback onOpenInventory;
   final VoidCallback onOpenBays;
+  final VoidCallback onOpenStockAlerts;
+  final ValueChanged<String> onOpenPartDetail;
   final VoidCallback onOpenPurchaseOrders;
   final ValueChanged<String> onOpenPurchaseOrderDetail;
   final ValueChanged<String> onOpenWorkOrder;
@@ -172,6 +175,8 @@ class FloorHubActions {
     VoidCallback? onRegisterWalkIn,
     VoidCallback? onOpenInventory,
     VoidCallback? onOpenBays,
+    VoidCallback? onOpenStockAlerts,
+    ValueChanged<String>? onOpenPartDetail,
     VoidCallback? onOpenPurchaseOrders,
     ValueChanged<String>? onOpenPurchaseOrderDetail,
     ValueChanged<String>? onOpenWorkOrder,
@@ -192,6 +197,8 @@ class FloorHubActions {
        onRegisterWalkIn = onRegisterWalkIn ?? (() {}),
        onOpenInventory = onOpenInventory ?? (() {}),
        onOpenBays = onOpenBays ?? (() {}),
+       onOpenStockAlerts = onOpenStockAlerts ?? (() {}),
+       onOpenPartDetail = onOpenPartDetail ?? ((_) {}),
        onOpenPurchaseOrders = onOpenPurchaseOrders ?? (() {}),
        onOpenPurchaseOrderDetail = onOpenPurchaseOrderDetail ?? ((_) {}),
        onOpenWorkOrder = onOpenWorkOrder ?? ((_) {}),
@@ -426,6 +433,36 @@ class FloorHubContent extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.only(left: 16, right: 4),
         child: AtelierSectionHeader(
+          title: strings.floorHubStockDecisions,
+          count: state.stockAlerts.isEmpty ? null : state.stockAlerts.length,
+          action: AtelierButton(
+            text: strings.todaySeeAll,
+            onClick: actions.onOpenStockAlerts,
+            style: AtelierButtonStyle.text,
+          ),
+        ),
+      ),
+      if (loading)
+        for (var i = 0; i < 2; i++) const AtelierListRow(title: 'Filtro de aceite', subtitle: 'SKU-001', loading: true)
+      else if (state.stockAlerts.isEmpty)
+        _padded(AtelierEmptyState(text: strings.floorHubStockEmpty))
+      else
+        for (final alert in state.stockAlerts.take(5))
+          _padded(
+            AtelierDecisionRow(
+              title: alert.name,
+              subtitle: strings.floorHubStockAlertLine(
+                alert.sku,
+                alert.currentStock.formatQuantity(),
+                alert.minimumStock.formatQuantity(),
+              ),
+              amount: strings.floorHubStockMissing(alert.deficit.formatQuantity()),
+              onClick: () => actions.onOpenPartDetail(alert.itemId),
+            ),
+          ),
+      Padding(
+        padding: const EdgeInsets.only(left: 16, right: 4),
+        child: AtelierSectionHeader(
           title: strings.floorHubStockPosSection,
           count: orders.isEmpty ? null : orders.length,
           action: AtelierButton(
@@ -592,10 +629,20 @@ class _HubReportPanel extends StatelessWidget {
     if (state.canManageStock) {
       return AtelierReportPanel(
         context: contextText,
-        legend: state.issuedPurchaseOrders.length.toString(),
-        caption: strings.floorHubStockPosCaption,
+        legend: state.stockAlerts.length.toString(),
+        caption: strings.floorHubStockCaption,
         loading: loading,
         figures: [
+          PanelFigure(
+            value: state.outOfStockCount.toString(),
+            label: strings.floorHubFigureOutOfStock,
+            onClick: actions.onOpenStockAlerts,
+          ),
+          PanelFigure(
+            value: state.issuedPurchaseOrders.length.toString(),
+            label: strings.floorHubFigureOpenPos,
+            onClick: actions.onOpenPurchaseOrders,
+          ),
           PanelFigure(
             value: state.catalogSize.toString(),
             label: strings.floorHubFigureCatalog,
@@ -938,7 +985,7 @@ class _FloorShortcutsCard extends StatelessWidget {
       if (state.canReadBays)
         (
           title: strings.floorHubQuickBays,
-          subtitle: strings.moreHBaysSub,
+          subtitle: strings.floorHubQuickBaysSub,
           icon: Icons.garage_outlined,
           onClick: actions.onOpenBays,
         ),

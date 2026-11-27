@@ -47,7 +47,6 @@ enum BarPrimaryAction {
 /// Pestaña raíz de la barra inferior flotante. [route] es la pantalla inicial de la pestaña: la barra se
 /// dibuja solo sobre estas raíces y los detalles, que se empujan al Navigator raíz, la cubren.
 ///
-/// Bahías (US40) no existe como pestaña: su historia está fuera.
 enum MainTab {
   shift(AppRoute.attendanceHome, icon: Icons.schedule_outlined),
   today(AppRoute.adminDashboard, icon: Icons.today_outlined),
@@ -58,6 +57,7 @@ enum MainTab {
   inventory(AppRoute.partsCatalog, icon: Icons.inventory_2_outlined),
   purchases(AppRoute.purchaseOrders, icon: Icons.shopping_cart_outlined),
   cash(AppRoute.dailyCash, icon: Icons.payments_outlined),
+  bays(AppRoute.bays, icon: Icons.garage_outlined),
   obd(AppRoute.diagnosticsHub, vectorIcon: AtelierIcons.bluetoothSearching);
 
   final AppRoute route;
@@ -76,6 +76,7 @@ enum MainTab {
     inventory => strings.mainTabStock,
     purchases => strings.mainTabPurchases,
     cash => strings.mainTabCash,
+    bays => strings.mainTabBays,
     obd => strings.mainTabObd,
   };
 
@@ -106,6 +107,8 @@ enum MainTab {
         }
         if (session.has(Permission.workOrdersRead)) addUnique(orders);
       }
+      // Relleno por si un rol personalizado tiene supervisión parcial
+      if (session.has(Permission.baysRead)) addUnique(bays);
       return result;
     }
 
@@ -117,6 +120,8 @@ enum MainTab {
       addUnique(tasks);
       if (session.canUseTelemetry()) {
         addUnique(obd);
+      } else if (session.has(Permission.baysRead)) {
+        addUnique(bays);
       } else if (session.has(Permission.workOrdersRead)) {
         addUnique(orders);
       }
@@ -146,6 +151,7 @@ enum MainTab {
     if (session.has(Permission.tasksRead)) addUnique(tasks);
     if (session.has(Permission.workOrdersRead)) addUnique(orders);
     if (session.has(Permission.partsRead)) addUnique(inventory);
+    if (session.has(Permission.baysRead)) addUnique(bays);
     if (session.canUseTelemetry() || session.canReadTelemetry()) addUnique(obd);
 
     return result;

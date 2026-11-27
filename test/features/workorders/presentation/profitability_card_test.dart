@@ -8,6 +8,7 @@ import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -99,47 +100,53 @@ void main() {
     });
   });
 
-  group('ProfitabilityCardContent', () {
+  group('ProfitabilitySheet', () {
     testWidgets(
-      'E2: muestra ingreso S/ 36.00, costo FIFO S/ 17.00 y ganancia S/ 19.00',
+      'E2: muestra ingreso S/ 36.00, costo FIFO S/ 17.00 y ganancia S/ 19.00 con el desglose',
       (tester) async {
         await _pump(
           tester,
-          ProfitabilityCardContent(
-            state: ProfitabilityUiState(profitability: _e2()),
-            partNames: const {'p1': 'Bujía NGK'},
-            isOnline: true,
-            onLoad: () {},
+          SingleChildScrollView(
+            child: ProfitabilitySheet(
+              state: ProfitabilityUiState(profitability: _e2()),
+              partNames: const {'p1': 'Bujía NGK'},
+              onRetry: () {},
+              onDismiss: () {},
+            ),
           ),
         );
 
         expect(find.text('Rentabilidad'), findsOneWidget);
+        expect(find.text('Ingreso por repuestos'), findsOneWidget);
+        expect(find.text('Costo de los repuestos'), findsOneWidget);
+        expect(find.text('Ganancia de repuestos'), findsOneWidget);
         expect(find.text('S/ 36.00'), findsOneWidget);
-        expect(find.text('S/ 17.00'), findsOneWidget);
+        expect(find.text('S/ 17.00'), findsWidgets);
         expect(find.text('S/ 19.00'), findsWidgets);
         expect(find.text('Bujía NGK'), findsOneWidget);
+        expect(find.text('3 unid. · costo S/ 17.00'), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
       },
     );
 
-    testWidgets('una ganancia negativa se muestra con signo menos', (
-      tester,
-    ) async {
+    testWidgets('una ganancia negativa se muestra con signo menos', (tester) async {
       await _pump(
         tester,
-        ProfitabilityCardContent(
-          state: ProfitabilityUiState(
-            profitability: Profitability(
-              workOrderId: 'wo1',
-              currency: 'PEN',
-              partsRevenue: Decimal.fromInt(10),
-              partsCostOfSales: Decimal.parse('14.50'),
-              partsGrossProfit: Decimal.parse('-4.50'),
-              lines: const [],
+        SingleChildScrollView(
+          child: ProfitabilitySheet(
+            state: ProfitabilityUiState(
+              profitability: Profitability(
+                workOrderId: 'wo1',
+                currency: 'PEN',
+                partsRevenue: Decimal.fromInt(10),
+                partsCostOfSales: Decimal.parse('14.50'),
+                partsGrossProfit: Decimal.parse('-4.50'),
+                lines: const [],
+              ),
             ),
+            onRetry: () {},
+            onDismiss: () {},
           ),
-          isOnline: true,
-          onLoad: () {},
         ),
       );
 
@@ -147,18 +154,21 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('sin conexión no se puede calcular', (tester) async {
+    testWidgets('un error ofrece reintentar', (tester) async {
+      var retried = 0;
       await _pump(
         tester,
-        ProfitabilityCardContent(
-          state: const ProfitabilityUiState(),
-          isOnline: false,
-          onLoad: () {},
+        SingleChildScrollView(
+          child: ProfitabilitySheet(
+            state: ProfitabilityUiState(error: const UiText.dynamic('Sin acceso')),
+            onRetry: () => retried++,
+            onDismiss: () {},
+          ),
         ),
       );
-
-      expect(find.text('Requiere conexión a internet.'), findsOneWidget);
-      expect(find.text('Calcular rentabilidad'), findsOneWidget);
+      expect(find.text('Sin acceso'), findsOneWidget);
+      await tester.tap(find.text('Reintentar'));
+      expect(retried, 1);
       await tester.pumpWidget(const SizedBox());
     });
   });

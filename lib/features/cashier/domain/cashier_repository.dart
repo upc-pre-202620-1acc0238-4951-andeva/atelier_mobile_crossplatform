@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:atelier_mobile_crossplatform/features/cashier/domain/tenant_fiscal_profile.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/domain/voucher_draft.dart';
 import 'package:decimal/decimal.dart';
@@ -64,4 +65,10 @@ abstract class CashierRepository {
   );
 
   Future<void> setSeriesActive(String id, bool active);
+
+  /// Perfil fiscal del taller (`GET /api/v1/tenants/current`); deja el nombre comercial al día en la sesión.
+  Future<TenantFiscalProfile> getTenantFiscalProfile();
+
+  /// `name` de 1 a 100 y `legalName` de 1 a 150 caracteres (`PUT /api/v1/tenants/current`).
+  Future<TenantFiscalProfile> updateTenantFiscalProfile(String name, String legalName);
 }

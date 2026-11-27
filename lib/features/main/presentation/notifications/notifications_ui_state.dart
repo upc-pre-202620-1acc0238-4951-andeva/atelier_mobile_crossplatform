@@ -1,13 +1,15 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/notification_record.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/team/domain/team_attendance.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
 
-/// Bandeja: lo que pide atención (cola sin sincronizar, descargos, órdenes sin iniciar) y los avisos push de la
-/// sesión. Sin alertas de stock: son la historia US34, fuera de esta versión.
+/// Bandeja: lo que pide atención (cola sin sincronizar, stock bajo, descargos, órdenes sin iniciar) y los avisos push
+/// de la sesión.
 class NotificationsUiState {
   final List<NotificationRecord> pushHistory;
+  final List<StockAlert> stockAlerts;
   final List<TeamAttendance> pendingJustifications;
   final List<WorkOrder> draftOrdersWaitingApproval;
   final Session? session;
@@ -20,6 +22,7 @@ class NotificationsUiState {
 
   const NotificationsUiState({
     this.pushHistory = const [],
+    this.stockAlerts = const [],
     this.pendingJustifications = const [],
     this.draftOrdersWaitingApproval = const [],
     this.session,
@@ -32,12 +35,14 @@ class NotificationsUiState {
   int get unreadPushCount => pushHistory.where((r) => !r.read).length;
 
   int get totalActiveAlerts =>
+      stockAlerts.length +
       pendingJustifications.length +
       draftOrdersWaitingApproval.length +
       (pendingSyncCount > 0 ? 1 : 0);
 
   NotificationsUiState copyWith({
     List<NotificationRecord>? pushHistory,
+    List<StockAlert>? stockAlerts,
     List<TeamAttendance>? pendingJustifications,
     List<WorkOrder>? draftOrdersWaitingApproval,
     Session? session,
@@ -49,6 +54,7 @@ class NotificationsUiState {
   }) {
     return NotificationsUiState(
       pushHistory: pushHistory ?? this.pushHistory,
+      stockAlerts: stockAlerts ?? this.stockAlerts,
       pendingJustifications: pendingJustifications ?? this.pendingJustifications,
       draftOrdersWaitingApproval: draftOrdersWaitingApproval ?? this.draftOrdersWaitingApproval,
       session: session ?? this.session,

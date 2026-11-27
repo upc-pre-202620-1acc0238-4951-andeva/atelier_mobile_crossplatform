@@ -241,5 +241,21 @@ void main() {
       expect(pending.map((p) => '${p.order.id.value}:${p.task.id.value}'), ['wo1:t1']);
       verify(() => repository.getDetail(any())).called(2);
     });
+
+    test('mira como mucho 15 órdenes en curso y no las borradores', () async {
+      final repository = _Repository();
+      when(() => repository.getDetail(any())).thenAnswer((invocation) async {
+        final id = (invocation.positionalArguments.first as WorkOrderId).value;
+        return _detail([_task('t1', pending: 'Retén')], id: id);
+      });
+
+      final pending = await FindPendingSuspensionsUseCase(repository: repository).execute([
+        for (var i = 0; i < 20; i++) _order('wo$i', WorkOrderStatus.inProgress),
+        _order('draft', WorkOrderStatus.draft),
+      ]);
+
+      expect(pending, hasLength(15));
+      verify(() => repository.getDetail(any())).called(15);
+    });
   });
 }
