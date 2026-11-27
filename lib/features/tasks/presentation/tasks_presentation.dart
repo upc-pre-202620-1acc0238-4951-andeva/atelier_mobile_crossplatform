@@ -1,6 +1,8 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/discard_pending_operation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/retry_pending_operation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/add_part_to_task_use_case.dart';
@@ -65,6 +67,8 @@ void setupTasksPresentation() {
       approveSuspension: getIt<ApproveSuspensionUseCase>(),
       rejectSuspension: getIt<RejectSuspensionUseCase>(),
       resumeSuspendedTask: getIt<ResumeSuspendedTaskUseCase>(),
+      retryPendingOperation: getIt<RetryPendingOperationUseCase>(),
+      discardPendingOperation: getIt<DiscardPendingOperationUseCase>(),
       pausedElapsed: getIt<PausedElapsedStore>(),
       connectivity: getIt<ConnectivityObserver>(),
     ),

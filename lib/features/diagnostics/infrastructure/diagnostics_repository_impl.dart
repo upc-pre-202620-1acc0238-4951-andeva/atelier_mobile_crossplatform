@@ -114,6 +114,17 @@ class DiagnosticsRepositoryImpl implements DiagnosticsRepository {
   }
 
   @override
+  Future<List<TelemetryHistoryBucket>> getVehicleTelemetryHistory(
+    String vehicleId, {
+    DateTime? from,
+    DateTime? to,
+    String? bucket,
+  }) async {
+    final dtos = await api.getTelemetryHistory(vehicleId, from: from, to: to, bucket: bucket);
+    return [for (final dto in dtos) dto.toDomain(vehicleId)];
+  }
+
+  @override
   Future<DeviceInstallation> installDevice({
     required String deviceId,
     required String vehicleId,

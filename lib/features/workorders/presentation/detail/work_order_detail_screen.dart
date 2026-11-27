@@ -67,10 +67,12 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
 
   void _feedback() {
     final state = viewModel.state;
-    if (state.notice != null && !identical(state.notice, _lastNotice))
+    if (state.notice != null && !identical(state.notice, _lastNotice)) {
       _haptics.confirm();
-    if (state.error != null && !identical(state.error, _lastError))
+    }
+    if (state.error != null && !identical(state.error, _lastError)) {
       _haptics.reject();
+    }
     _lastNotice = state.notice;
     _lastError = state.error;
   }
@@ -778,19 +780,20 @@ class WorkOrderDetailContent extends StatelessWidget {
     ];
   }
 
-  /// "Esperan tu decisión": propuestas en revisión y proforma sin respuesta (sin suspensiones US29).
+  /// "Esperan tu decisión": suspensiones por validar, propuestas en revisión y proforma sin respuesta.
   List<Widget> _decisions(
     AppLocalizations strings,
     WorkOrderDetail detail,
     WorkOrder order,
   ) {
+    final suspensions = state.canValidateSuspension ? detail.tasksAwaitingSuspensionReview : const <TaskDetail>[];
     final pendingProposals = state.canResolveProposals
         ? detail.proposals
               .where((p) => p.status == ProposalStatus.pendingReview)
               .toList()
         : const <Proposal>[];
     final quotationPending = state.isDraft && state.canApproveQuotation;
-    final count = pendingProposals.length + (quotationPending ? 1 : 0);
+    final count = suspensions.length + pendingProposals.length + (quotationPending ? 1 : 0);
     if (count == 0) return const [];
     return [
       Padding(
@@ -800,6 +803,18 @@ class WorkOrderDetailContent extends StatelessWidget {
           count: count,
         ),
       ),
+      for (final task in suspensions)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: AtelierDecisionRow(
+            title: strings.ordersDecisionSuspension(state.taskTitle(task)),
+            subtitle: task.pendingSuspensionReason != null && task.pendingSuspensionReason!.trim().isNotEmpty
+                ? task.pendingSuspensionReason
+                : null,
+            plate: order.plate,
+            onClick: () => actions.onOpenSuspensionReview(task),
+          ),
+        ),
       for (final proposal in pendingProposals)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -1079,8 +1094,9 @@ class WorkOrderDetailContent extends StatelessWidget {
 
   /// Movimientos de repuestos (US33 E2) y rentabilidad con costo FIFO (US35 E2), cada uno con su permiso.
   List<Widget> _costs(BuildContext context, AppLocalizations strings) {
-    if (!state.canReadPartMovements && !state.canReadProfitability)
+    if (!state.canReadPartMovements && !state.canReadProfitability) {
       return const [];
+    }
     final workOrderId =
         (state.detail?.workOrder.id ?? state.cachedOrder?.id)?.value;
     return [

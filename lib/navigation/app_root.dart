@@ -120,11 +120,9 @@ class _AppRootState extends State<AppRoot> {
         open(AppRoute.adminAttendance, tab: MainTab.team);
       case MyAttendanceDestination() || ClockInDestination():
         open(AppRoute.attendanceHome, tab: MainTab.shift);
-      case TaskSuspensionReviewDestination(:final workOrderId, :final taskId):
-        open(
-          AppRoute.taskDetail,
-          args: TaskDetailArgs(workOrderId: workOrderId, taskId: taskId),
-        );
+      case TaskSuspensionReviewDestination(:final workOrderId):
+        // Como Android: la revisión se hace desde la orden, donde están todas las decisiones.
+        open(AppRoute.workOrderDetail, args: workOrderId);
       case LowStockAlertsDestination():
         open(AppRoute.stockAlerts);
     }

@@ -16,6 +16,10 @@ abstract class DiagnosticSession {
 
   Future<ObdConnectionInfo> connect(ObdAdapter adapter);
 
+  /// Reconecta con el último adaptador cuando la sesión cayó a `lost` (US16 E2, US18). Sin adaptador previo:
+  /// `ObdNotConnectedException`; si no responde, la sesión queda en `lost`.
+  Future<ObdConnectionInfo> reconnect();
+
   /// Muestreo cada 2 s de [vehicleId] (US18 E1, US19 E1). Sin conexión: `ObdNotConnectedException`.
   Future<void> startStreaming(String vehicleId);
 

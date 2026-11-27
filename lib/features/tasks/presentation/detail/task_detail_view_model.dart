@@ -7,6 +7,8 @@ import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/add_part_to_task_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/discard_pending_operation_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/main/application/retry_pending_operation_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/approve_suspension_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/attach_task_evidence_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/tasks/application/complete_task_use_case.dart';
@@ -65,6 +67,8 @@ class TaskDetailViewModel extends ChangeNotifier {
   final ApproveSuspensionUseCase approveSuspension;
   final RejectSuspensionUseCase rejectSuspension;
   final ResumeSuspendedTaskUseCase resumeSuspendedTask;
+  final RetryPendingOperationUseCase? retryPendingOperation;
+  final DiscardPendingOperationUseCase? discardPendingOperation;
   final PausedElapsedStore pausedElapsed;
   final ConnectivityObserver connectivity;
   final DateTime Function() now;
@@ -90,6 +94,8 @@ class TaskDetailViewModel extends ChangeNotifier {
     required this.approveSuspension,
     required this.rejectSuspension,
     required this.resumeSuspendedTask,
+    this.retryPendingOperation,
+    this.discardPendingOperation,
     required this.pausedElapsed,
     required this.connectivity,
     this.now = DateTime.now,
@@ -264,6 +270,11 @@ class TaskDetailViewModel extends ChangeNotifier {
   Future<void> onCompleteConfirm() async {
     final form = _state.completeForm;
     if (form == null || !_state.canComplete) return;
+    // US30: con permiso de fotos, el cierre exige al menos una foto de Montaje.
+    if (_state.requiresAssemblyEvidence) {
+      _update(_state.copyWith(error: UiText.resource((s) => s.tasksSeg2CompleteMissingAssemblyWarning)));
+      return;
+    }
     final hours = _toAmount(form.hours);
     if (hours == null) {
       _fail(const InvalidTaskInputException('actualLaborHours'));
@@ -436,60 +447,61 @@ class TaskDetailViewModel extends ChangeNotifier {
 
   // --- US28: evidencia fotográfica ---
 
-  void onAddEvidenceClick() {
-    if (!_state.canAddEvidence || _state.isBusy) return;
-    _update(
-      _state.copyWith(
-        evidenceForm: const EvidenceCaptureForm(),
-        clearNotice: true,
-        clearError: true,
-        clearInvalidField: true,
-      ),
-    );
-  }
+  void onEvidenceKindChange(EvidenceKind kind) =>
+      _update(_state.copyWith(evidenceKind: kind, clearError: true, clearInvalidField: true));
 
-  void onEvidenceDismiss() {
-    if (_state.evidenceForm == null) return;
-    _update(_state.copyWith(clearEvidenceForm: true, clearError: true, clearInvalidField: true));
-  }
-
-  void onEvidenceKindChange(EvidenceKind kind) => _editEvidence((f) => f.copyWith(kind: kind));
-
-  void onEvidenceNoteChange(String value) => _editEvidence((f) => f.copyWith(note: value));
-
-  void _editEvidence(EvidenceCaptureForm Function(EvidenceCaptureForm form) change) {
-    final form = _state.evidenceForm;
-    if (form == null || _state.isBusy) return;
-    _update(_state.copyWith(evidenceForm: change(form), clearError: true, clearInvalidField: true));
-  }
+  void onEvidenceNoteChange(String value) =>
+      _update(_state.copyWith(evidenceNote: value, clearError: true, clearInvalidField: true));
 
   void onCameraDenied() {
-    _update(_state.copyWith(error: UiText.resource((s) => s.galleryCameraDenied)));
+    _update(_state.copyWith(error: UiText.resource((s) => s.galleryCameraDenied), clearNotice: true));
   }
 
   /// No exige conexión: la foto se encola y se sube cuando haya señal.
   Future<void> onEvidenceCaptured(File photo) async {
-    final form = _state.evidenceForm;
-    if (form == null || !_state.canAddEvidence || _state.isBusy) return;
+    if (!_state.canUploadPhotos || _state.isBusy) return;
+    final state = _state;
     _startAction(TaskAction.attachEvidence);
     try {
       await attachTaskEvidence.execute(
         taskId,
-        _state.resolvedWorkOrderId,
+        state.resolvedWorkOrderId,
         photo,
-        form.kind,
-        note: form.note,
+        state.evidenceKind,
+        note: state.evidenceNote,
       );
       _update(
         _state.copyWith(
           clearBusyAction: true,
-          clearEvidenceForm: true,
+          evidenceNote: '',
           notice: UiText.resource((s) => s.tasksSeg2EvidenceQueued),
         ),
       );
     } on Object catch (e) {
       _fail(e);
     }
+  }
+
+  /// Una foto que falló al subir: se abre la hoja para reintentar o descartar.
+  void onSelectFailedEvidence(PendingEvidence pending) =>
+      _update(_state.copyWith(selectedFailedEvidence: pending, clearError: true, clearNotice: true));
+
+  void onDismissFailedEvidence() => _update(_state.copyWith(clearSelectedFailedEvidence: true));
+
+  Future<void> onRetryFailedEvidence() async {
+    final pending = _state.selectedFailedEvidence;
+    if (pending == null) return;
+    _update(_state.copyWith(clearSelectedFailedEvidence: true));
+    await retryPendingOperation?.execute(pending.operationId);
+    _update(_state.copyWith(notice: UiText.resource((s) => s.tasksSeg2EvidenceFailedRetryNotice)));
+  }
+
+  Future<void> onDiscardFailedEvidence() async {
+    final pending = _state.selectedFailedEvidence;
+    if (pending == null) return;
+    _update(_state.copyWith(clearSelectedFailedEvidence: true));
+    await discardPendingOperation?.execute(pending.operationId);
+    _update(_state.copyWith(notice: UiText.resource((s) => s.tasksSeg2EvidenceFailedDiscardNotice)));
   }
 
   // --- Reabrir tarea cerrada (`operations:work_orders:update`) ---

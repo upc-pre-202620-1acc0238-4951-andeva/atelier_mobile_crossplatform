@@ -1368,9 +1368,6 @@
   "bayTypeWashBay": "Bahía de lavado",
   "bayTypeAlignment": "Estación de alineación",
   "bayTypePaintBooth": "Cabina de pintura",
-  "bayStatusOccupiedDesc": "En intervención técnica · Trabajo en curso",
-  "bayStatusAvailableDesc": "Bahía libre · Lista para recibir vehículo",
-  "bayStatusMaintenanceDesc": "Fuera de servicio · En mantenimiento",
   "bayStatusAvailable": "Libre",
   "bayStatusOccupied": "Ocupada",
   "bayStatusMaintenance": "Mantenimiento",
@@ -2425,18 +2422,6 @@
   "diagAlertTypeOil": "Agotamiento de aceite",
   "diagAlertTypeEmissions": "Falla de emisiones",
   "diagAlertTypeGeneric": "Alerta predictiva",
-  "diagActionLiveSub": "RPM, temperatura, presión y voltaje en vivo",
-  "diagLivePidRpm": "RPM",
-  "diagLivePidCoolant": "Refrigerante",
-  "diagLivePidIntake": "Presión de admisión",
-  "diagLivePidVoltage": "Voltaje",
-  "diagLivePidSpeed": "Velocidad",
-  "diagLivePidFuel": "Combustible",
-  "diagLiveOutOfRange": "Fuera de rango",
-  "diagLiveFrozenClose": "Descartar muestra",
-  "diagLiveExitTitle": "¿Salir del muestreo?",
-  "diagLiveExitBody": "El muestreo está activo. Si sales, se detiene; lo ya capturado no se pierde.",
-  "diagLiveExitConfirm": "Detener y salir",
   "diagLiveTitle": "Telemetría",
   "diagLiveNoPermission": "Tu perfil no tiene permiso para leer ni capturar telemetría.",
   "diagLiveSyncPending": "{p1} lecturas pendientes de sincronizar",
@@ -3491,12 +3476,7 @@
   },
   "baysTapToAssign": "Toca para ingresar una orden",
   "baysUnavailableError": "Esa bahía no está libre. Elige otra.",
-  "baysMovedNotice": "Orden movida a {p1}.",
-  "@baysMovedNotice": {"placeholders": {"p1": {"type": "String"}}},
-  "baysAssignedNotice": "Orden ingresada a {p1}.",
-  "@baysAssignedNotice": {"placeholders": {"p1": {"type": "String"}}},
   "baysNoAssignableOrders": "No hay órdenes activas sin bahía.",
-  "baysNoFreeTargets": "No hay otras bahías registradas.",
   "baysNameError": "Escribe un nombre de hasta 100 caracteres.",
   "baysMechanicsSection": "Mecánicos y faenas en bahía",
   "notifTitle": "Notificaciones",
@@ -3727,131 +3707,31 @@
   },
   "floorHubStockPosCaption": "órdenes de compra emitidas",
   "floorHubQuickObdSubNoLive": "Fallas DTC e informe IA",
-  "stockAlertsTitle": "Alertas de stock",
-  "stockAlertsContext": "Inventario",
-  "stockAlertsCaption": "Repuestos en el mínimo o por debajo",
-  "stockAlertsOut": "agotados",
-  "stockAlertsLow": "por reponer",
-  "stockAlertsNoPermission": "Tu perfil no tiene permiso para ver las alertas de stock.",
-  "stockAlertsEmpty": "No hay alertas de stock. Todo está sobre el mínimo.",
-  "stockAlertsChipOut": "Agotado",
-  "stockAlertsChipLow": "Stock bajo",
-  "stockAlertsDetail": "Stock {current} · mínimo {minimum} · faltan {missing}",
-  "@stockAlertsDetail": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      },
-      "minimum": {
-        "type": "String"
-      },
-      "missing": {
-        "type": "String"
-      }
-    }
-  },
-  "moreHStockAlerts": "Alertas de stock",
-  "moreHStockAlertsSub": "Repuestos bajo el mínimo",
-  "moreHFiscalSeries": "Series SUNAT",
-  "moreHFiscalSeriesSub": "Series de facturas y boletas",
-  "invReceiveBtn": "Recibir compra",
-  "invReceiveTitle": "Recibir compra",
-  "invReceiveBody": "Registra el comprobante del proveedor. Al confirmar, el stock sube y la alerta de mínimo se retira.",
-  "invReceiveConfirm": "Confirmar recepción",
-  "invReceiveNumberLabel": "Número de comprobante",
-  "invReceiveDateLabel": "Fecha de recepción (opcional)",
-  "invReceiveDateHint": "AAAA-MM-DD",
-  "invReceivePhotoPreview": "Foto del comprobante",
-  "invReceiveTakePhoto": "Tomar foto del comprobante",
-  "invReceiveRetakePhoto": "Tomar otra foto",
-  "invReceiveRemovePhoto": "Quitar foto",
   "invReceiveCameraDenied": "Sin permiso de cámara. Actívalo en los ajustes del teléfono para fotografiar el comprobante.",
   "invReceiveErrPhoto": "Toma la foto del comprobante para recibir la compra.",
   "invReceiveErrNumber": "Ingresa el número del comprobante.",
   "invReceiveErrDate": "La fecha debe tener el formato AAAA-MM-DD y no puede ser futura.",
   "invReceiveErrNotReceivable": "Solo se pueden recibir órdenes emitidas.",
-  "fiscalSeriesTitle": "Series de comprobantes",
-  "fiscalSeriesContext": "Facturación electrónica",
-  "fiscalSeriesCaption": "series activas en la sede",
-  "fiscalSeriesFigFactura": "facturas",
-  "fiscalSeriesFigBoleta": "boletas",
-  "fiscalSeriesNoPermission": "Tu perfil no tiene permiso para configurar series de comprobantes.",
-  "fiscalSeriesPse": "La emisión ante SUNAT la hace el proveedor de servicios electrónicos (PSE) de la plataforma. Aquí solo configuras la numeración de tu sede.",
-  "fiscalSeriesListHeader": "Series de la sede",
-  "fiscalSeriesAdd": "Agregar serie",
-  "fiscalSeriesEmpty": "Esta sede aún no tiene series. Agrega una para poder emitir comprobantes.",
-  "fiscalSeriesRowSub": "{type} · correlativo actual {number}",
-  "@fiscalSeriesRowSub": {
+  "floorHubStockAlertLine": "{p1} · Stock {p2} / mín. {p3}",
+  "@floorHubStockAlertLine": {
     "placeholders": {
-      "type": {
+      "p1": {
         "type": "String"
       },
-      "number": {
-        "type": "String"
-      }
-    }
-  },
-  "fiscalSeriesActive": "Activa",
-  "fiscalSeriesInactive": "Inactiva",
-  "fiscalSeriesToggleLabel": "Activar o desactivar la serie {serie}",
-  "@fiscalSeriesToggleLabel": {
-    "placeholders": {
-      "serie": {
-        "type": "String"
-      }
-    }
-  },
-  "fiscalSeriesCreatedOk": "Serie {serie} ({type}) activada para esta sede.",
-  "@fiscalSeriesCreatedOk": {
-    "placeholders": {
-      "serie": {
+      "p2": {
         "type": "String"
       },
-      "type": {
+      "p3": {
         "type": "String"
       }
     }
   },
-  "fiscalSeriesSheetTitle": "Agregar serie",
-  "fiscalSeriesSheetBody": "Elige el tipo de comprobante y la serie de 4 caracteres: la factura empieza con F y la boleta con B.",
-  "fiscalSeriesSerieLabel": "Serie",
-  "fiscalSeriesInitialLabel": "Correlativo inicial (opcional)",
-  "fiscalSeriesSave": "Activar serie",
-  "profitabilityTitle": "Rentabilidad",
-  "profitabilityHint": "Ingreso de los repuestos contra su costo de ventas por lotes (FIFO).",
-  "profitabilityCalculate": "Calcular rentabilidad",
-  "profitabilityRefresh": "Actualizar",
-  "profitabilityNeedsConnection": "Requiere conexión a internet.",
-  "profitabilityRevenue": "Ingreso por repuestos",
-  "profitabilityCost": "Costo de ventas (FIFO)",
-  "profitabilityGross": "Ganancia bruta",
-  "profitabilityLabor": "Mano de obra",
-  "profitabilityLines": "Por repuesto",
-  "profitabilityLineUnknown": "Repuesto",
-  "profitabilityLineDetail": "{qty} u. · ingreso {revenue} · costo {cost}",
-  "@profitabilityLineDetail": {
+  "floorHubStockMissing": "Faltan {p1}",
+  "@floorHubStockMissing": {
     "placeholders": {
-      "qty": {
-        "type": "String"
-      },
-      "revenue": {
-        "type": "String"
-      },
-      "cost": {
+      "p1": {
         "type": "String"
       }
     }
-  },
-  "profitabilityNoTax": "Importes sin IGV.",
-  "diagReportPdfTitle": "Informe en PDF",
-  "diagReportPdfHint": "Semáforo de salud por subsistema, riesgos y acciones recomendadas.",
-  "reportsFleetSelected": "Cliente: {name}",
-  "@reportsFleetSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "reportsFleetClear": "Quitar cliente"
+  }
 }

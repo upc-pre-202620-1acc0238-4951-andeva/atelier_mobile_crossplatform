@@ -2,6 +2,7 @@ import 'package:atelier_mobile_crossplatform/core/designsystem/text/ui_text.dart
 import 'package:atelier_mobile_crossplatform/features/bays/domain/bay_board.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
 import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order.dart';
+import 'package:atelier_mobile_crossplatform/features/workorders/domain/work_order_references.dart';
 
 enum BayFilter {
   all(null),
@@ -13,7 +14,7 @@ enum BayFilter {
   const BayFilter(this.status);
 }
 
-enum BayAction { move, assign, release, maintenance, restore, create }
+enum BayAction { move, assign, release, maintenance, restore, create, reassignMechanic }
 
 /// Hoja de una bahía; lo que ofrece depende del estado actual de la bahía en el tablero.
 class BaySheet {
@@ -40,17 +41,23 @@ class BaysUiState {
   final List<BayBoardItem> items;
   final BayFilter filter;
 
-  /// membershipId → nombre visible (H11).
-  final Map<String, String> mechanicNamesById;
+  /// Mecánicos de la sede (H11): nombres visibles y destino de la reasignación por tarea.
+  final List<MechanicOption> availableMechanics;
+
+  /// Tarea cuya lista de mecánicos está abierta en la hoja de la bahía ocupada.
+  final String? reassigningTaskId;
 
   /// Órdenes de la sede en caché; de ellas salen las que pueden entrar a una bahía libre.
   final List<WorkOrder> orders;
   final BaySheet? sheet;
   final CreateBayForm? createForm;
   final bool canRead;
-  final bool canReassign;
+  final bool canReadWorkOrders;
+  final bool canAssignBay;
+  final bool canReleaseBay;
   final bool canManage;
   final bool isLoading;
+  final bool isRefreshing;
   final bool isOnline;
   final BayAction? busyAction;
   final UiText? error;
@@ -62,14 +69,18 @@ class BaysUiState {
   const BaysUiState({
     this.items = const [],
     this.filter = BayFilter.all,
-    this.mechanicNamesById = const {},
+    this.availableMechanics = const [],
+    this.reassigningTaskId,
     this.orders = const [],
     this.sheet,
     this.createForm,
     this.canRead = true,
-    this.canReassign = false,
+    this.canReadWorkOrders = false,
+    this.canAssignBay = false,
+    this.canReleaseBay = false,
     this.canManage = false,
     this.isLoading = true,
+    this.isRefreshing = false,
     this.isOnline = true,
     this.busyAction,
     this.error,
@@ -86,9 +97,8 @@ class BaysUiState {
   int countFor(BayFilter value) =>
       value.status == null ? items.length : items.where((i) => i.bay.status == value.status).length;
 
-  List<BayBoardItem> get visibleItems => filter.status == null
-      ? items
-      : items.where((i) => i.bay.status == filter.status).toList();
+  List<BayBoardItem> get visibleItems =>
+      filter.status == null ? items : items.where((i) => i.bay.status == filter.status).toList();
 
   BayBoardItem? get selectedItem {
     final id = sheet?.bayId;
@@ -96,6 +106,39 @@ class BaysUiState {
       if (item.bay.id == id) return item;
     }
     return null;
+  }
+
+  List<WorkBay> get availableBays => [
+    for (final item in items)
+      if (item.bay.status == BayStatus.available) item.bay,
+  ];
+
+  int get availableCount => countFor(BayFilter.available);
+  int get occupiedCount => countFor(BayFilter.occupied);
+  int get maintenanceCount => countFor(BayFilter.maintenance);
+
+  /// Nombre del mecánico de una tarea: el de la lista de la sede o, si falta, el que trae la tarea.
+  String? mechanicNameFor(String? mechanicId, [String? fallbackName]) {
+    final fallback = fallbackName != null && fallbackName.trim().isNotEmpty ? fallbackName : null;
+    if (mechanicId == null) return fallback;
+    for (final mechanic in availableMechanics) {
+      if (mechanic.membershipId == mechanicId) return mechanic.displayName;
+    }
+    return fallback;
+  }
+
+  /// Mecánicos de la orden que ocupa la bahía, sin repetir.
+  List<String> mechanicLabelsFor(BayOccupant occupant) {
+    final fromIds = [
+      for (final id in occupant.mechanicIds)
+        for (final mechanic in availableMechanics)
+          if (mechanic.membershipId == id) mechanic.displayName,
+    ];
+    if (fromIds.isNotEmpty) return {...fromIds}.toList();
+    return {
+      for (final task in occupant.tasks)
+        if (task.mechanicName != null && task.mechanicName!.trim().isNotEmpty) task.mechanicName!,
+    }.toList();
   }
 
   /// Órdenes activas que todavía no ocupan ninguna bahía del tablero.
@@ -112,16 +155,21 @@ class BaysUiState {
   BaysUiState copyWith({
     List<BayBoardItem>? items,
     BayFilter? filter,
-    Map<String, String>? mechanicNamesById,
+    List<MechanicOption>? availableMechanics,
+    String? reassigningTaskId,
+    bool clearReassigningTask = false,
     List<WorkOrder>? orders,
     BaySheet? sheet,
     bool clearSheet = false,
     CreateBayForm? createForm,
     bool clearCreateForm = false,
     bool? canRead,
-    bool? canReassign,
+    bool? canReadWorkOrders,
+    bool? canAssignBay,
+    bool? canReleaseBay,
     bool? canManage,
     bool? isLoading,
+    bool? isRefreshing,
     bool? isOnline,
     BayAction? busyAction,
     bool clearBusyAction = false,
@@ -135,14 +183,18 @@ class BaysUiState {
     return BaysUiState(
       items: items ?? this.items,
       filter: filter ?? this.filter,
-      mechanicNamesById: mechanicNamesById ?? this.mechanicNamesById,
+      availableMechanics: availableMechanics ?? this.availableMechanics,
+      reassigningTaskId: clearReassigningTask ? null : reassigningTaskId ?? this.reassigningTaskId,
       orders: orders ?? this.orders,
       sheet: clearSheet ? null : sheet ?? this.sheet,
       createForm: clearCreateForm ? null : createForm ?? this.createForm,
       canRead: canRead ?? this.canRead,
-      canReassign: canReassign ?? this.canReassign,
+      canReadWorkOrders: canReadWorkOrders ?? this.canReadWorkOrders,
+      canAssignBay: canAssignBay ?? this.canAssignBay,
+      canReleaseBay: canReleaseBay ?? this.canReleaseBay,
       canManage: canManage ?? this.canManage,
       isLoading: isLoading ?? this.isLoading,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       isOnline: isOnline ?? this.isOnline,
       busyAction: clearBusyAction ? null : busyAction ?? this.busyAction,
       error: clearError ? null : error ?? this.error,

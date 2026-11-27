@@ -1,5 +1,7 @@
 import 'package:atelier_mobile_crossplatform/core/data/remote/connectivity_observer.dart';
 import 'package:atelier_mobile_crossplatform/core/di/dependency_injection.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_stock_alerts_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/observe_stock_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/clock_in_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/clock_out_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/get_current_location_use_case.dart';
@@ -61,6 +63,8 @@ void setupAttendancePresentation() {
       refreshBranchOrders: getIt<RefreshBranchWorkOrdersUseCase>(),
       observePartsCatalog: getIt<ObservePartsCatalogUseCase>(),
       refreshPartsCatalog: getIt<RefreshPartsCatalogUseCase>(),
+      observeStockAlerts: getIt<ObserveStockAlertsUseCase>(),
+      getStockAlerts: getIt<GetStockAlertsUseCase>(),
       getPurchaseOrders: getIt<GetPurchaseOrdersUseCase>(),
       getDailyCashSummary: getIt<GetDailyCashSummaryUseCase>(),
       getObdDevices: getIt<GetObdDevicesUseCase>(),

@@ -45,7 +45,7 @@ enum MoreDestination {
     myAttendance => (AppRoute.attendanceDetail, null),
     myTasks => (AppRoute.myTasks, MainTab.tasks),
     workOrders => (AppRoute.workOrders, MainTab.orders),
-    bays => (AppRoute.bays, null),
+    bays => (AppRoute.bays, MainTab.bays),
     reception => (AppRoute.vehicleSearch, MainTab.reception),
     services => (AppRoute.servicesCatalog, null),
     dailyCash => (AppRoute.dailyCash, MainTab.cash),
@@ -222,15 +222,6 @@ List<_MoreRow> _moreRows(Session s) {
       (t) => t.moreHVouchersSub,
     );
   }
-  if (s.has(Permission.fiscalConfigManage)) {
-    add(
-      _MoreGroup.cashier,
-      MoreDestination.fiscalSeries,
-      Icons.confirmation_number_outlined,
-      (t) => t.moreHFiscalSeries,
-      (t) => t.moreHFiscalSeriesSub,
-    );
-  }
   if (s.has(Permission.cashflowExportPdf) ||
       (s.canReadAiReports() && s.has(Permission.customersRead))) {
     add(
@@ -241,6 +232,15 @@ List<_MoreRow> _moreRows(Session s) {
       (t) => t.moreHReportsSub,
     );
   }
+  if (s.has(Permission.fiscalConfigManage) || s.has(Permission.tenantsUpdate)) {
+    add(
+      _MoreGroup.cashier,
+      MoreDestination.fiscalSeries,
+      Icons.receipt_long_outlined,
+      (t) => t.moreHSeries,
+      (t) => t.moreHSeriesSub,
+    );
+  }
   if (s.has(Permission.partsRead)) {
     add(
       _MoreGroup.stock,
@@ -248,6 +248,15 @@ List<_MoreRow> _moreRows(Session s) {
       Icons.inventory_2_outlined,
       (t) => t.moreHParts,
       (t) => t.moreHPartsSub,
+    );
+  }
+  if (s.has(Permission.alertsRead)) {
+    add(
+      _MoreGroup.stock,
+      MoreDestination.stockAlerts,
+      Icons.warning_amber_outlined,
+      (t) => t.moreHAlerts,
+      (t) => t.moreHAlertsSub,
     );
   }
   if (s.has(Permission.purchaseOrdersRead)) {
@@ -276,15 +285,6 @@ List<_MoreRow> _moreRows(Session s) {
       Icons.account_balance_wallet_outlined,
       (t) => t.moreHValuation,
       (t) => t.moreHValuationSub,
-    );
-  }
-  if (s.has(Permission.alertsRead)) {
-    add(
-      _MoreGroup.stock,
-      MoreDestination.stockAlerts,
-      Icons.warning_amber_outlined,
-      (t) => t.moreHStockAlerts,
-      (t) => t.moreHStockAlertsSub,
     );
   }
   add(

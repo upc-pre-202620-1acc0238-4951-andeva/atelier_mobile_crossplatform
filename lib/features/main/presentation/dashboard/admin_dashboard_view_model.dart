@@ -7,7 +7,10 @@ import 'package:atelier_mobile_crossplatform/core/domain/permission.dart';
 import 'package:atelier_mobile_crossplatform/core/domain/session.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/application/observe_today_attendance_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/auth/application/get_selectable_branches_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/observe_bay_board_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/application/refresh_bay_board_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/diagnostics/application/get_obd_devices_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_stock_alerts_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
@@ -39,6 +42,9 @@ class AdminDashboardViewModel extends ChangeNotifier {
   final GetSelectableBranchesUseCase getBranches;
   final ObserveBranchWorkOrdersUseCase observeOrders;
   final RefreshBranchWorkOrdersUseCase refreshOrders;
+  final ObserveBayBoardUseCase observeBayBoard;
+  final RefreshBayBoardUseCase refreshBayBoard;
+  final GetStockAlertsUseCase getStockAlerts;
   final EnrichReceptionReferencesUseCase enrichReferences;
   final ObserveAppointmentsUseCase observeAppointments;
   final RefreshAppointmentsUseCase refreshAppointments;
@@ -65,6 +71,9 @@ class AdminDashboardViewModel extends ChangeNotifier {
     required this.getBranches,
     required this.observeOrders,
     required this.refreshOrders,
+    required this.observeBayBoard,
+    required this.refreshBayBoard,
+    required this.getStockAlerts,
     required this.enrichReferences,
     required this.observeAppointments,
     required this.refreshAppointments,
@@ -114,6 +123,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
       }),
     );
     _subscriptions.add(observeOrders.execute().listen(_onOrders));
+    _subscriptions.add(observeBayBoard.execute().listen((bays) => _update(_state.copyWith(bays: bays)), onError: (Object _) {}));
     _subscriptions.add(
       observeAppointments.execute(_today).listen(
         (list) => _update(_state.copyWith(appointments: list)),
@@ -160,9 +170,11 @@ class AdminDashboardViewModel extends ChangeNotifier {
         canReadWorkOrders: has(Permission.workOrdersRead),
         canStartWorkOrders: has(Permission.workOrdersUpdate),
         canValidateSuspension: has(Permission.tasksHoldValidate),
+        canReadBays: has(Permission.baysRead),
         canReadAppointments: has(Permission.appointmentsRead),
         canReadCustomers: has(Permission.customersRead),
         canRegisterCustomers: has(Permission.customersCreate),
+        canReadInventory: has(Permission.inventoryAlertsRead),
         canReadObd: has(Permission.obdDevicesRead) && session?.plan?.iotTelemetryEnabled != false,
         canAuditAttendance: has(Permission.attendanceAuditAll),
         canApproveJustifications: has(Permission.justificationsApprove),
@@ -230,11 +242,21 @@ class AdminDashboardViewModel extends ChangeNotifier {
       }
       if (failure == null && has(Permission.tasksHoldValidate)) await _loadPendingSuspensions();
     }
+    if (has(Permission.baysRead)) {
+      await _ignoring(() => refreshBayBoard.execute());
+    }
     if (has(Permission.appointmentsRead)) {
       await _ignoring(() => refreshAppointments.execute(_today));
     }
     if (has(Permission.customersRead)) {
       await _ignoring(() => refreshCustomers.execute());
+    }
+    if (has(Permission.inventoryAlertsRead)) {
+      try {
+        _update(_state.copyWith(stockAlerts: await getStockAlerts.execute()));
+      } on Object {
+        // El indicador conserva el último valor.
+      }
     }
     if (has(Permission.obdDevicesRead) && session?.plan?.iotTelemetryEnabled != false) {
       try {

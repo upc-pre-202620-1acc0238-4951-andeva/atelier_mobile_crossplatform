@@ -157,6 +157,18 @@ abstract final class ObdResponseParser {
   /// `010B`: A kPa (presión absoluta del múltiple de admisión).
   static int? intakePressure(String raw) => data(raw, '410B')?.firstOrNull;
 
+  /// `0104`: A × 100 / 255 % (carga calculada del motor).
+  static double? engineLoad(String raw) {
+    final value = data(raw, '4104')?.firstOrNull;
+    return value == null ? null : value * 100.0 / 255.0;
+  }
+
+  /// `0111`: A × 100 / 255 % (posición del acelerador).
+  static double? throttlePosition(String raw) {
+    final value = data(raw, '4111')?.firstOrNull;
+    return value == null ? null : value * 100.0 / 255.0;
+  }
+
   /// `ATRV`: "12.6V".
   static double? voltage(String raw) {
     for (final line in lines(raw)) {

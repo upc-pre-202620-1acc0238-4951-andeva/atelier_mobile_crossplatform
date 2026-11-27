@@ -203,6 +203,12 @@ class SessionManager extends ChangeNotifier implements SessionStore {
     notifyListeners();
   }
 
+  /// Nombre comercial del taller en caliente tras `PUT /api/v1/tenants/current` (US42).
+  Future<void> updateTenantName(String name) async {
+    await preferences.setString(_tenantName, name);
+    notifyListeners();
+  }
+
   /// Sede y turno de `GET /hr/employees/membership/{membershipId}`. Con sede asignada ya no hay
   /// nada que elegir; sin ella, la elegida a mano se conserva (un 404 posterior no la borra).
   Future<void> updateAssignment(String? branchId, String? shiftId) async {

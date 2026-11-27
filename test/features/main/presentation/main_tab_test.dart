@@ -119,9 +119,21 @@ void main() {
       expect(tabs.toSet().length, tabs.length);
     });
 
-    test('Bahías no existe: tener el permiso no añade pestaña', () {
+    test('Bahías: el permiso de lectura rellena la barra de piso', () {
       final tabs = MainTab.tabsFor(_session([Permission.baysRead]));
-      expect(tabs, [MainTab.shift]);
+      expect(tabs, [MainTab.shift, MainTab.bays]);
+    });
+
+    test('técnico sin telemetría: Bahías va antes que Órdenes', () {
+      final tabs = MainTab.tabsFor(
+        _session([Permission.tasksRead, Permission.tasksTrackTime, Permission.baysRead, Permission.workOrdersRead]),
+      );
+      expect(tabs, [MainTab.shift, MainTab.tasks, MainTab.bays]);
+    });
+
+    test('supervisión parcial: Bahías rellena tras Hoy', () {
+      final tabs = MainTab.tabsFor(_session([Permission.baysAssign, Permission.baysRead]));
+      expect(tabs, [MainTab.today, MainTab.bays]);
     });
 
     test('sin permisos queda solo Turno', () {

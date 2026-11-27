@@ -9,6 +9,8 @@ import 'package:atelier_mobile_crossplatform/features/auth/application/request_n
 import 'package:atelier_mobile_crossplatform/features/main/application/mark_all_push_notifications_read_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_pending_operation_count_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_push_history_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/application/get_stock_alerts_use_case.dart';
+import 'package:atelier_mobile_crossplatform/features/inventory/domain/part.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/observe_session_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/application/open_push_notification_use_case.dart';
 import 'package:atelier_mobile_crossplatform/features/main/presentation/notifications/notifications_ui_state.dart';
@@ -24,6 +26,7 @@ class NotificationsViewModel extends ChangeNotifier {
   final OpenPushNotificationUseCase openPushNotification;
   final MarkAllPushNotificationsReadUseCase markAllPushNotificationsRead;
   final GetBranchDailyAttendanceUseCase getBranchDailyAttendance;
+  final GetStockAlertsUseCase getStockAlerts;
   final ObserveBranchWorkOrdersUseCase observeOrders;
   final ObservePendingOperationCountUseCase observePendingSyncCount;
   final IsNotificationPermissionGrantedUseCase isNotificationPermissionGranted;
@@ -36,6 +39,7 @@ class NotificationsViewModel extends ChangeNotifier {
     required this.openPushNotification,
     required this.markAllPushNotificationsRead,
     required this.getBranchDailyAttendance,
+    required this.getStockAlerts,
     required this.observeOrders,
     required this.observePendingSyncCount,
     required this.isNotificationPermissionGranted,
@@ -84,6 +88,14 @@ class NotificationsViewModel extends ChangeNotifier {
   Future<void> refresh() async {
     _update(_state.copyWith(isLoading: true, clearError: true));
     final session = _session ?? await observeSession.execute().first;
+    var stockAlerts = const <StockAlert>[];
+    if ((session?.has(Permission.inventoryAlertsRead) ?? false) || (session?.has(Permission.partsRead) ?? false)) {
+      try {
+        stockAlerts = await getStockAlerts.execute();
+      } on Object {
+        // La bandeja sigue sin esa sección.
+      }
+    }
     var justifications = const <TeamAttendance>[];
     if (session?.has(Permission.attendanceAuditAll) ?? false) {
       try {
@@ -93,7 +105,7 @@ class NotificationsViewModel extends ChangeNotifier {
         // La bandeja sigue sin esa sección.
       }
     }
-    _update(_state.copyWith(isLoading: false, pendingJustifications: justifications));
+    _update(_state.copyWith(isLoading: false, stockAlerts: stockAlerts, pendingJustifications: justifications));
   }
 
   /// Vuelve a leer el permiso del sistema (al abrir y al volver de los ajustes).

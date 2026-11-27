@@ -16,6 +16,7 @@ import 'package:atelier_mobile_crossplatform/core/presentation/lima_time_format.
 import 'package:atelier_mobile_crossplatform/features/main/presentation/main_labels.dart';
 import 'package:atelier_mobile_crossplatform/features/main/presentation/notifications/notifications_ui_state.dart';
 import 'package:atelier_mobile_crossplatform/features/main/presentation/notifications/notifications_view_model.dart';
+import 'package:atelier_mobile_crossplatform/core/presentation/money_format.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:atelier_mobile_crossplatform/navigation/app_navigator.dart';
 import 'package:flutter/material.dart';
@@ -69,6 +70,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with WidgetsB
         onOpenPushRecord: viewModel.onOpenPushRecord,
         onOpenOrder: (id) => _open(AppRoute.workOrderDetail, id),
         onOpenAttendanceReview: () => _open(AppRoute.adminAttendance),
+        onOpenStockAlerts: () => _open(AppRoute.stockAlerts),
         onOpenSyncQueue: () => _open(AppRoute.pendingOperations),
       ),
     );
@@ -84,6 +86,7 @@ class NotificationsContent extends StatelessWidget {
   final ValueChanged<NotificationRecord> onOpenPushRecord;
   final ValueChanged<String> onOpenOrder;
   final VoidCallback onOpenAttendanceReview;
+  final VoidCallback onOpenStockAlerts;
   final VoidCallback onOpenSyncQueue;
 
   const NotificationsContent({
@@ -96,6 +99,7 @@ class NotificationsContent extends StatelessWidget {
     required this.onOpenPushRecord,
     required this.onOpenOrder,
     required this.onOpenAttendanceReview,
+    required this.onOpenStockAlerts,
     required this.onOpenSyncQueue,
   });
 
@@ -185,6 +189,17 @@ class NotificationsContent extends StatelessWidget {
           subtitle: strings.notifSyncPendingBody,
           onClick: onOpenSyncQueue,
           trailing: AtelierChip(text: strings.syncOpPending, kind: ChipKind.idle),
+        ),
+      for (final alert in state.stockAlerts.take(_alertsPreview))
+        AtelierListRow(
+          title: alert.name,
+          subtitle: strings.notificationsStockDeficitLine(
+            alert.sku,
+            alert.currentStock.formatQuantity(),
+            alert.minimumStock.formatQuantity(),
+          ),
+          onClick: onOpenStockAlerts,
+          trailing: AtelierChip(text: strings.notificationsLowStockChip, kind: ChipKind.warn),
         ),
       for (final item in state.pendingJustifications)
         AtelierListRow(

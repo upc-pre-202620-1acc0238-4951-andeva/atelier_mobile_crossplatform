@@ -15,6 +15,7 @@ import 'package:atelier_mobile_crossplatform/core/media/photo_capture.dart';
 import 'package:atelier_mobile_crossplatform/features/attendance/infrastructure/remote/attendance_api.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/bay_repository_impl.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/infrastructure/remote/work_bay_api.dart';
+import 'package:atelier_mobile_crossplatform/core/data/remote/tenant/tenant_api.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/cashier_repository_impl.dart';
 import 'package:atelier_mobile_crossplatform/features/cashier/infrastructure/remote/cashier_api.dart';
 import 'package:atelier_mobile_crossplatform/features/reports/infrastructure/remote/reports_api.dart';
@@ -257,6 +258,7 @@ class Step9TestEnv {
     api: CashierApi(client: client),
     voucherDao: db.voucherDao,
     session: session,
+    tenantApi: TenantApi(client: client),
     now: () => clock,
   );
 

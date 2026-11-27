@@ -9,7 +9,9 @@ abstract final class CashierValidation {
   static final minAmount = Decimal.parse('0.01');
   static const maxReferenceLength = 100;
   static const maxReasonLength = 250;
-  static const maxLineDescriptionLength = 250;
+  static const maxLineDescriptionLength = 200;
+  static const maxTenantNameLength = 100;
+  static const maxTenantLegalNameLength = 150;
 
   static final _placeholderProduct = RegExp(
     r'^Product [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',

@@ -202,7 +202,7 @@ void main() {
       expect(find.text('Orden OC-0042'), findsOneWidget);
       expect(find.text('Filtro de aceite Bosch'), findsOneWidget);
       // Sin `inventory:batches:receive` no hay botón de recepción.
-      expect(find.text('Recibir compra'), findsNothing);
+      expect(find.text('Recibir orden'), findsNothing);
 
       await _pump(
         tester,
@@ -222,7 +222,7 @@ void main() {
           onOpenReceive: () {},
         ),
       );
-      expect(find.text('Recibir compra'), findsOneWidget);
+      expect(find.text('Recibir orden'), findsOneWidget);
       await _teardown(tester);
     });
   });
@@ -247,11 +247,12 @@ void main() {
             onBack: () {},
             onRefresh: () async {},
             onOpenPart: (_) {},
+            onCreatePurchaseOrder: () {},
           ),
         );
         expect(find.text('Bujía NGK'), findsOneWidget);
-        expect(find.textContaining('mínimo 5'), findsOneWidget);
-        expect(find.textContaining('faltan 3'), findsOneWidget);
+        expect(find.text('SKU NGK-9 · Stock 2 de 5'), findsOneWidget);
+        expect(find.text('Faltan 3'), findsOneWidget);
 
         await _pump(
           tester,
@@ -260,11 +261,12 @@ void main() {
             onBack: () {},
             onRefresh: () async {},
             onOpenPart: (_) {},
+            onCreatePurchaseOrder: () {},
           ),
         );
         expect(find.text('Bujía NGK'), findsNothing);
         expect(
-          find.text('No hay alertas de stock. Todo está sobre el mínimo.'),
+          find.text('Ningún repuesto está en su mínimo.'),
           findsOneWidget,
         );
 
@@ -275,6 +277,7 @@ void main() {
             onBack: () {},
             onRefresh: () async {},
             onOpenPart: (_) {},
+            onCreatePurchaseOrder: () {},
           ),
         );
         expect(

@@ -683,8 +683,10 @@ class _ScannerTabContent extends StatelessWidget {
       children: [
         if (showLive)
           AtelierGroupedRow(
-            title: strings.diagLiveTitle,
-            subtitle: strings.diagActionLiveSub,
+            title: strings.diagActionLiveTitle,
+            subtitle: state.isBluetoothConnected || state.canUseTelemetry
+                ? strings.diagActionLiveSubBt
+                : strings.diagActionLiveSubRemote,
             icon: Icons.speed_outlined,
             showDivider: showFaults || showAi || showFinding,
             onClick: () => actions.onOpenLiveTelemetry(vehicleId, plate),

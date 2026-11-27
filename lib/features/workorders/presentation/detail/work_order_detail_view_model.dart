@@ -487,8 +487,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     if (task == null ||
         remove == null ||
         !state.canModifyTasks ||
-        task.products.isNotEmpty)
+        task.products.isNotEmpty) {
       return;
+    }
     _update(
       state.copyWith(busyAction: WorkOrderDetailAction.deleteTask, error: null),
     );
@@ -1084,8 +1085,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
     final reassign = reassignBay;
     if (reassign == null ||
         _state.assignBayForm == null ||
-        !_state.canAssignBay)
+        !_state.canAssignBay) {
       return;
+    }
     _update(
       _state.copyWith(
         busyAction: WorkOrderDetailAction.assignBay,
@@ -1123,7 +1125,7 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
         busyAction: null,
         assignBayForm: null,
         detail: detail,
-        notice: UiText.resource((s) => s.baysAssignedNotice(bay.name)),
+        notice: UiText.resource((s) => s.orderBayAssignedNotice(bay.name)),
       ),
     );
   }
@@ -1166,8 +1168,9 @@ class WorkOrderDetailViewModel extends ChangeNotifier {
 
   Future<void> onResumeSuspendedTask(TaskDetail task) async {
     final resume = resumeSuspendedTask;
-    if (resume == null || !_state.canReviewSuspension || !task.isSuspended)
+    if (resume == null || !_state.canReviewSuspension || !task.isSuspended) {
       return;
+    }
     await _runSuspensionAction(
       WorkOrderDetailAction.resumeSuspended,
       UiText.resource((s) => s.ordersTaskResumedNotice),

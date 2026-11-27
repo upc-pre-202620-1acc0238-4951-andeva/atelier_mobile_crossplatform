@@ -116,6 +116,7 @@ dependencies:
   share_plus: ^13.3.1             # ➕ compartir PDFs
   sqlite3: ^3.9.0                 # ➕ soporte SQLite en pruebas/FFI de Drift
   mobile_scanner: ^7.5.0          # ➕ escáner de código de barras/QR de SKU
+  app_links: ^7.2.2               # ➕ App Links / Universal Links de auth (US01/US05)
 
 dev_dependencies:
   flutter_test:
@@ -146,21 +147,6 @@ flutter:
           weight: 700
         - asset: assets/fonts/satoshi_black.otf
           weight: 900
-    - family: PlusJakartaSans
-      fonts:
-        - asset: assets/fonts/plus_jakarta_sans_regular.ttf
-        - asset: assets/fonts/plus_jakarta_sans_medium.ttf
-          weight: 500
-        - asset: assets/fonts/plus_jakarta_sans_semibold.ttf
-          weight: 600
-        - asset: assets/fonts/plus_jakarta_sans_bold.ttf
-          weight: 700
-        - asset: assets/fonts/plus_jakarta_sans_extrabold.ttf
-          weight: 800
-    - family: JetBrainsMono
-      fonts:
-        - asset: assets/fonts/jetbrains_mono_medium.ttf
-          weight: 500
     - family: AlbertSans
       fonts:
         - asset: assets/fonts/albert_sans_extrabold.ttf
@@ -1090,7 +1076,7 @@ Los push se abren con un `navigatorKey` global, que consume `PushInbox`: `PushRo
 ### 5.6. Sistema de diseño
 
 - `core/designsystem/theme/theme.dart` conserva la forma del `MaterialTheme` del profesor (`light()`, `dark()`), con colores y tipografía de la marca. Los valores están en `core/designsystem/theme/{Color,Type,Shape}.kt` del repo Android, y son los que hay que portar.
-- **Tipografía:** Plus Jakarta Sans en la interfaz, JetBrains Mono para datos y Albert Sans solo en el imagotipo, igual que Android. Los `.ttf` se copian de `app/src/main/res/font/`. Los `.woff2` de `docs/branding/satoshi/` no sirven: Flutter no carga ese formato.
+- **Tipografía:** Satoshi en la interfaz y Albert Sans solo en el imagotipo, igual que Android 1.0.0 (Plus Jakarta Sans y JetBrains Mono ya no se usan). Los `.ttf` se copian de `app/src/main/res/font/`. Los `.woff2` de `docs/branding/satoshi/` no sirven: Flutter no carga ese formato.
 - **Íconos:** los de Material (`Icons.*`), como el profesor. Android los escribe con `ImageVector.Builder`, y aquí no hace falta.
 - **Componentes:** los mismos que `core/designsystem/component/` de Android (`AtelierButton`, `AtelierTextField`, `AtelierTopBar`, `AtelierChip`, `AtelierBanner`, `AtelierOtpField`, `AtelierLogo`), más `MoneyText` y `PermissionGate`.
 

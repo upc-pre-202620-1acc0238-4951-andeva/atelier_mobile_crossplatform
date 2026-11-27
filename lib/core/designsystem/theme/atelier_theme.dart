@@ -161,6 +161,21 @@ abstract final class AtelierTheme {
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(borderRadius: controlRadius),
       ),
+      // `AtelierShapes` de Android: extraSmall 6 (menús), small y medium 12 (chips, campos), large 16 (FAB).
+      chipTheme: const ChipThemeData(shape: RoundedRectangleBorder(borderRadius: controlRadius)),
+      popupMenuTheme: const PopupMenuThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
+      ),
+      menuTheme: const MenuThemeData(
+        style: MenuStyle(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
+          ),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        shape: RoundedRectangleBorder(borderRadius: panelRadius),
+      ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: AtelierPageTransitionsBuilder(),

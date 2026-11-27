@@ -1,4 +1,5 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_chip.dart';
+import 'package:atelier_mobile_crossplatform/features/bays/domain/bay_board.dart';
 import 'package:atelier_mobile_crossplatform/features/bays/domain/work_bay.dart';
 import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 
@@ -34,7 +35,7 @@ String? bayStatusLabel(AppLocalizations strings, BayStatus? status) => switch (s
 ChipKind bayStatusChipKind(BayStatus? status) => switch (status) {
   BayStatus.available => ChipKind.ok,
   BayStatus.occupied => ChipKind.info,
-  BayStatus.maintenance => ChipKind.wait,
+  BayStatus.maintenance => ChipKind.warn,
   null => ChipKind.idle,
 };
 
@@ -44,3 +45,13 @@ String formatLaborElapsed(Duration elapsed) {
   String two(int value) => value.toString().padLeft(2, '0');
   return '${two(total ~/ 60)}:${two(total % 60)}';
 }
+
+/// `1 h 20 min` / `35 min`: el tiempo de mano de obra de las tareas en curso.
+String formatBayElapsed(Duration elapsed) {
+  final minutes = elapsed.isNegative ? 0 : elapsed.inMinutes;
+  return minutes >= 60 ? '${minutes ~/ 60} h ${minutes % 60} min' : '$minutes min';
+}
+
+/// Mano de obra al instante [now] (recalculada con las tareas si las hay); si no, la del último detalle.
+Duration? bayLiveElapsed(BayOccupant occupant, DateTime now) =>
+    occupant.tasks.isNotEmpty ? laborElapsed(occupant.tasks, now) : occupant.laborElapsed;

@@ -1,6 +1,7 @@
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_banner.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_button.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_list_row.dart';
+import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_sheet.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/component/atelier_surface.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_shapes.dart';
 import 'package:atelier_mobile_crossplatform/core/designsystem/theme/atelier_theme.dart';
@@ -12,9 +13,9 @@ import 'package:atelier_mobile_crossplatform/l10n/app_localizations.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
-/// Tarjeta "Rentabilidad" de la ficha de una orden (US35 E2): ingreso de repuestos, costo de ventas FIFO y ganancia
-/// bruta, con el desglose por línea. Se muestra con `inventory:batches:read` o `invoicing:cashflow:export_pdf`; el
-/// cálculo se pide a demanda y solo en línea. [partNames] son los nombres ya cargados por la ficha.
+/// Fila "Rentabilidad" de la ficha de una orden (US35 E2). Se muestra con `inventory:batches:read` o
+/// `invoicing:cashflow:export_pdf`; al tocarla se abre la hoja y el cálculo se pide entonces, solo en línea.
+/// [partNames] son los nombres ya cargados por la ficha.
 class WorkOrderProfitabilityCard extends StatefulWidget {
   final String workOrderId;
   final Map<String, String> partNames;
@@ -28,15 +29,11 @@ class WorkOrderProfitabilityCard extends StatefulWidget {
   });
 
   @override
-  State<WorkOrderProfitabilityCard> createState() =>
-      _WorkOrderProfitabilityCardState();
+  State<WorkOrderProfitabilityCard> createState() => _WorkOrderProfitabilityCardState();
 }
 
-class _WorkOrderProfitabilityCardState
-    extends State<WorkOrderProfitabilityCard> {
-  late final ProfitabilityViewModel viewModel = getIt<ProfitabilityViewModel>(
-    param1: widget.workOrderId,
-  );
+class _WorkOrderProfitabilityCardState extends State<WorkOrderProfitabilityCard> {
+  late final ProfitabilityViewModel viewModel = getIt<ProfitabilityViewModel>(param1: widget.workOrderId);
 
   @override
   void dispose() {
@@ -44,184 +41,134 @@ class _WorkOrderProfitabilityCardState
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: viewModel,
-      builder: (context, _) => ProfitabilityCardContent(
-        state: viewModel.state,
-        partNames: widget.partNames,
-        isOnline: widget.isOnline,
-        onLoad: viewModel.load,
+  void _open() {
+    viewModel.load();
+    showAtelierSheetBuilder<void>(
+      context: context,
+      builder: (context) => ListenableBuilder(
+        listenable: viewModel,
+        builder: (context, _) => ProfitabilitySheet(
+          state: viewModel.state,
+          partNames: widget.partNames,
+          onRetry: viewModel.load,
+          onDismiss: () => Navigator.of(context).maybePop(),
+        ),
       ),
     );
   }
-}
-
-class ProfitabilityCardContent extends StatelessWidget {
-  final ProfitabilityUiState state;
-  final Map<String, String> partNames;
-  final bool isOnline;
-  final VoidCallback onLoad;
-
-  const ProfitabilityCardContent({
-    super.key,
-    required this.state,
-    this.partNames = const {},
-    required this.isOnline,
-    required this.onLoad,
-  });
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    final colors = context.atelier;
-    final result = state.profitability;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: AtelierSurface(
         tier: SurfaceTier.card,
         shape: cardLargeShape,
-        contentPadding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 8,
-          children: [
-            Text(
-              strings.profitabilityTitle,
-              style: context.text.titleMedium?.copyWith(
-                color: context.scheme.onSurface,
-              ),
-            ),
-            Text(
-              strings.profitabilityHint,
-              style: context.text.bodySmall?.copyWith(
-                color: colors.inkSecondary,
-              ),
-            ),
-            if (state.error case final err?)
-              AtelierBanner(
-                message: err.asString(strings),
-                icon: Icons.error_outline,
-              ),
-            if (result != null) ..._figures(context, strings, result),
-            AtelierButton(
-              text: result == null
-                  ? strings.profitabilityCalculate
-                  : strings.profitabilityRefresh,
-              onClick: onLoad,
-              style: AtelierButtonStyle.outlined,
-              icon: Icons.calculate_outlined,
-              enabled: isOnline && !state.isLoading,
-              loading: state.isLoading,
-            ),
-            if (!isOnline)
-              Text(
-                strings.profitabilityNeedsConnection,
-                style: context.text.bodySmall,
-              ),
-          ],
+        child: AtelierListRow(
+          title: strings.ordersProfitabilityTitle,
+          subtitle: strings.ordersProfitabilityHint,
+          showDivider: false,
+          onClick: widget.isOnline ? _open : null,
+          trailing: Icon(Icons.keyboard_arrow_right_outlined, color: context.atelier.inkSecondary),
         ),
       ),
     );
   }
+}
 
-  List<Widget> _figures(
-    BuildContext context,
-    AppLocalizations strings,
-    Profitability result,
-  ) {
-    final colors = context.atelier;
+/// Hoja de rentabilidad (US35 E2): ingreso de repuestos contra su costo de ventas FIFO y el desglose por repuesto.
+class ProfitabilitySheet extends StatelessWidget {
+  final ProfitabilityUiState state;
+  final Map<String, String> partNames;
+  final VoidCallback onRetry;
+  final VoidCallback onDismiss;
+
+  const ProfitabilitySheet({
+    super.key,
+    required this.state,
+    this.partNames = const {},
+    required this.onRetry,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final result = state.profitability;
+    final error = state.error;
+    return AtelierBottomSheet(
+      title: strings.ordersProfitabilityTitle,
+      actions: [
+        AtelierButton(text: strings.quotationPdfClose, onClick: onDismiss, style: AtelierButtonStyle.text),
+      ],
+      content: [
+        if (state.isLoading && result == null)
+          for (var i = 0; i < 4; i++)
+            const AtelierListRow(title: 'Ingresos de repuestos', subtitle: 'Costo de ventas FIFO', loading: true)
+        else if (error != null && result == null) ...[
+          AtelierBanner(message: error.asString(strings), icon: Icons.error_outline),
+          AtelierButton(text: strings.commonRetry, onClick: onRetry, style: AtelierButtonStyle.outlined),
+        ] else if (result != null)
+          ..._summary(context, strings, result),
+      ],
+    );
+  }
+
+  List<Widget> _summary(BuildContext context, AppLocalizations strings, Profitability result) {
     final currency = result.currency;
-    final profit = result.partsGrossProfit;
-    final profitColor = profit == null
-        ? context.scheme.onSurface
-        : profit < Decimal.zero
-        ? colors.bad
-        : colors.ok;
-    Widget row(
-      String title,
-      String value, {
-      Color? color,
-      bool divider = true,
-    }) => AtelierListRow(
-      title: title,
-      showDivider: divider,
-      trailing: Text(
-        value,
-        style: context.text.titleMedium?.copyWith(
-          color: color ?? context.scheme.onSurface,
+    Widget row(String label, Decimal? value, {bool emphasized = false}) => Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: (emphasized ? context.text.titleMedium : context.text.bodyLarge)?.copyWith(
+              color: emphasized ? context.scheme.onSurface : context.atelier.inkSecondary,
+            ),
+          ),
         ),
-      ),
+        Text(
+          profitabilityAmount(value, currency),
+          style: (emphasized ? context.text.titleMedium : context.text.bodyLarge)?.copyWith(
+            color: context.scheme.onSurface,
+          ),
+        ),
+      ],
     );
     return [
-      row(
-        strings.profitabilityRevenue,
-        profitabilityAmount(result.partsRevenue, currency),
-      ),
-      row(
-        strings.profitabilityCost,
-        profitabilityAmount(result.partsCostOfSales, currency),
-      ),
-      row(
-        strings.profitabilityGross,
-        profitabilityAmount(profit, currency),
-        color: profitColor,
-        divider: result.laborRevenue != null || result.lines.isNotEmpty,
-      ),
-      if (result.laborRevenue != null)
-        row(
-          strings.profitabilityLabor,
-          profitabilityAmount(result.laborRevenue, currency),
-          divider: result.lines.isNotEmpty,
-        ),
+      row(strings.ordersProfitLaborRevenue, result.laborRevenue),
+      row(strings.ordersProfitPartsRevenue, result.partsRevenue),
+      row(strings.ordersProfitCostOfSales, result.partsCostOfSales),
+      Divider(color: context.scheme.outlineVariant, height: 1),
+      row(strings.ordersProfitPartsGross, result.partsGrossProfit, emphasized: true),
+      row(strings.ordersProfitSubtotal, result.subtotal),
       if (result.lines.isNotEmpty) ...[
-        Text(
-          strings.profitabilityLines,
-          style: context.text.labelLarge?.copyWith(color: colors.inkSecondary),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Semantics(
+            header: true,
+            child: Text(
+              strings.ordersProfitLines,
+              style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+            ),
+          ),
         ),
-        for (var i = 0; i < result.lines.length; i++)
-          _line(
-            context,
-            strings,
-            result.lines[i],
-            currency,
-            divider: i < result.lines.length - 1,
+        for (final line in result.lines)
+          AtelierListRow(
+            title: partNames[line.productId] ?? strings.taskPartUnnamed,
+            subtitle: strings.ordersProfitLineDetail(
+              line.quantity.formatQuantity(),
+              profitabilityAmount(line.costOfSales, currency),
+            ),
+            trailing: Text(
+              profitabilityAmount(line.grossProfit, currency),
+              maxLines: 1,
+              style: context.text.titleMedium?.copyWith(color: context.scheme.onSurface),
+            ),
           ),
       ],
-      Text(
-        strings.profitabilityNoTax,
-        style: context.text.bodySmall?.copyWith(color: colors.inkSecondary),
-      ),
     ];
-  }
-
-  Widget _line(
-    BuildContext context,
-    AppLocalizations strings,
-    PartProfitability line,
-    String? currency, {
-    required bool divider,
-  }) {
-    final colors = context.atelier;
-    final profit = line.grossProfit;
-    return AtelierListRow(
-      title: partNames[line.productId] ?? strings.profitabilityLineUnknown,
-      subtitle: strings.profitabilityLineDetail(
-        line.quantity.formatQuantity(),
-        profitabilityAmount(line.revenue, currency),
-        profitabilityAmount(line.costOfSales, currency),
-      ),
-      showDivider: divider,
-      trailing: Text(
-        profitabilityAmount(profit, currency),
-        style: context.text.titleMedium?.copyWith(
-          color: profit != null && profit < Decimal.zero
-              ? colors.bad
-              : context.scheme.onSurface,
-        ),
-      ),
-    );
   }
 }
 

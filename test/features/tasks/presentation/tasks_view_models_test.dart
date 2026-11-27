@@ -535,7 +535,6 @@ void main() {
         );
         await _settle();
 
-        vm.onAddEvidenceClick();
         vm.onEvidenceKindChange(EvidenceKind.assembly);
         vm.onEvidenceNoteChange('Pastilla nueva');
         await vm.onEvidenceCaptured(File('foto.jpg'));
@@ -544,7 +543,7 @@ void main() {
         verify(
           () => attachEvidence.execute(any(), 'wo1', any(), EvidenceKind.assembly, note: 'Pastilla nueva'),
         ).called(1);
-        expect(vm.state.evidenceForm, isNull);
+        expect(vm.state.evidenceNote, isEmpty);
         expect(vm.state.notice?.asString(strings), strings.tasksSeg2EvidenceQueued);
         vm.dispose();
       });
@@ -565,11 +564,70 @@ void main() {
         vm.dispose();
       });
 
-      test('sin permiso no abre la captura', () async {
+      test('sin permiso de fotos no adjunta', () async {
         final vm = build(permissions: {});
         await _settle();
-        vm.onAddEvidenceClick();
-        expect(vm.state.evidenceForm, isNull);
+        await vm.onEvidenceCaptured(File('foto.jpg'));
+        verifyNever(() => attachEvidence.execute(any(), any(), any(), any(), note: any(named: 'note')));
+        vm.dispose();
+      });
+
+      test('el contador de la nota descuenta la etiqueta del tipo y avisa cambios sin guardar', () async {
+        final vm = build(permissions: permissions);
+        await _settle();
+        expect(vm.state.hasUnsavedChanges, isFalse);
+        expect(vm.state.maxEvidenceNoteLength, 500 - ('Desmontaje'.length + 2));
+        vm.onEvidenceKindChange(EvidenceKind.assembly);
+        expect(vm.state.maxEvidenceNoteLength, 500 - ('Montaje'.length + 2));
+        vm.onEvidenceNoteChange('Pastilla al 10 %');
+        expect(vm.state.hasUnsavedChanges, isTrue);
+        vm.dispose();
+      });
+
+      test('una foto fallida se revisa y se reintenta o descarta con su aviso', () async {
+        final vm = build(permissions: permissions);
+        await _settle();
+        final failed = PendingEvidence(operationId: 'op9', imageUrl: '', status: 'FAILED', capturedAt: now);
+        vm.onSelectFailedEvidence(failed);
+        expect(vm.state.selectedFailedEvidence, same(failed));
+        expect(vm.state.hasOpenSheet, isTrue);
+        vm.onDismissFailedEvidence();
+        expect(vm.state.selectedFailedEvidence, isNull);
+
+        vm.onSelectFailedEvidence(failed);
+        await vm.onRetryFailedEvidence();
+        expect(vm.state.selectedFailedEvidence, isNull);
+        expect(vm.state.notice?.asString(strings), strings.tasksSeg2EvidenceFailedRetryNotice);
+
+        vm.onSelectFailedEvidence(failed);
+        await vm.onDiscardFailedEvidence();
+        expect(vm.state.notice?.asString(strings), strings.tasksSeg2EvidenceFailedDiscardNotice);
+        vm.dispose();
+      });
+
+      test('cerrar la tarea exige una foto de Montaje si puede subir fotos', () async {
+        final vm = build(
+          permissions: {...permissions, 'operations:tasks:complete'},
+          loadDetail: () async => _detail(startedAt: startedAt),
+        );
+        await _settle();
+        vm.onCompleteClick();
+        await vm.onCompleteConfirm();
+        verifyNever(() => completeTask.execute(any(), any(), notes: any(named: 'notes')));
+        expect(vm.state.error?.asString(strings), strings.tasksSeg2CompleteMissingAssemblyWarning);
+        expect(vm.state.requiresAssemblyEvidence, isTrue);
+
+        evidenceStream.add([
+          PendingEvidence(
+            operationId: 'op1',
+            imageUrl: 'https://x/1.jpg',
+            description: 'Montaje: listo',
+            status: 'PENDING',
+            capturedAt: now,
+          ),
+        ]);
+        await _settle();
+        expect(vm.state.requiresAssemblyEvidence, isFalse);
         vm.dispose();
       });
     });
